@@ -41,4 +41,10 @@ describe('Shell', () => {
     await userEvent.click(screen.getByRole('button', { name: /theme/i }))
     expect(document.documentElement.getAttribute('data-theme')).toBe('slate')
   })
+
+  it('applies the stored theme to the DOM on mount (render-synced, self-healing)', () => {
+    localStorage.setItem('theme', 'slate')
+    renderShell()
+    expect(document.documentElement.getAttribute('data-theme')).toBe('slate')
+  })
 })

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useViewState, VIEWS, type ViewId } from './useViewState'
 import { getTheme, setTheme, type Theme } from '../lib/theme'
 import { WorkspaceSwitcher } from '../components/WorkspaceSwitcher'
@@ -13,11 +13,13 @@ export function Shell() {
   const { view, setView } = useViewState()
   const [theme, setThemeState] = useState<Theme>(getTheme())
 
-  const toggleTheme = () => {
-    const next: Theme = theme === 'bloom' ? 'slate' : 'bloom'
-    setTheme(next)
-    setThemeState(next)
-  }
+  // Apply the theme to the DOM (and persist it) on mount and on every change,
+  // so the DOM always reflects state — self-healing across remounts/desyncs.
+  useEffect(() => {
+    setTheme(theme)
+  }, [theme])
+
+  const toggleTheme = () => setThemeState((t) => (t === 'bloom' ? 'slate' : 'bloom'))
 
   return (
     <div className="min-h-full grid grid-cols-[200px_1fr] bg-[var(--bg)] text-[var(--text)]">
