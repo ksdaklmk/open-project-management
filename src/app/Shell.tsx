@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useViewState, VIEWS, type ViewId } from './useViewState'
 import { getTheme, setTheme, type Theme } from '../lib/theme'
+import { WorkspaceSwitcher } from '../components/WorkspaceSwitcher'
 
 const LABEL: Record<ViewId, string> = {
   list: 'List', board: 'Board', gantt: 'Gantt',
@@ -20,6 +21,7 @@ export function Shell() {
   return (
     <div className="min-h-full grid grid-cols-[200px_1fr] bg-[var(--bg)] text-[var(--text)]">
       <aside className="border-r border-[var(--border)] p-3 space-y-1">
+        <div className="mb-3"><WorkspaceSwitcher /></div>
         {VIEWS.map(v => (
           <button key={v} onClick={() => setView(v)}
             className={`block w-full text-left px-3 py-2 rounded ${
