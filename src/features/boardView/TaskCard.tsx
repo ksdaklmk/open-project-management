@@ -2,12 +2,18 @@ import { TASK_TYPES, PRIORITIES } from '../../types/constants'
 import type { Task } from '../../data/tasksRepo'
 import type { Member } from '../../data/membersRepo'
 
-export function TaskCard({ task, members }: { task: Task; members: Member[] }) {
+export function TaskCard({ task, members, onDragStart }: {
+  task: Task; members: Member[]; onDragStart: (taskId: string) => void
+}) {
   const type = TASK_TYPES[task.type]
   const priority = PRIORITIES.find((p) => p.id === task.priority)
   const assignee = members.find((m) => m.user_id === task.assignee_id)
   return (
-    <article className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-2.5 text-[var(--text)]">
+    <article
+      draggable
+      onDragStart={(e) => { e.dataTransfer?.setData('text/plain', task.id); onDragStart(task.id) }}
+      className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-2.5 text-[var(--text)] cursor-grab active:cursor-grabbing"
+    >
       <div className="flex items-center gap-2 text-xs text-[var(--muted)]">
         <span style={{ color: type.color }}>{type.label[0]}</span>
         <span>{task.ref}</span>
