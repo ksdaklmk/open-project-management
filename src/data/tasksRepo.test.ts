@@ -12,7 +12,7 @@ const { order, eq, select: _select, update, updateEq, from } = vi.hoisted(() => 
 
 vi.mock('../lib/supabase', () => ({ supabase: { from } }))
 
-import { listTasks, updateTaskStatus } from './tasksRepo'
+import { listTasks, updateTask } from './tasksRepo'
 
 beforeEach(() => vi.clearAllMocks())
 
@@ -31,10 +31,10 @@ describe('tasksRepo', () => {
     await expect(listTasks('ws-1')).rejects.toThrow('boom')
   })
 
-  it('updates a task status', async () => {
-    await updateTaskStatus('t1', 'done')
+  it('updates a task with a partial patch, scoped by id', async () => {
+    await updateTask('t1', { status: 'done', priority: 'high' })
     expect(from).toHaveBeenCalledWith('tasks')
-    expect(update).toHaveBeenCalledWith({ status: 'done' })
+    expect(update).toHaveBeenCalledWith({ status: 'done', priority: 'high' })
     expect(updateEq).toHaveBeenCalledWith('id', 't1')
   })
 })

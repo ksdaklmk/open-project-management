@@ -13,7 +13,10 @@ export async function listTasks(workspaceId: string): Promise<Task[]> {
   return data ?? []
 }
 
-export async function updateTaskStatus(id: string, status: Task['status']): Promise<void> {
-  const { error } = await supabase.from('tasks').update({ status }).eq('id', id)
+export async function updateTask(
+  id: string,
+  patch: Partial<Pick<Task, 'status' | 'priority' | 'assignee_id' | 'title'>>,
+): Promise<void> {
+  const { error } = await supabase.from('tasks').update(patch).eq('id', id)
   if (error) throw new Error(error.message)
 }
