@@ -7,7 +7,7 @@ import { groupTasksByStatus } from './grouping'
 import { TaskTable } from './TaskTable'
 
 export function ListView() {
-  const { activeId } = useActiveWorkspace()
+  const { activeId, loading: wsLoading } = useActiveWorkspace()
   const { data: tasks, isLoading, error } = useTasks(activeId ?? '')
   const { data: members } = useMembers(activeId ?? '')
   const { setTaskRef, taskRef } = useViewState()
@@ -15,7 +15,7 @@ export function ListView() {
   const onPatch = (id: string, patch: Parameters<typeof update.mutate>[0]['patch']) =>
     update.mutate({ id, patch })
 
-  if (isLoading) return <ListSkeleton />
+  if (wsLoading || isLoading) return <ListSkeleton />
   if (error) return <ErrorState />
   const groups = groupTasksByStatus(tasks ?? [])
   if (groups.length === 0) return <EmptyState />

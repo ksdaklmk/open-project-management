@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react'
 
 const { useTasks, useMembers, useActiveWorkspace, setTaskRef, mutate } = vi.hoisted(() => ({
   useTasks: vi.fn(), useMembers: vi.fn(),
-  useActiveWorkspace: vi.fn(() => ({ activeId: 'w1', setActiveId: vi.fn(), loading: false })),
+  useActiveWorkspace: vi.fn(() => ({ activeId: 'w1' as string | null, setActiveId: vi.fn(), loading: false })),
   setTaskRef: vi.fn(),
   mutate: vi.fn(),
 }))
@@ -41,6 +41,14 @@ describe('ListView', () => {
     useTasks.mockReturnValue({ data: undefined, isLoading: false, error: new Error('fail') })
     render(<ListView />)
     expect(screen.getByText(/couldn.t load/i)).toBeInTheDocument()
+  })
+  it('shows the skeleton while workspaces are still loading (no false empty state)', () => {
+    // cold load: workspaces in flight → activeId null → useTasks disabled (isLoading false, data undefined)
+    useActiveWorkspace.mockReturnValueOnce({ activeId: null, setActiveId: vi.fn(), loading: true })
+    useTasks.mockReturnValue({ data: undefined, isLoading: false, error: null })
+    render(<ListView />)
+    expect(screen.getByRole('status')).toBeInTheDocument()
+    expect(screen.queryByText(/no tasks/i)).not.toBeInTheDocument()
   })
   it('patches a task when its status cell changes', async () => {
     useTasks.mockReturnValue({ data: [{ id: 't1', ref: 'NIM-1', title: 'Hello', status: 'todo', priority: 'low', position: 0, type: 'feature', assignee_id: null, points: null }], isLoading: false, error: null })
