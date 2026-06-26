@@ -37,4 +37,10 @@ describe('tasksRepo', () => {
     expect(update).toHaveBeenCalledWith({ status: 'done', priority: 'high' })
     expect(updateEq).toHaveBeenCalledWith('id', 't1')
   })
+
+  it('accepts a position patch', async () => {
+    await updateTask('t1', { position: 1.5 })
+    expect(update).toHaveBeenCalledWith({ position: 1.5 })
+    expect(updateEq).toHaveBeenCalledWith('id', 't1')
+  })
 })

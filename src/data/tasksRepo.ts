@@ -15,7 +15,7 @@ export async function listTasks(workspaceId: string): Promise<Task[]> {
 
 export async function updateTask(
   id: string,
-  patch: Partial<Pick<Task, 'status' | 'priority' | 'assignee_id' | 'title'>>,
+  patch: Partial<Pick<Task, 'status' | 'priority' | 'assignee_id' | 'title' | 'position'>>,
 ): Promise<void> {
   const { error } = await supabase.from('tasks').update(patch).eq('id', id)
   if (error) throw new Error(error.message)
