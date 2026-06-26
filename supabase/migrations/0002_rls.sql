@@ -119,8 +119,14 @@ create policy comment_read   on comments for select
   using (exists (select 1 from tasks t where t.id = task_id and is_member(t.workspace_id)));
 create policy comment_insert on comments for insert
   with check (author_id = auth.uid() and exists (select 1 from tasks t where t.id = task_id and is_member(t.workspace_id)));
-create policy comment_update on comments for update using (author_id = auth.uid()) with check (author_id = auth.uid());
-create policy comment_delete on comments for delete using (author_id = auth.uid());
+create policy comment_update on comments for update
+  using (author_id = auth.uid()
+         and exists (select 1 from tasks t where t.id = task_id and is_member(t.workspace_id)))
+  with check (author_id = auth.uid()
+         and exists (select 1 from tasks t where t.id = task_id and is_member(t.workspace_id)));
+create policy comment_delete on comments for delete
+  using (author_id = auth.uid()
+         and exists (select 1 from tasks t where t.id = task_id and is_member(t.workspace_id)));
 
 create policy activity_read   on activity for select using (is_member(workspace_id));
 create policy activity_insert on activity for insert with check (is_member(workspace_id) and actor_id = auth.uid());

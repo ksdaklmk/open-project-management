@@ -19,7 +19,7 @@
 -- passing only because access is blanket-denied.
 
 begin;
-select plan(22);
+select plan(27);
 
 -- ---------------------------------------------------------------------------
 -- Service-role setup: two workspaces, three users, a task + subtask each.
@@ -65,6 +65,13 @@ insert into tasks (id, project_id, workspace_id, ref, title, created_by) values
 insert into subtasks (id, task_id, title) values
   ('00000000-0000-0000-0000-0000000000a4', '00000000-0000-0000-0000-0000000000a3', 'sub a'),
   ('00000000-0000-0000-0000-0000000000b4', '00000000-0000-0000-0000-0000000000b3', 'sub b');
+
+-- A owns a comment on a WS-A task (a3). Used by the comment_update/_delete
+-- membership tests below: the author must not be able to re-parent it into
+-- another workspace's task, and non-authors must not touch it.
+insert into comments (id, task_id, author_id, body) values
+  ('00000000-0000-0000-0000-0000000000a5', '00000000-0000-0000-0000-0000000000a3',
+   '00000000-0000-0000-0000-00000000000a', 'a comment');
 
 -- ---------------------------------------------------------------------------
 -- Impersonate user A (owner of WS-A). A must be fully isolated from WS-B.
@@ -205,6 +212,61 @@ with del as (
 select is(
   (select count(*)::int from del), 1,
   'owner A can delete a project (proj_delete is not deny-all)');
+
+-- ---------------------------------------------------------------------------
+-- Security fix 2: comment_update/_delete authorize via the parent task's
+-- workspace, not author_id alone. Otherwise the author could re-parent their
+-- own comment into another workspace's thread (cross-tenant write), and a
+-- former member could still edit/delete old comments after losing access.
+-- A still impersonated. a5 is A's comment on WS-A task a3; b3 is a WS-B task.
+-- ---------------------------------------------------------------------------
+-- The exploit: A re-parents its own comment into a WS-B task. The WITH CHECK
+-- must reject it (A is not a member of b3's workspace) -> 42501.
+select throws_ok(
+  $$ update comments set task_id = '00000000-0000-0000-0000-0000000000b3'
+     where id = '00000000-0000-0000-0000-0000000000a5' $$,
+  '42501', null,
+  'A cannot re-parent its own comment into a WS-B task (cross-tenant write)');
+
+-- A non-author in another workspace cannot touch A's comment. USING is
+-- author-scoped, so these are RLS-filtered to zero rows (no-op, not an error).
+select set_config('request.jwt.claims',
+  json_build_object('sub','00000000-0000-0000-0000-00000000000b','role','authenticated')::text,
+  true);
+with upd as (
+  update comments set body = 'hacked by B'
+  where id = '00000000-0000-0000-0000-0000000000a5'
+  returning 1)
+select is(
+  (select count(*)::int from upd), 0,
+  'B cannot update A''s comment (author-scoped, no-op)');
+with del as (
+  delete from comments
+  where id = '00000000-0000-0000-0000-0000000000a5'
+  returning 1)
+select is(
+  (select count(*)::int from del), 0,
+  'B cannot delete A''s comment (author-scoped, no-op)');
+
+-- Positive controls: the author CAN still edit and delete its own comment
+-- within its own workspace -- so the membership predicate is not deny-all.
+select set_config('request.jwt.claims',
+  json_build_object('sub','00000000-0000-0000-0000-00000000000a','role','authenticated')::text,
+  true);
+with upd as (
+  update comments set body = 'edited by A'
+  where id = '00000000-0000-0000-0000-0000000000a5'
+  returning 1)
+select is(
+  (select count(*)::int from upd), 1,
+  'A can edit its own comment body in its own workspace (not deny-all)');
+with del as (
+  delete from comments
+  where id = '00000000-0000-0000-0000-0000000000a5'
+  returning 1)
+select is(
+  (select count(*)::int from del), 1,
+  'A can delete its own comment in its own workspace (not deny-all)');
 
 -- ---------------------------------------------------------------------------
 -- Impersonate user C (plain member of WS-A): read yes, privileged delete no.
