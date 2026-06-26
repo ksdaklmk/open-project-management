@@ -1,26 +1,23 @@
-import { TASK_TYPES, STATUSES, PRIORITIES, TAG_COLORS } from '../../types/constants'
+import { TASK_TYPES, TAG_COLORS } from '../../types/constants'
 import type { Task } from '../../data/tasksRepo'
 import type { Member } from '../../data/membersRepo'
+import { StatusCell, PriorityCell, AssigneeCell } from './cells'
 
-const label = <T extends { id: string; label: string; color: string }>(arr: readonly T[], id: string) =>
-  arr.find((x) => x.id === id)
+type Patch = Partial<Pick<Task, 'status' | 'priority' | 'assignee_id'>>
 
-export function TaskRow({ task, members, onSelect }: {
-  task: Task; members: Member[]; onSelect: (ref: string) => void
+export function TaskRow({ task, members, onSelect, onPatch }: {
+  task: Task; members: Member[]; onSelect: (ref: string) => void; onPatch: (id: string, p: Patch) => void
 }) {
   const type = TASK_TYPES[task.type]
-  const status = label(STATUSES, task.status)
-  const priority = label(PRIORITIES, task.priority)
-  const assignee = members.find((m) => m.user_id === task.assignee_id)
   return (
     <tr onClick={() => onSelect(task.ref)}
       className="border-b border-[var(--border)] hover:bg-[var(--surface)] cursor-pointer">
       <td className="px-2 py-1"><span style={{ color: type.color }}>{type.label[0]}</span></td>
       <td className="px-2 py-1 text-[var(--muted)]">{task.ref}</td>
       <td className="px-2 py-1 text-[var(--text)]">{task.title}</td>
-      <td className="px-2 py-1"><span style={{ color: status?.color }}>{status?.label}</span></td>
-      <td className="px-2 py-1"><span style={{ color: priority?.color }}>{priority?.label}</span></td>
-      <td className="px-2 py-1 text-[var(--text)]">{assignee?.name ?? '—'}</td>
+      <td className="px-2 py-1"><StatusCell task={task} onChange={(p) => onPatch(task.id, p)} /></td>
+      <td className="px-2 py-1"><PriorityCell task={task} onChange={(p) => onPatch(task.id, p)} /></td>
+      <td className="px-2 py-1"><AssigneeCell task={task} members={members} onChange={(p) => onPatch(task.id, p)} /></td>
       <td className="px-2 py-1">{(task as Task & { tags?: string[] }).tags?.map?.((tg) => (
         <span key={tg} style={{ color: TAG_COLORS[tg] }} className="mr-1">{tg}</span>
       ))}</td>
