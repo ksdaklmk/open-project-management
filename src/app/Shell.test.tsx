@@ -5,7 +5,11 @@ import { MemoryRouter } from 'react-router-dom'
 import { Shell } from './Shell'
 
 const renderShell = () =>
-  render(<MemoryRouter initialEntries={['/']}><Shell /></MemoryRouter>)
+  render(
+    <MemoryRouter initialEntries={['/']} future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <Shell />
+    </MemoryRouter>,
+  )
 
 describe('Shell', () => {
   beforeEach(() => {
