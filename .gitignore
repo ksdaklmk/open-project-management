@@ -31,3 +31,6 @@ dist-ssr
 
 # Coordination scratch — keep out of commits
 .superpowers/
+
+# Transient handoff doc
+HANDOFF.md

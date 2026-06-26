@@ -1,12 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const { order, eq, select: _select, update, from } = vi.hoisted(() => {
+const { order, eq, select: _select, update, updateEq, from } = vi.hoisted(() => {
   const order = vi.fn()
   const eq = vi.fn(() => ({ order }))
   const select = vi.fn(() => ({ eq }))
-  const update = vi.fn(() => ({ eq: vi.fn(() => Promise.resolve({ error: null })) }))
+  const updateEq = vi.fn(() => Promise.resolve({ error: null }))
+  const update = vi.fn(() => ({ eq: updateEq }))
   const from = vi.fn(() => ({ select, update }))
-  return { order, eq, select, update, from }
+  return { order, eq, select, update, updateEq, from }
 })
 
 vi.mock('../lib/supabase', () => ({ supabase: { from } }))
@@ -34,5 +35,6 @@ describe('tasksRepo', () => {
     await updateTaskStatus('t1', 'done')
     expect(from).toHaveBeenCalledWith('tasks')
     expect(update).toHaveBeenCalledWith({ status: 'done' })
+    expect(updateEq).toHaveBeenCalledWith('id', 't1')
   })
 })
