@@ -7,9 +7,10 @@ import type { Patch } from './cells'
 
 const cssVars = (color?: string) => ({ '--chip': color }) as CSSProperties
 
-export function TaskTable({ status, tasks, members, selectedRef, onSelect, onPatch }: {
+export function TaskTable({ status, tasks, members, selectedRef, onSelect, onPatch, onMove }: {
   status: Status; tasks: Task[]; members: Member[]; selectedRef?: string | null
   onSelect: (ref: string) => void; onPatch: (id: string, p: Patch) => void
+  onMove: (task: Task, toStatus: Task['status']) => void
 }) {
   const meta = STATUSES.find((s) => s.id === status)
   return (
@@ -33,7 +34,7 @@ export function TaskTable({ status, tasks, members, selectedRef, onSelect, onPat
         <tbody>
           {tasks.map((t) => (
             <TaskRow key={t.id} task={t} members={members}
-              selected={t.ref === selectedRef} onSelect={onSelect} onPatch={onPatch} />
+              selected={t.ref === selectedRef} onSelect={onSelect} onPatch={onPatch} onMove={onMove} />
           ))}
         </tbody>
       </table>

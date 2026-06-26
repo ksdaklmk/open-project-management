@@ -16,9 +16,10 @@ function shapeStyle(shape: string, color: string): CSSProperties {
   }
 }
 
-export function TaskRow({ task, members, selected, onSelect, onPatch }: {
+export function TaskRow({ task, members, selected, onSelect, onPatch, onMove }: {
   task: Task; members: Member[]; selected?: boolean
   onSelect: (ref: string) => void; onPatch: (id: string, p: Patch) => void
+  onMove: (task: Task, toStatus: Task['status']) => void
 }) {
   const type = TASK_TYPES[task.type]
   const tags = (task as Task & { tags?: string[] }).tags
@@ -41,7 +42,7 @@ export function TaskRow({ task, members, selected, onSelect, onPatch }: {
         <span className="block truncate font-medium text-[var(--text)]">{task.title}</span>
       </td>
       <td className="px-2 py-1.5 align-middle">
-        <StatusCell task={task} onChange={(p) => onPatch(task.id, p)} />
+        <StatusCell task={task} onChange={(p) => p.status && onMove(task, p.status)} />
       </td>
       <td className="px-2 py-1.5 align-middle">
         <PriorityCell task={task} onChange={(p) => onPatch(task.id, p)} />

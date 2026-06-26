@@ -3,8 +3,10 @@ import { useMembers } from '../../lib/hooks/useMembers'
 import { useActiveWorkspace } from '../../lib/workspace'
 import { useViewState } from '../../app/useViewState'
 import { useUpdateTask } from '../../lib/hooks/useUpdateTask'
+import { useMoveTask } from '../../lib/hooks/useMoveTask'
 import { groupTasksByStatus } from './grouping'
 import { TaskTable } from './TaskTable'
+import type { Task } from '../../data/tasksRepo'
 
 export function ListView() {
   const { activeId, loading: wsLoading } = useActiveWorkspace()
@@ -14,6 +16,9 @@ export function ListView() {
   const update = useUpdateTask(activeId ?? '')
   const onPatch = (id: string, patch: Parameters<typeof update.mutate>[0]['patch']) =>
     update.mutate({ id, patch })
+  const move = useMoveTask(activeId ?? '')
+  const onMove = (task: Task, toStatus: Task['status']) =>
+    move.mutate({ taskId: task.id, toStatus, position: task.position, fromStatus: task.status })
 
   if (wsLoading || isLoading) return <ListSkeleton />
   if (error) return <ErrorState />
@@ -25,7 +30,7 @@ export function ListView() {
       {groups.map((g) => (
         <TaskTable key={g.status} status={g.status} tasks={g.tasks}
           members={members ?? []} selectedRef={taskRef}
-          onSelect={setTaskRef} onPatch={onPatch} />
+          onSelect={setTaskRef} onPatch={onPatch} onMove={onMove} />
       ))}
     </div>
   )

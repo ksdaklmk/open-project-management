@@ -1,17 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 
-const { useTasks, useMembers, useActiveWorkspace, setTaskRef, mutate } = vi.hoisted(() => ({
+const { useTasks, useMembers, useActiveWorkspace, setTaskRef, mutate, moveMutate } = vi.hoisted(() => ({
   useTasks: vi.fn(), useMembers: vi.fn(),
   useActiveWorkspace: vi.fn(() => ({ activeId: 'w1' as string | null, setActiveId: vi.fn(), loading: false })),
   setTaskRef: vi.fn(),
   mutate: vi.fn(),
+  moveMutate: vi.fn(),
 }))
 vi.mock('../../lib/hooks/useTasks', () => ({ useTasks }))
 vi.mock('../../lib/hooks/useMembers', () => ({ useMembers }))
 vi.mock('../../lib/workspace', () => ({ useActiveWorkspace }))
 vi.mock('../../app/useViewState', () => ({ useViewState: () => ({ setTaskRef }) }))
 vi.mock('../../lib/hooks/useUpdateTask', () => ({ useUpdateTask: () => ({ mutate }) }))
+vi.mock('../../lib/hooks/useMoveTask', () => ({ useMoveTask: () => ({ mutate: moveMutate }) }))
 
 import { ListView } from './ListView'
 
@@ -50,11 +52,11 @@ describe('ListView', () => {
     expect(screen.getByRole('status')).toBeInTheDocument()
     expect(screen.queryByText(/no tasks/i)).not.toBeInTheDocument()
   })
-  it('patches a task when its status cell changes', async () => {
+  it('moves a task (logs activity) when its status cell changes', async () => {
     useTasks.mockReturnValue({ data: [{ id: 't1', ref: 'NIM-1', title: 'Hello', status: 'todo', priority: 'low', position: 0, type: 'feature', assignee_id: null, points: null }], isLoading: false, error: null })
     const { default: userEvent } = await import('@testing-library/user-event')
     render(<ListView />)
     await userEvent.selectOptions(screen.getByLabelText('Status'), 'done')
-    expect(mutate).toHaveBeenCalledWith({ id: 't1', patch: { status: 'done' } })
+    expect(moveMutate).toHaveBeenCalledWith({ taskId: 't1', toStatus: 'done', position: 0, fromStatus: 'todo' })
   })
 })
