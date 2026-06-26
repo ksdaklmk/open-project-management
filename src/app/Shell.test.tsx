@@ -10,6 +10,9 @@ vi.mock('../components/WorkspaceSwitcher', () => ({
 vi.mock('../features/listView/ListView', () => ({
   ListView: () => null,
 }))
+vi.mock('../features/boardView/BoardView', () => ({
+  BoardView: () => <div>board view</div>,
+}))
 
 const renderShell = () =>
   render(
