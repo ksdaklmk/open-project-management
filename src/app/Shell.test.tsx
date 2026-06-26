@@ -7,6 +7,9 @@ import { Shell } from './Shell'
 vi.mock('../components/WorkspaceSwitcher', () => ({
   WorkspaceSwitcher: () => null,
 }))
+vi.mock('../features/listView/ListView', () => ({
+  ListView: () => null,
+}))
 
 const renderShell = () =>
   render(

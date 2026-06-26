@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useViewState, VIEWS, type ViewId } from './useViewState'
 import { getTheme, setTheme, type Theme } from '../lib/theme'
 import { WorkspaceSwitcher } from '../components/WorkspaceSwitcher'
+import { ListView } from '../features/listView/ListView'
 
 const LABEL: Record<ViewId, string> = {
   list: 'List', board: 'Board', gantt: 'Gantt',
@@ -37,7 +38,7 @@ export function Shell() {
             className="px-3 py-1 rounded border border-[var(--border)]">Theme</button>
         </header>
         <main data-testid="view-region" className="flex-1 p-4 text-[var(--muted)]">
-          {view} view — coming next.
+          {view === 'list' ? <ListView /> : `${view} view — coming next.`}
         </main>
       </section>
     </div>
