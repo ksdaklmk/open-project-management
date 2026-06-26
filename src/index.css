@@ -12,3 +12,184 @@
 }
 html, body, #root { height: 100%; }
 body { background: var(--bg); color: var(--text); }
+
+@layer components {
+  /* ---- Inline editor fields (status / priority / assignee / workspace) ----
+     A native <select> wrapped so we can overlay a colored leading dot and a
+     currentColor caret. Stays a real combobox: keyboard + AT operable. */
+  .opm-field {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+    color: var(--muted); /* drives the caret on neutral fields */
+  }
+  .opm-field.is-chip {
+    --chip-text: color-mix(in oklab, var(--chip) 72%, var(--text));
+    color: var(--chip-text);
+  }
+
+  .opm-select {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 100%;
+    min-width: 0;
+    font: inherit;
+    line-height: 1.25;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 3px 26px 3px 8px;
+    cursor: pointer;
+    text-overflow: ellipsis;
+    transition: background-color .15s ease, border-color .15s ease, box-shadow .15s ease;
+  }
+  .opm-select:hover {
+    border-color: color-mix(in oklab, var(--text) 24%, var(--border));
+  }
+  .opm-select:focus-visible {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px color-mix(in oklab, var(--primary) 40%, transparent);
+  }
+
+  /* Chip variant: a rounded, hue-tinted pill that is still a <select>. */
+  .opm-chip {
+    border-radius: 999px;
+    padding-left: 24px;
+    font-weight: 500;
+    color: var(--chip-text);
+    background: color-mix(in oklab, var(--chip) 16%, var(--surface));
+    border-color: color-mix(in oklab, var(--chip) 30%, var(--surface));
+  }
+  .opm-chip:hover {
+    background: color-mix(in oklab, var(--chip) 24%, var(--surface));
+    border-color: color-mix(in oklab, var(--chip) 42%, var(--surface));
+  }
+
+  .opm-field-dot {
+    position: absolute;
+    left: 9px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--chip);
+    pointer-events: none;
+  }
+  .opm-caret {
+    position: absolute;
+    right: 8px;
+    width: 12px;
+    height: 12px;
+    color: inherit;
+    opacity: .8;
+    pointer-events: none;
+  }
+
+  /* ---- Read-only tag chip ---- */
+  .opm-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    border-radius: 999px;
+    padding: 1px 8px;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.5;
+    white-space: nowrap;
+    color: color-mix(in oklab, var(--chip) 70%, var(--text));
+    background: color-mix(in oklab, var(--chip) 14%, var(--surface));
+    border: 1px solid color-mix(in oklab, var(--chip) 22%, var(--surface));
+  }
+  .opm-tag::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--chip);
+  }
+
+  /* ---- Story-points badge ---- */
+  .opm-points {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+    background: color-mix(in oklab, var(--text) 6%, var(--surface));
+  }
+
+  /* ---- Group header bits ---- */
+  .opm-group-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--chip);
+    flex: none;
+  }
+  .opm-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 18px;
+    padding: 0 6px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+    background: color-mix(in oklab, var(--text) 7%, var(--surface));
+  }
+
+  /* ---- Task rows ---- */
+  .opm-row {
+    transition: background-color .12s ease;
+  }
+  .opm-row:hover {
+    background: var(--surface);
+  }
+  .opm-row[aria-selected='true'] {
+    background: color-mix(in oklab, var(--primary) 12%, var(--surface));
+  }
+  .opm-row:focus-visible {
+    outline: 2px solid color-mix(in oklab, var(--primary) 60%, transparent);
+    outline-offset: -2px;
+  }
+
+  /* ---- Loading skeleton ---- */
+  .opm-skel {
+    position: relative;
+    overflow: hidden;
+    border-radius: 6px;
+    background: color-mix(in oklab, var(--text) 9%, var(--surface));
+  }
+  .opm-skel::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in oklab, var(--text) 7%, transparent),
+      transparent
+    );
+    animation: opm-shimmer 1.4s ease-in-out infinite;
+  }
+}
+
+@keyframes opm-shimmer {
+  100% { transform: translateX(100%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .opm-skel::after { animation: none; }
+  .opm-row, .opm-select { transition: none; }
+}
