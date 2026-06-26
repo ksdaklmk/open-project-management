@@ -21,6 +21,7 @@ beforeEach(() => vi.clearAllMocks())
 describe('useMoveTask', () => {
   it('optimistically sets status+position and logs activity on a status change', async () => {
     const qc = new QueryClient()
+    const invalidate = vi.spyOn(qc, 'invalidateQueries')
     qc.setQueryData(['tasks', ws], [{ id: 't1', status: 'todo', position: 0 }])
     updateTask.mockResolvedValueOnce(undefined); logMove.mockResolvedValueOnce(undefined)
     const { result } = renderHook(() => useMoveTask(ws), { wrapper: wrap(qc) })
@@ -31,6 +32,8 @@ describe('useMoveTask', () => {
     })
     await waitFor(() => expect(logMove).toHaveBeenCalledWith(
       { workspaceId: ws, actorId: 'u1', taskId: 't1', fromStatus: 'todo', toStatus: 'done' }))
+    // onSettled invalidates BOTH the tasks and activity caches
+    await waitFor(() => expect(invalidate).toHaveBeenCalledWith({ queryKey: ['activity', ws] }))
   })
 
   it('does NOT log activity for a pure reorder (same status)', async () => {
@@ -39,7 +42,7 @@ describe('useMoveTask', () => {
     updateTask.mockResolvedValueOnce(undefined)
     const { result } = renderHook(() => useMoveTask(ws), { wrapper: wrap(qc) })
     result.current.mutate({ taskId: 't1', toStatus: 'todo', position: 2, fromStatus: 'todo' })
-    await waitFor(() => expect(updateTask).toHaveBeenCalled())
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(logMove).not.toHaveBeenCalled()
   })
 
