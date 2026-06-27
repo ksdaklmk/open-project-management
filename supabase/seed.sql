@@ -30,6 +30,13 @@ insert into tasks (project_id, ref, type, title, status, priority, assignee_id, 
   ('30000000-0000-0000-0000-000000000001', 'NIM-101', 'feature', 'Design login screen',  'in_progress', 'high',   '10000000-0000-0000-0000-000000000001', '2026-06-22', '2026-06-26', 5, 1, '10000000-0000-0000-0000-000000000001'),
   ('30000000-0000-0000-0000-000000000001', 'NIM-102', 'bug',     'Fix board drag jitter', 'todo',       'urgent', '10000000-0000-0000-0000-000000000001', '2026-06-24', '2026-06-25', 3, 2, '10000000-0000-0000-0000-000000000001');
 
+insert into tasks (project_id, ref, type, title, status, priority, assignee_id, start_date, end_date, points, position, created_by) values
+  ('30000000-0000-0000-0000-000000000001', 'NIM-103', 'feature',     'Auth rate limiting', 'in_progress', 'high',   '10000000-0000-0000-0000-000000000001', '2026-06-29', '2026-07-03', 5, 3, '10000000-0000-0000-0000-000000000001'),
+  ('30000000-0000-0000-0000-000000000001', 'NIM-104', 'chore',       'Billing webhooks',   'todo',        'medium', '10000000-0000-0000-0000-000000000001', '2026-07-06', '2026-07-10', 3, 4, '10000000-0000-0000-0000-000000000001'),
+  ('30000000-0000-0000-0000-000000000001', 'NIM-105', 'improvement', 'Onboarding emails',  'backlog',     'low',    '10000000-0000-0000-0000-000000000001', null,         null,         2, 5, '10000000-0000-0000-0000-000000000001'),
+  ('30000000-0000-0000-0000-000000000001', 'NIM-106', 'chore',       'Dark-mode polish',   'backlog',     'low',    '10000000-0000-0000-0000-000000000001', null,         null,         1, 6, '10000000-0000-0000-0000-000000000001')
+on conflict (project_id, ref) do nothing;
+
 insert into task_tags (task_id, tag)
   select id, 'Frontend' from tasks where ref = 'NIM-101';
 
