@@ -6,7 +6,7 @@ import { useActiveWorkspace } from '../../lib/workspace'
 import { STATUSES } from '../../types/constants'
 import { boardColumns } from './boardColumns'
 import { BoardColumn } from './BoardColumn'
-import { computeDropPosition } from './computeDropPosition'
+import { dropPosition } from './computeDropPosition'
 import type { Status } from '../../types/constants'
 
 export function BoardView() {
@@ -25,10 +25,10 @@ export function BoardView() {
     const all = tasks ?? []
     const dragged = all.find((t) => t.id === taskId)
     if (!dragged) return
-    const colTasks = all
-      .filter((t) => t.status === toStatus && t.id !== taskId)
+    const sorted = all
+      .filter((t) => t.status === toStatus)
       .sort((a, b) => a.position - b.position)
-    const position = computeDropPosition(colTasks, insertIndex)
+    const position = dropPosition(sorted, taskId, insertIndex)
     move.mutate({ taskId, toStatus, position, fromStatus: dragged.status })
   }
 

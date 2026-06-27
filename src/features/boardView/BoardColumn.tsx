@@ -37,6 +37,7 @@ export function BoardColumn({ status, tasks, members, onCardDragStart, onDrop }:
           setHoverIndex(null)
         }
       }}
+      onDragEnd={() => setHoverIndex(null)}
       onDrop={(e) => {
         e.preventDefault()
         onDrop(status, hoverIndex ?? tasks.length)

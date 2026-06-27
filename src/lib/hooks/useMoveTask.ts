@@ -19,7 +19,11 @@ export function useMoveTask(workspaceId: string) {
     mutationFn: async ({ taskId, toStatus, position, fromStatus }: MoveArgs) => {
       await updateTask(taskId, { status: toStatus, position })
       if (toStatus !== fromStatus) {
-        await logMove({ workspaceId, actorId: session?.user.id ?? '', taskId, fromStatus, toStatus })
+        try {
+          await logMove({ workspaceId, actorId: session?.user.id ?? '', taskId, fromStatus, toStatus })
+        } catch (e) {
+          toast.error(`Move saved, but activity wasn't logged: ${(e as Error).message}`)
+        }
       }
     },
     onMutate: async ({ taskId, toStatus, position }) => {

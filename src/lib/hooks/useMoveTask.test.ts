@@ -55,4 +55,20 @@ describe('useMoveTask', () => {
     await waitFor(() => expect(toast.error).toHaveBeenCalled())
     expect((qc.getQueryData(['tasks', ws]) as any)[0].status).toBe('todo')
   })
+
+  it('keeps the move when logMove rejects — toasts "wasn\'t logged" but does NOT roll back', async () => {
+    const qc = new QueryClient()
+    qc.setQueryData(['tasks', ws], [{ id: 't1', status: 'todo', position: 0 }])
+    updateTask.mockResolvedValueOnce(undefined)
+    logMove.mockRejectedValueOnce(new Error('activity db down'))
+    const { result } = renderHook(() => useMoveTask(ws), { wrapper: wrap(qc) })
+    result.current.mutate({ taskId: 't1', toStatus: 'done', position: 5, fromStatus: 'todo' })
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    // The move should have persisted — cache stays at toStatus, NOT rolled back
+    const cached = (qc.getQueryData(['tasks', ws]) as any)[0]
+    expect(cached.status).toBe('done')
+    expect(cached.position).toBe(5)
+    // And we surfaced the failure via a toast mentioning "wasn't logged"
+    expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("wasn't logged"))
+  })
 })
