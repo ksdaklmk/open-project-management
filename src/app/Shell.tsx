@@ -6,6 +6,7 @@ import { ListView } from '../features/listView/ListView'
 import { BoardView } from '../features/boardView/BoardView'
 import { ActivityView } from '../features/activityView/ActivityView'
 import { GanttView } from '../features/ganttView/GanttView'
+import { TimelineView } from '../features/timelineView/TimelineView'
 
 const LABEL: Record<ViewId, string> = {
   list: 'List', board: 'Board', gantt: 'Gantt',
@@ -49,6 +50,8 @@ export function Shell() {
             <BoardView />
           ) : view === 'gantt' ? (
             <GanttView />
+          ) : view === 'timeline' ? (
+            <TimelineView />
           ) : view === 'activity' ? (
             <ActivityView />
           ) : (

@@ -19,6 +19,9 @@ vi.mock('../features/activityView/ActivityView', () => ({
 vi.mock('../features/ganttView/GanttView', () => ({
   GanttView: () => <div>gantt mounted</div>,
 }))
+vi.mock('../features/timelineView/TimelineView', () => ({
+  TimelineView: () => <div>timeline mounted</div>,
+}))
 
 const renderShell = () =>
   render(
@@ -67,5 +70,11 @@ describe('Shell', () => {
     renderShell()
     await userEvent.click(screen.getByRole('button', { name: 'Gantt' }))
     expect(screen.getByTestId('view-region')).toHaveTextContent('gantt mounted')
+  })
+
+  it('mounts the Timeline view on the Timeline tab', async () => {
+    renderShell()
+    await userEvent.click(screen.getByRole('button', { name: 'Timeline' }))
+    expect(screen.getByTestId('view-region')).toHaveTextContent('timeline mounted')
   })
 })
