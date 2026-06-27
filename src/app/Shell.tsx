@@ -5,6 +5,7 @@ import { WorkspaceSwitcher } from '../components/WorkspaceSwitcher'
 import { ListView } from '../features/listView/ListView'
 import { BoardView } from '../features/boardView/BoardView'
 import { ActivityView } from '../features/activityView/ActivityView'
+import { GanttView } from '../features/ganttView/GanttView'
 
 const LABEL: Record<ViewId, string> = {
   list: 'List', board: 'Board', gantt: 'Gantt',
@@ -46,6 +47,8 @@ export function Shell() {
             <ListView />
           ) : view === 'board' ? (
             <BoardView />
+          ) : view === 'gantt' ? (
+            <GanttView />
           ) : view === 'activity' ? (
             <ActivityView />
           ) : (

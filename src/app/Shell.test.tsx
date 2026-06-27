@@ -16,6 +16,9 @@ vi.mock('../features/boardView/BoardView', () => ({
 vi.mock('../features/activityView/ActivityView', () => ({
   ActivityView: () => <div>activity feed mounted</div>,
 }))
+vi.mock('../features/ganttView/GanttView', () => ({
+  GanttView: () => <div>gantt mounted</div>,
+}))
 
 const renderShell = () =>
   render(
@@ -58,5 +61,11 @@ describe('Shell', () => {
     renderShell()
     await userEvent.click(screen.getByRole('button', { name: 'Activity' }))
     expect(screen.getByTestId('view-region')).toHaveTextContent('activity feed mounted')
+  })
+
+  it('mounts the Gantt view on the Gantt tab', async () => {
+    renderShell()
+    await userEvent.click(screen.getByRole('button', { name: 'Gantt' }))
+    expect(screen.getByTestId('view-region')).toHaveTextContent('gantt mounted')
   })
 })
