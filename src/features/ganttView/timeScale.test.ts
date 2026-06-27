@@ -46,4 +46,9 @@ describe('buildScale', () => {
   it('returns null todayPct when now is outside the range', () => {
     expect(buildScale(scheduled, parseDate('2026-09-01')).todayPct).toBeNull()
   })
+  it('keeps the today marker on the last in-range day and drops it the day after', () => {
+    // range = 3 weeks from Mon Jun 22; last day = Sun Jul 12 (offset 20 of 21)
+    expect(buildScale(scheduled, parseDate('2026-07-12')).todayPct).toBeCloseTo((20 / 21) * 100, 5)
+    expect(buildScale(scheduled, parseDate('2026-07-13')).todayPct).toBeNull()
+  })
 })

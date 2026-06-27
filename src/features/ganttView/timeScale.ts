@@ -29,8 +29,12 @@ export function buildScale(scheduled: Task[], now: Date): GanttScale {
     return { start, label: start.toLocaleDateString('en-US', LABEL) }
   })
   const rangeDays = weekCount * 7
-  const todayOffset = daysBetween(rangeStart, now)
-  const todayPct = todayOffset >= 0 && todayOffset <= rangeDays ? (todayOffset / rangeDays) * 100 : null
+  // Marker reflects today's DATE: normalize now to local midnight (whole-day
+  // offset), and hide it once today leaves the range — valid offsets are
+  // 0..rangeDays-1; rangeDays itself is the day after the last range day.
+  const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const todayOffset = daysBetween(rangeStart, todayMidnight)
+  const todayPct = todayOffset >= 0 && todayOffset < rangeDays ? (todayOffset / rangeDays) * 100 : null
 
   return {
     weeks,
