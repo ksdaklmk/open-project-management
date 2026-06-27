@@ -20,3 +20,37 @@ export async function logMove(params: {
   })
   if (error) throw new Error(error.message)
 }
+
+export interface ActivityItem {
+  id: string
+  verb: string
+  from_status: Status | null
+  to_status: Status | null
+  created_at: string
+  actor: { name: string; color: string } | null
+  task: { ref: string; title: string } | null
+}
+
+export async function listActivity(workspaceId: string): Promise<ActivityItem[]> {
+  const { data, error } = await supabase
+    .from('activity')
+    .select(
+      'id, verb, from_status, to_status, created_at, actor:profiles!actor_id(name,color), task:tasks!task_id(ref,title)',
+    )
+    .eq('workspace_id', workspaceId)
+    .order('created_at', { ascending: false })
+    .limit(100)
+  if (error) throw new Error(error.message)
+  return (data ?? []).map((r) => {
+    const row = r as unknown as ActivityItem
+    return {
+      id: row.id,
+      verb: row.verb,
+      from_status: row.from_status,
+      to_status: row.to_status,
+      created_at: row.created_at,
+      actor: row.actor ?? null,
+      task: row.task ?? null,
+    }
+  })
+}
