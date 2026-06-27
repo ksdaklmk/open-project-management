@@ -1,0 +1,60 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { render, screen } from '@testing-library/react'
+
+const { useActivity, useActiveWorkspace } = vi.hoisted(() => ({
+  useActivity: vi.fn(),
+  useActiveWorkspace: vi.fn(() => ({ activeId: 'w1', setActiveId: vi.fn(), loading: false })),
+}))
+vi.mock('../../lib/hooks/useActivity', () => ({ useActivity }))
+vi.mock('../../lib/workspace', () => ({ useActiveWorkspace }))
+
+import { ActivityView } from './ActivityView'
+
+const MOVED = {
+  id: 'a1', verb: 'moved', from_status: 'in_progress', to_status: 'in_review',
+  created_at: '2026-06-27T10:00:00Z',
+  actor: { name: 'Dana', color: '#6d5ef0' }, task: { ref: 'NIM-101', title: 'Fix login redirect' },
+}
+
+beforeEach(() => vi.clearAllMocks())
+
+describe('ActivityView', () => {
+  it('renders a moved activity row with actor, task, and from/to statuses', () => {
+    useActivity.mockReturnValue({ data: [MOVED], isLoading: false, error: null })
+    render(<ActivityView />)
+    expect(screen.getByText('Dana')).toBeInTheDocument()
+    expect(screen.getByText('NIM-101')).toBeInTheDocument()
+    expect(screen.getByText(/Fix login redirect/)).toBeInTheDocument()
+    expect(screen.getByText(/moved/)).toBeInTheDocument()
+    expect(screen.getByText('In Progress')).toBeInTheDocument()
+    expect(screen.getByText('In Review')).toBeInTheDocument()
+  })
+
+  it('shows the loading state', () => {
+    useActivity.mockReturnValue({ data: undefined, isLoading: true, error: null })
+    render(<ActivityView />)
+    expect(screen.getByText(/loading/i)).toBeInTheDocument()
+  })
+
+  it('shows the error state', () => {
+    useActivity.mockReturnValue({ data: undefined, isLoading: false, error: new Error('x') })
+    render(<ActivityView />)
+    expect(screen.getByText(/couldn't load activity/i)).toBeInTheDocument()
+  })
+
+  it('shows the empty state when there is no activity', () => {
+    useActivity.mockReturnValue({ data: [], isLoading: false, error: null })
+    render(<ActivityView />)
+    expect(screen.getByText(/no activity yet/i)).toBeInTheDocument()
+  })
+
+  it('falls back gracefully for an unknown verb and null actor/task', () => {
+    useActivity.mockReturnValue({
+      data: [{ id: 'a2', verb: 'sneezed', from_status: null, to_status: null, created_at: '2026-06-27T10:00:00Z', actor: null, task: null }],
+      isLoading: false, error: null,
+    })
+    render(<ActivityView />)
+    expect(screen.getByText(/someone/i)).toBeInTheDocument()
+    expect(screen.getByText(/sneezed/)).toBeInTheDocument()
+  })
+})

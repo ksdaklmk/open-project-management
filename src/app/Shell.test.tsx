@@ -13,6 +13,9 @@ vi.mock('../features/listView/ListView', () => ({
 vi.mock('../features/boardView/BoardView', () => ({
   BoardView: () => <div>board view</div>,
 }))
+vi.mock('../features/activityView/ActivityView', () => ({
+  ActivityView: () => <div>activity feed mounted</div>,
+}))
 
 const renderShell = () =>
   render(
@@ -49,5 +52,11 @@ describe('Shell', () => {
     localStorage.setItem('theme', 'slate')
     renderShell()
     expect(document.documentElement.getAttribute('data-theme')).toBe('slate')
+  })
+
+  it('mounts the Activity view on the Activity tab', async () => {
+    renderShell()
+    await userEvent.click(screen.getByRole('button', { name: 'Activity' }))
+    expect(screen.getByTestId('view-region')).toHaveTextContent('activity feed mounted')
   })
 })
