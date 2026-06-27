@@ -34,12 +34,14 @@ describe('ActivityView', () => {
     useActivity.mockReturnValue({ data: undefined, isLoading: true, error: null })
     render(<ActivityView />)
     expect(screen.getByText(/loading/i)).toBeInTheDocument()
+    expect(screen.getByRole('status')).toBeInTheDocument()
   })
 
   it('shows the error state', () => {
     useActivity.mockReturnValue({ data: undefined, isLoading: false, error: new Error('x') })
     render(<ActivityView />)
     expect(screen.getByText(/couldn't load activity/i)).toBeInTheDocument()
+    expect(screen.getByRole('alert')).toBeInTheDocument()
   })
 
   it('shows the empty state when there is no activity', () => {

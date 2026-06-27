@@ -11,6 +11,7 @@ const STATUS_META = Object.fromEntries(STATUSES.map((s) => [s.id, s])) as Record
 function StatusChip({ status }: { status: Status | null }) {
   if (!status) return null
   const s = STATUS_META[status]
+  if (!s) return null
   return (
     <span
       className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium whitespace-nowrap"
