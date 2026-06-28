@@ -28,7 +28,8 @@ insert into projects (id, workspace_id, name, key, color) values
 
 insert into tasks (project_id, ref, type, title, status, priority, assignee_id, start_date, end_date, points, position, created_by) values
   ('30000000-0000-0000-0000-000000000001', 'NIM-101', 'feature', 'Design login screen',  'in_progress', 'high',   '10000000-0000-0000-0000-000000000001', '2026-06-22', '2026-06-26', 5, 1, '10000000-0000-0000-0000-000000000001'),
-  ('30000000-0000-0000-0000-000000000001', 'NIM-102', 'bug',     'Fix board drag jitter', 'todo',       'urgent', '10000000-0000-0000-0000-000000000001', '2026-06-24', '2026-06-25', 3, 2, '10000000-0000-0000-0000-000000000001');
+  ('30000000-0000-0000-0000-000000000001', 'NIM-102', 'bug',     'Fix board drag jitter', 'todo',       'urgent', '10000000-0000-0000-0000-000000000001', '2026-06-24', '2026-06-25', 3, 2, '10000000-0000-0000-0000-000000000001')
+on conflict (project_id, ref) do nothing;
 
 insert into tasks (project_id, ref, type, title, status, priority, assignee_id, start_date, end_date, points, position, created_by) values
   ('30000000-0000-0000-0000-000000000001', 'NIM-103', 'feature',     'Auth rate limiting', 'in_progress', 'high',   '10000000-0000-0000-0000-000000000001', '2026-06-29', '2026-07-03', 5, 3, '10000000-0000-0000-0000-000000000001'),
@@ -43,3 +44,29 @@ insert into task_tags (task_id, tag)
 insert into activity (workspace_id, actor_id, task_id, verb, to_status)
   select '20000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000001', id, 'created', 'todo'
   from tasks where ref = 'NIM-101';
+
+-- Second member + Workload-shaping data (added with the Workload view)
+insert into auth.users (id, email) values
+  ('10000000-0000-0000-0000-000000000002', 'dana@northwind.dev')
+on conflict (id) do nothing;
+
+insert into profiles (id, name, color)
+  values ('10000000-0000-0000-0000-000000000002', 'Dana Lee', '#14b8a6')
+  on conflict (id) do update set name = excluded.name, color = excluded.color;
+
+insert into workspace_members (workspace_id, user_id, role, capacity_per_week) values
+  ('20000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000002', 'member', 8)
+on conflict (workspace_id, user_id) do update set role = excluded.role, capacity_per_week = excluded.capacity_per_week;
+
+update workspace_members set capacity_per_week = 10
+  where workspace_id = '20000000-0000-0000-0000-000000000001'
+    and user_id = '10000000-0000-0000-0000-000000000001';
+
+update tasks set points = 13 where project_id = '30000000-0000-0000-0000-000000000001' and ref = 'NIM-103';
+update tasks set points = 9  where project_id = '30000000-0000-0000-0000-000000000001' and ref = 'NIM-104';
+
+insert into tasks (project_id, ref, type, title, status, priority, assignee_id, start_date, end_date, points, position, created_by) values
+  ('30000000-0000-0000-0000-000000000001', 'NIM-107', 'feature', 'Search indexing',     'in_progress', 'high',   '10000000-0000-0000-0000-000000000002', '2026-06-29', '2026-07-01', 8,  7, '10000000-0000-0000-0000-000000000001'),
+  ('30000000-0000-0000-0000-000000000001', 'NIM-108', 'chore',   'Log retention sweep', 'todo',        'medium', '10000000-0000-0000-0000-000000000002', '2026-07-13', '2026-07-15', 10, 8, '10000000-0000-0000-0000-000000000001'),
+  ('30000000-0000-0000-0000-000000000001', 'NIM-109', 'feature', 'Public API docs',     'todo',        'medium', null,                                   '2026-07-06', '2026-07-08', 6,  9, '10000000-0000-0000-0000-000000000001')
+on conflict (project_id, ref) do nothing;
