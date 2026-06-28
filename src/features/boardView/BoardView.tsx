@@ -3,6 +3,7 @@ import { useTasks } from '../../lib/hooks/useTasks'
 import { useMembers } from '../../lib/hooks/useMembers'
 import { useMoveTask } from '../../lib/hooks/useMoveTask'
 import { useActiveWorkspace } from '../../lib/workspace'
+import { useViewState } from '../../app/useViewState'
 import { STATUSES } from '../../types/constants'
 import { boardColumns } from './boardColumns'
 import { BoardColumn } from './BoardColumn'
@@ -14,6 +15,7 @@ export function BoardView() {
   const { data: tasks, isLoading, error } = useTasks(activeId ?? '')
   const { data: members } = useMembers(activeId ?? '')
   const move = useMoveTask(activeId ?? '')
+  const { setTaskRef } = useViewState()
   const dragId = useRef<string | null>(null)
 
   const onCardDragStart = (taskId: string) => { dragId.current = taskId }
@@ -46,6 +48,7 @@ export function BoardView() {
           members={members ?? []}
           onCardDragStart={onCardDragStart}
           onDrop={onDrop}
+          onOpen={setTaskRef}
         />
       ))}
     </div>

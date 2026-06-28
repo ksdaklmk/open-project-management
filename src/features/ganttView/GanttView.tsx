@@ -1,5 +1,6 @@
 import { useTasks } from '../../lib/hooks/useTasks'
 import { useActiveWorkspace } from '../../lib/workspace'
+import { useViewState } from '../../app/useViewState'
 import { STATUSES } from '../../types/constants'
 import { splitGantt, buildScale } from './timeScale'
 import { parseDate } from '../../lib/weeks'
@@ -15,6 +16,7 @@ const BAR_SHADOW = '0 1px 2px color-mix(in oklab, var(--text) 14%, transparent)'
 export function GanttView({ now = new Date() }: { now?: Date } = {}) {
   const { activeId, loading: wsLoading } = useActiveWorkspace()
   const { data: tasks, isLoading, error } = useTasks(activeId ?? '')
+  const { setTaskRef } = useViewState()
 
   if (wsLoading || isLoading) return <GanttSkeleton />
   if (error) return <GanttError />
@@ -36,7 +38,7 @@ export function GanttView({ now = new Date() }: { now?: Date } = {}) {
           </p>
         </div>
       ) : (
-        <GanttChart ordered={ordered} now={now} />
+        <GanttChart ordered={ordered} now={now} onOpen={setTaskRef} />
       )}
       {unscheduled.length > 0 && (
         <div className="mt-7">
@@ -46,7 +48,7 @@ export function GanttView({ now = new Date() }: { now?: Date } = {}) {
           </h2>
           <ul className="overflow-hidden rounded-xl border border-dashed border-[var(--border)] bg-[var(--bg)] divide-y divide-[var(--border)]">
             {unscheduled.map((t) => (
-              <li key={t.id} className="opm-row flex items-center gap-3 px-4 py-2.5">
+              <li key={t.id} onClick={() => setTaskRef(t.ref)} className="opm-row flex items-center gap-3 px-4 py-2.5 cursor-pointer">
                 <span
                   aria-hidden="true"
                   className="h-2.5 w-2.5 shrink-0 rounded-full"
@@ -63,7 +65,7 @@ export function GanttView({ now = new Date() }: { now?: Date } = {}) {
   )
 }
 
-function GanttChart({ ordered, now }: { ordered: Task[]; now: Date }) {
+function GanttChart({ ordered, now, onOpen }: { ordered: Task[]; now: Date; onOpen: (ref: string) => void }) {
   const scale = buildScale(ordered, now)
   const weekCount = scale.weeks.length
 
@@ -101,7 +103,7 @@ function GanttChart({ ordered, now }: { ordered: Task[]; now: Date }) {
         {ordered.map((t) => {
           const { leftPct, widthPct } = scale.position(parseDate(t.start_date!), parseDate(t.end_date!))
           return (
-            <div key={t.id} className="opm-row grid items-center" style={{ gridTemplateColumns: GRID, height: 34 }}>
+            <div key={t.id} onClick={() => onOpen(t.ref)} className="opm-row grid items-center cursor-pointer" style={{ gridTemplateColumns: GRID, height: 34 }}>
               <div className="truncate pr-3">
                 <span className="font-mono text-[10px] tracking-tight text-[var(--muted)]">{t.ref}</span>{' '}
                 <span className="text-xs text-[var(--text)]">{t.title}</span>

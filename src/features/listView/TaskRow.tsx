@@ -26,6 +26,8 @@ export function TaskRow({ task, members, selected, onSelect, onPatch, onMove }: 
   return (
     <tr
       onClick={() => onSelect(task.ref)}
+      tabIndex={0}
+      onKeyDown={(e) => e.key === 'Enter' && onSelect(task.ref)}
       aria-selected={selected || undefined}
       className="opm-row cursor-pointer border-b border-[var(--border)]"
     >

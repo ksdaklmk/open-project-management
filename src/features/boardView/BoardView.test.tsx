@@ -11,6 +11,7 @@ vi.mock('../../lib/hooks/useTasks', () => ({ useTasks }))
 vi.mock('../../lib/hooks/useMembers', () => ({ useMembers }))
 vi.mock('../../lib/workspace', () => ({ useActiveWorkspace }))
 vi.mock('../../lib/hooks/useMoveTask', () => ({ useMoveTask: () => ({ mutate: moveMutate }) }))
+vi.mock('../../app/useViewState', () => ({ useViewState: () => ({ setTaskRef: vi.fn() }) }))
 
 import { BoardView } from './BoardView'
 

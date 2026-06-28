@@ -8,6 +8,7 @@ const { useTasks, useActiveWorkspace } = vi.hoisted(() => ({
 }))
 vi.mock('../../lib/hooks/useTasks', () => ({ useTasks }))
 vi.mock('../../lib/workspace', () => ({ useActiveWorkspace }))
+vi.mock('../../app/useViewState', () => ({ useViewState: () => ({ setTaskRef: vi.fn() }) }))
 
 import { TimelineView } from './TimelineView'
 

@@ -1,5 +1,6 @@
 import { useTasks } from '../../lib/hooks/useTasks'
 import { useActiveWorkspace } from '../../lib/workspace'
+import { useViewState } from '../../app/useViewState'
 import { STATUSES } from '../../types/constants'
 import { bucketTasks } from './buckets'
 import { parseDate } from '../../lib/weeks'
@@ -17,6 +18,7 @@ function range(t: Task): string {
 export function TimelineView({ now = new Date() }: { now?: Date } = {}) {
   const { activeId, loading: wsLoading } = useActiveWorkspace()
   const { data: tasks, isLoading, error } = useTasks(activeId ?? '')
+  const { setTaskRef } = useViewState()
 
   if (wsLoading || isLoading) return <TimelineSkeleton />
   if (error) return <TimelineError />
@@ -36,7 +38,7 @@ export function TimelineView({ now = new Date() }: { now?: Date } = {}) {
           </h2>
           <ul className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg)] divide-y divide-[var(--border)]">
             {b.tasks.map((t) => (
-              <li key={t.id} className="opm-row flex items-center gap-3 px-4 py-3">
+              <li key={t.id} onClick={() => setTaskRef(t.ref)} className="opm-row flex items-center gap-3 px-4 py-3 cursor-pointer">
                 <span
                   aria-hidden="true"
                   className="h-2.5 w-2.5 shrink-0 rounded-full"

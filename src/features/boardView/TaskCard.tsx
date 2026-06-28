@@ -35,8 +35,8 @@ function TypeMark({ typeId }: { typeId: string }) {
   )
 }
 
-export function TaskCard({ task, members, onDragStart }: {
-  task: Task; members: Member[]; onDragStart: (taskId: string) => void
+export function TaskCard({ task, members, onDragStart, onOpen }: {
+  task: Task; members: Member[]; onDragStart: (taskId: string) => void; onOpen: (ref: string) => void
 }) {
   const [isDragging, setIsDragging] = useState(false)
   const priority = PRIORITIES.find((p) => p.id === task.priority)
@@ -46,6 +46,7 @@ export function TaskCard({ task, members, onDragStart }: {
   return (
     <article
       draggable
+      onClick={() => onOpen(task.ref)}
       onDragStart={(e) => {
         e.dataTransfer?.setData('text/plain', task.id)
         onDragStart(task.id)
