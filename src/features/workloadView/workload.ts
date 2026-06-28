@@ -1,0 +1,86 @@
+import { addDays, parseDate, startOfWeek } from '../../lib/weeks'
+import type { Task } from '../../data/tasksRepo'
+import type { Member } from '../../data/membersRepo'
+
+export type Level = 'none' | 'under' | 'near' | 'over'
+export interface Cell { points: number; ratio: number | null; level: Level }
+export interface Row { id: string; name: string; capacity: number | null; cells: Cell[]; total: number }
+export interface WeekCol { key: string; label: string }
+export interface Workload {
+  weeks: WeekCol[]
+  rows: Row[]
+  unscheduledPoints: number
+  outOfRangePoints: number
+}
+
+const WEEKS = 6
+const UNASSIGNED = '__unassigned__'
+
+// Local 'YYYY-MM-DD' — NOT toISOString (UTC) which would drift the bucket key.
+function isoLocal(d: Date): string {
+  const y = d.getFullYear()
+  const mo = String(d.getMonth() + 1).padStart(2, '0')
+  const da = String(d.getDate()).padStart(2, '0')
+  return `${y}-${mo}-${da}`
+}
+
+const fmt = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+
+function levelFor(points: number, ratio: number | null): Level {
+  if (points === 0 || ratio === null) return 'none'
+  if (ratio <= 0.8) return 'under'
+  if (ratio <= 1) return 'near'
+  return 'over'
+}
+
+export function buildWorkload(tasks: Task[], members: Member[], now: Date): Workload {
+  const monday0 = startOfWeek(now)
+  const weeks: WeekCol[] = Array.from({ length: WEEKS }, (_, i) => {
+    const d = addDays(monday0, i * 7)
+    return { key: isoLocal(d), label: fmt(d) }
+  })
+  const windowKeys = new Set(weeks.map((w) => w.key))
+
+  const load: Record<string, Record<string, number>> = {}
+  let unscheduledPoints = 0
+  let outOfRangePoints = 0
+
+  for (const task of tasks) {
+    if (task.status === 'done') continue
+    const points = task.points ?? 0
+    if (points === 0) continue
+    if (!task.start_date) {
+      unscheduledPoints += points
+      continue
+    }
+    const wk = isoLocal(startOfWeek(parseDate(task.start_date)))
+    if (!windowKeys.has(wk)) {
+      outOfRangePoints += points
+      continue
+    }
+    const who = task.assignee_id ?? UNASSIGNED
+    load[who] ??= {}
+    load[who][wk] = (load[who][wk] ?? 0) + points // ?? 0 is runtime-required (index is undefined on first write)
+  }
+
+  const rowFor = (id: string, name: string, capacity: number | null): Row => {
+    let total = 0
+    const cells = weeks.map((w): Cell => {
+      const points = load[id]?.[w.key] ?? 0
+      total += points
+      const ratio = capacity !== null && capacity > 0 ? points / capacity : null
+      // Unassigned (capacity null) stays neutral regardless of points.
+      const level = capacity === null ? 'none' : levelFor(points, ratio)
+      return { points, ratio, level }
+    })
+    return { id, name, capacity, cells, total }
+  }
+
+  const rows = members
+    .map((mem) => rowFor(mem.user_id, mem.name.trim() || 'Someone', mem.capacity_per_week))
+    .sort((a, b) => a.name.localeCompare(b.name))
+
+  if (load[UNASSIGNED]) rows.push(rowFor(UNASSIGNED, 'Unassigned', null))
+
+  return { weeks, rows, unscheduledPoints, outOfRangePoints }
+}
