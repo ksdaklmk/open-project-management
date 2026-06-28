@@ -23,6 +23,7 @@ describe('subtasksRepo', () => {
     order.mockResolvedValueOnce({ data: [{ id: 's1' }], error: null })
     const rows = await listSubtasks('t1')
     expect(from).toHaveBeenCalledWith('subtasks')
+    expect(select).toHaveBeenCalledWith('*')
     expect(eq).toHaveBeenCalledWith('task_id', 't1')
     expect(order).toHaveBeenCalledWith('position', { ascending: true })
     expect(rows).toEqual([{ id: 's1' }])
@@ -38,6 +39,7 @@ describe('subtasksRepo', () => {
   })
   it('deletes scoped by id', async () => {
     await deleteSubtask('s1')
+    expect(del).toHaveBeenCalled()
     expect(delEq).toHaveBeenCalledWith('id', 's1')
   })
   it('throws on error', async () => {
