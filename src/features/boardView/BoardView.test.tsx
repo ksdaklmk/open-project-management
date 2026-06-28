@@ -14,7 +14,7 @@ vi.mock('../../lib/hooks/useMoveTask', () => ({ useMoveTask: () => ({ mutate: mo
 
 import { BoardView } from './BoardView'
 
-const TASK = { id: 't1', ref: 'NIM-1', title: 'Hello', status: 'todo', priority: 'low', position: 0, type: 'feature', assignee_id: null, points: null }
+const TASK = { id: 't1', ref: 'NIM-1', title: 'Hello', status: 'todo', priority: 'low', position: 0, type: 'feature', assignee_id: null, points: null, tags: [] }
 
 beforeEach(() => { vi.clearAllMocks(); useMembers.mockReturnValue({ data: [] }) })
 

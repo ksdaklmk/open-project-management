@@ -22,7 +22,7 @@ export function TaskRow({ task, members, selected, onSelect, onPatch, onMove }: 
   onMove: (task: Task, toStatus: Task['status']) => void
 }) {
   const type = TASK_TYPES[task.type]
-  const tags = (task as Task & { tags?: string[] }).tags
+  const tags = task.tags
   return (
     <tr
       onClick={() => onSelect(task.ref)}

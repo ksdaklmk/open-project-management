@@ -41,7 +41,7 @@ export function TaskCard({ task, members, onDragStart }: {
   const [isDragging, setIsDragging] = useState(false)
   const priority = PRIORITIES.find((p) => p.id === task.priority)
   const assignee = members.find((m) => m.user_id === task.assignee_id)
-  const tags = (task as Task & { tags?: string[] }).tags ?? []
+  const tags = task.tags
 
   return (
     <article
