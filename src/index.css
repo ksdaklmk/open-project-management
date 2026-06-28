@@ -5,10 +5,12 @@
 :root, [data-theme='bloom'] {
   --primary: #6d5ef0; --bg: #f7f7fb; --surface: #ffffff; --border: #e6e6ef;
   --text: #1c1d22; --muted: #6b7280; --faint: #9aa0ad;
+  --load-boost: 1; /* Workload heatmap tint strength; bumped on dark so tints don't wash out */
 }
 [data-theme='slate'] {
   --primary: #8b7ff5; --bg: #0f1115; --surface: #171a21; --border: #262a33;
   --text: #e8eaed; --muted: #9aa0ad; --faint: #5b616e;
+  --load-boost: 1.4;
 }
 html, body, #root { height: 100%; }
 body { background: var(--bg); color: var(--text); }
