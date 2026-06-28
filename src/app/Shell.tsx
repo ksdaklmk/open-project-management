@@ -7,6 +7,7 @@ import { BoardView } from '../features/boardView/BoardView'
 import { ActivityView } from '../features/activityView/ActivityView'
 import { GanttView } from '../features/ganttView/GanttView'
 import { TimelineView } from '../features/timelineView/TimelineView'
+import { WorkloadView } from '../features/workloadView/WorkloadView'
 
 const LABEL: Record<ViewId, string> = {
   list: 'List', board: 'Board', gantt: 'Gantt',
@@ -54,6 +55,8 @@ export function Shell() {
             <TimelineView />
           ) : view === 'activity' ? (
             <ActivityView />
+          ) : view === 'workload' ? (
+            <WorkloadView />
           ) : (
             `${view} view — coming next.`
           )}
