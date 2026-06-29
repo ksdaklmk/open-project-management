@@ -14,7 +14,9 @@ vi.mock('../../lib/hooks/useTasks', () => ({
   }),
 }))
 const mutate = vi.fn()
+const moveMutate = vi.fn()
 vi.mock('../../lib/hooks/useUpdateTask', () => ({ useUpdateTask: () => ({ mutate }) }))
+vi.mock('../../lib/hooks/useMoveTask', () => ({ useMoveTask: () => ({ mutate: moveMutate }) }))
 vi.mock('../../lib/hooks/useMembers', () => ({ useMembers: () => ({ data: [] }) }))
 vi.mock('../../lib/hooks/useTaskTags', () => ({ useTaskTags: () => ({ add: { mutate: vi.fn() }, remove: { mutate: vi.fn() } }) }))
 vi.mock('../../lib/hooks/useSubtasks', () => ({ useSubtasks: () => ({ data: [], add: { mutate: vi.fn() }, toggle: { mutate: vi.fn() }, remove: { mutate: vi.fn() } }) }))
@@ -22,7 +24,7 @@ vi.mock('../../lib/hooks/useComments', () => ({ useComments: () => ({ data: [] }
 
 import { TaskDrawer } from './TaskDrawer'
 
-beforeEach(() => { state.taskRef = 'NIM-101'; setTaskRef.mockClear(); mutate.mockClear() })
+beforeEach(() => { state.taskRef = 'NIM-101'; setTaskRef.mockClear(); mutate.mockClear(); moveMutate.mockClear() })
 
 describe('TaskDrawer', () => {
   it('renders a dialog with the task ref + title when ?task matches', () => {
@@ -56,10 +58,11 @@ describe('TaskDrawer', () => {
     expect(container).toBeEmptyDOMElement()
   })
 
-  it('saves a status edit through useUpdateTask', () => {
+  it('logs a status edit through useMoveTask (so it lands in Activity, like the List)', () => {
     render(<TaskDrawer />)
     fireEvent.change(screen.getByLabelText('Status'), { target: { value: 'done' } })
-    expect(mutate).toHaveBeenCalledWith({ id: 't1', patch: { status: 'done' } })
+    expect(moveMutate).toHaveBeenCalledWith({ taskId: 't1', toStatus: 'done', position: 0, fromStatus: 'todo' })
+    expect(mutate).not.toHaveBeenCalled()
   })
   it('saves the title on blur', () => {
     render(<TaskDrawer />)

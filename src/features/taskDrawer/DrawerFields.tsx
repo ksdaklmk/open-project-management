@@ -1,14 +1,22 @@
 import { useState } from 'react'
 import { TASK_TYPES } from '../../types/constants'
-import { StatusCell, PriorityCell, AssigneeCell } from '../listView/cells'
+import { StatusCell, PriorityCell, AssigneeCell, type Patch } from '../listView/cells'
 import { useUpdateTask } from '../../lib/hooks/useUpdateTask'
+import { useMoveTask } from '../../lib/hooks/useMoveTask'
 import { useMembers } from '../../lib/hooks/useMembers'
 import type { Task } from '../../data/tasksRepo'
 
 export function DrawerFields({ task, workspaceId }: { task: Task; workspaceId: string }) {
   const update = useUpdateTask(workspaceId)
+  const move = useMoveTask(workspaceId)
   const { data: members } = useMembers(workspaceId)
   const save = (patch: Parameters<typeof update.mutate>[0]['patch']) => update.mutate({ id: task.id, patch })
+  // Status routes through useMoveTask (not useUpdateTask) so a drawer status change
+  // is logged to the Activity feed and recomputes board position, exactly like the
+  // List status dropdown. Other fields stay on the plain update.
+  const onStatus = (p: Patch) => {
+    if (p.status) move.mutate({ taskId: task.id, toStatus: p.status, position: task.position, fromStatus: task.status })
+  }
 
   const [title, setTitle] = useState(task.title)
   const [desc, setDesc] = useState(task.description)
@@ -26,7 +34,7 @@ export function DrawerFields({ task, workspaceId }: { task: Task; workspaceId: s
       </label>
 
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Status"><StatusCell task={task} onChange={save} /></Field>
+        <Field label="Status"><StatusCell task={task} onChange={onStatus} /></Field>
         <Field label="Priority"><PriorityCell task={task} onChange={save} /></Field>
         <Field label="Assignee"><AssigneeCell task={task} members={members ?? []} onChange={save} /></Field>
         <Field label="Type">
