@@ -19,7 +19,7 @@ vi.mock('../../lib/hooks/useMembers', () => ({ useMembers: () => ({ data: [] }) 
 
 import { TaskDrawer } from './TaskDrawer'
 
-beforeEach(() => { state.taskRef = 'NIM-101'; setTaskRef.mockClear() })
+beforeEach(() => { state.taskRef = 'NIM-101'; setTaskRef.mockClear(); mutate.mockClear() })
 
 describe('TaskDrawer', () => {
   it('renders a dialog with the task ref + title when ?task matches', () => {

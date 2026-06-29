@@ -64,7 +64,7 @@ export function TaskDrawer() {
               <button onClick={close} aria-label="Close" className="rounded px-2 py-1 hover:bg-[var(--surface)]">✕</button>
             </header>
             <div data-testid="drawer-body" className="space-y-5 px-4 py-4">
-              <DrawerFields task={task} workspaceId={activeId ?? ''} />
+              <DrawerFields key={task.id} task={task} workspaceId={activeId ?? ''} />
             </div>
           </>
         ) : (
