@@ -1,25 +1,16 @@
 import { describe, it, expect } from 'vitest'
 import { groupTasksByStatus } from './grouping'
-import type { Task } from '../../data/tasksRepo'
 
-const t = (over: Partial<Task>): Task => ({
-  id: 'x', project_id: 'p', workspace_id: 'w', ref: 'NIM-1', type: 'feature',
-  title: 't', description: '', status: 'todo', priority: 'low', assignee_id: null,
-  start_date: null, end_date: null, points: null, position: 0,
-  created_by: null, created_at: '', updated_at: '', tags: [], ...over,
-})
+const t = (id: string, status: string) => ({ id, status, priority: 'low', position: 0 })
 
 describe('groupTasksByStatus', () => {
-  it('groups in status order, hides empty groups', () => {
-    const groups = groupTasksByStatus([t({ status: 'done' }), t({ status: 'todo' })])
+  it('buckets by status in STATUSES order, preserving input order', () => {
+    const groups = groupTasksByStatus([t('a', 'todo'), t('b', 'done'), t('c', 'todo')] as any)
     expect(groups.map((g) => g.status)).toEqual(['todo', 'done'])
+    expect(groups[0].tasks.map((x) => x.id)).toEqual(['a', 'c'])
   })
-  it('sorts within a group by priority desc then position', () => {
-    const groups = groupTasksByStatus([
-      t({ id: 'a', status: 'todo', priority: 'low', position: 1 }),
-      t({ id: 'b', status: 'todo', priority: 'urgent', position: 9 }),
-      t({ id: 'c', status: 'todo', priority: 'low', position: 0 }),
-    ])
-    expect(groups[0].tasks.map((x) => x.id)).toEqual(['b', 'c', 'a'])
+  it('omits empty groups', () => {
+    const groups = groupTasksByStatus([t('a', 'todo')] as any)
+    expect(groups.every((g) => g.tasks.length > 0)).toBe(true)
   })
 })

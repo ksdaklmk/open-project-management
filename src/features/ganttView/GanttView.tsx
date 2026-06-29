@@ -1,4 +1,4 @@
-import { useTasks } from '../../lib/hooks/useTasks'
+import { useFilteredTasks } from '../../lib/hooks/useFilteredTasks'
 import { useActiveWorkspace } from '../../lib/workspace'
 import { useViewState } from '../../app/useViewState'
 import { STATUSES } from '../../types/constants'
@@ -15,7 +15,7 @@ const BAR_SHADOW = '0 1px 2px color-mix(in oklab, var(--text) 14%, transparent)'
 
 export function GanttView({ now = new Date() }: { now?: Date } = {}) {
   const { activeId, loading: wsLoading } = useActiveWorkspace()
-  const { data: tasks, isLoading, error } = useTasks(activeId ?? '')
+  const { data: tasks, isLoading, error } = useFilteredTasks(activeId ?? '')
   const { setTaskRef } = useViewState()
 
   if (wsLoading || isLoading) return <GanttSkeleton />

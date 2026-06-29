@@ -9,6 +9,9 @@ import { GanttView } from '../features/ganttView/GanttView'
 import { TimelineView } from '../features/timelineView/TimelineView'
 import { WorkloadView } from '../features/workloadView/WorkloadView'
 import { TaskDrawer } from '../features/taskDrawer/TaskDrawer'
+import { Toolbar } from '../features/toolbar/Toolbar'
+
+const TASK_VIEWS: ViewId[] = ['list', 'board', 'gantt', 'timeline']
 
 const LABEL: Record<ViewId, string> = {
   list: 'List', board: 'Board', gantt: 'Gantt',
@@ -45,6 +48,7 @@ export function Shell() {
           <button onClick={toggleTheme} aria-label="Toggle theme"
             className="px-3 py-1 rounded border border-[var(--border)]">Theme</button>
         </header>
+        {TASK_VIEWS.includes(view) && <Toolbar showSort={view === 'list'} />}
         <main data-testid="view-region" className="flex-1 p-4 text-[var(--muted)]">
           {view === 'list' ? (
             <ListView />

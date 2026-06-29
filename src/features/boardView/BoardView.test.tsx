@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 
 const { useTasks, useMembers, useActiveWorkspace, moveMutate } = vi.hoisted(() => ({
   useTasks: vi.fn(),
@@ -15,6 +16,9 @@ vi.mock('../../app/useViewState', () => ({ useViewState: () => ({ setTaskRef: vi
 
 import { BoardView } from './BoardView'
 
+const inRouter = (ui: React.ReactElement) =>
+  <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>{ui}</MemoryRouter>
+
 const TASK = { id: 't1', ref: 'NIM-1', title: 'Hello', status: 'todo', priority: 'low', position: 0, type: 'feature', assignee_id: null, points: null, tags: [] }
 
 beforeEach(() => { vi.clearAllMocks(); useMembers.mockReturnValue({ data: [] }) })
@@ -22,7 +26,7 @@ beforeEach(() => { vi.clearAllMocks(); useMembers.mockReturnValue({ data: [] }) 
 describe('BoardView', () => {
   it('renders all five columns and a card', () => {
     useTasks.mockReturnValue({ data: [TASK], isLoading: false, error: null })
-    render(<BoardView />)
+    render(inRouter(<BoardView />))
     for (const label of ['Backlog', 'To Do', 'In Progress', 'In Review', 'Done'])
       expect(screen.getByRole('heading', { name: new RegExp(label, 'i') })).toBeInTheDocument()
     expect(screen.getByText('Hello')).toBeInTheDocument()
@@ -30,19 +34,19 @@ describe('BoardView', () => {
 
   it('shows loading state', () => {
     useTasks.mockReturnValue({ data: undefined, isLoading: true, error: null })
-    render(<BoardView />)
+    render(inRouter(<BoardView />))
     expect(screen.getByText(/loading/i)).toBeInTheDocument()
   })
 
   it('shows error state', () => {
     useTasks.mockReturnValue({ data: undefined, isLoading: false, error: new Error('x') })
-    render(<BoardView />)
+    render(inRouter(<BoardView />))
     expect(screen.getByText(/couldn't load tasks/i)).toBeInTheDocument()
   })
 
   it('moves a card when dropped on another column', () => {
     useTasks.mockReturnValue({ data: [TASK], isLoading: false, error: null })
-    render(<BoardView />)
+    render(inRouter(<BoardView />))
 
     const card = screen.getByText('Hello').closest('article')!
     const doneCol = screen.getByRole('heading', { name: /done/i }).closest('section')!

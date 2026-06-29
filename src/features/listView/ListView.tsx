@@ -1,16 +1,19 @@
-import { useTasks } from '../../lib/hooks/useTasks'
+import { useFilteredTasks } from '../../lib/hooks/useFilteredTasks'
 import { useMembers } from '../../lib/hooks/useMembers'
 import { useActiveWorkspace } from '../../lib/workspace'
 import { useViewState } from '../../app/useViewState'
 import { useUpdateTask } from '../../lib/hooks/useUpdateTask'
 import { useMoveTask } from '../../lib/hooks/useMoveTask'
 import { groupTasksByStatus } from './grouping'
+import { sortTasks } from '../toolbar/sortTasks'
+import { useTaskFilters } from '../toolbar/useTaskFilters'
 import { TaskTable } from './TaskTable'
 import type { Task } from '../../data/tasksRepo'
 
 export function ListView() {
   const { activeId, loading: wsLoading } = useActiveWorkspace()
-  const { data: tasks, isLoading, error } = useTasks(activeId ?? '')
+  const { data: tasks, isLoading, error } = useFilteredTasks(activeId ?? '')
+  const { sort } = useTaskFilters()
   const { data: members } = useMembers(activeId ?? '')
   const { setTaskRef, taskRef } = useViewState()
   const update = useUpdateTask(activeId ?? '')
@@ -22,7 +25,7 @@ export function ListView() {
 
   if (wsLoading || isLoading) return <ListSkeleton />
   if (error) return <ErrorState />
-  const groups = groupTasksByStatus(tasks ?? [])
+  const groups = groupTasksByStatus(sortTasks(tasks ?? [], sort))
   if (groups.length === 0) return <EmptyState />
 
   return (

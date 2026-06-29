@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { useTasks } from '../../lib/hooks/useTasks'
+import { useFilteredTasks } from '../../lib/hooks/useFilteredTasks'
 import { useMembers } from '../../lib/hooks/useMembers'
 import { useMoveTask } from '../../lib/hooks/useMoveTask'
 import { useActiveWorkspace } from '../../lib/workspace'
@@ -12,7 +12,7 @@ import type { Status } from '../../types/constants'
 
 export function BoardView() {
   const { activeId, loading: wsLoading } = useActiveWorkspace()
-  const { data: tasks, isLoading, error } = useTasks(activeId ?? '')
+  const { data: tasks, isLoading, error } = useFilteredTasks(activeId ?? '')
   const { data: members } = useMembers(activeId ?? '')
   const move = useMoveTask(activeId ?? '')
   const { setTaskRef } = useViewState()

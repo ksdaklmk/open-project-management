@@ -26,6 +26,7 @@ vi.mock('../features/workloadView/WorkloadView', () => ({
   WorkloadView: () => <div>workload mounted</div>,
 }))
 vi.mock('../features/taskDrawer/TaskDrawer', () => ({ TaskDrawer: () => null }))
+vi.mock('../features/toolbar/Toolbar', () => ({ Toolbar: () => null }))
 
 const renderShell = () =>
   render(

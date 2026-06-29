@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import type { Task } from '../../data/tasksRepo'
 
 const { useTasks, useActiveWorkspace } = vi.hoisted(() => ({
@@ -11,6 +12,9 @@ vi.mock('../../lib/workspace', () => ({ useActiveWorkspace }))
 vi.mock('../../app/useViewState', () => ({ useViewState: () => ({ setTaskRef: vi.fn() }) }))
 
 import { TimelineView } from './TimelineView'
+
+const inRouter = (ui: React.ReactElement) =>
+  <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>{ui}</MemoryRouter>
 
 const t = (over: Partial<Task>): Task => ({
   id: 'x', project_id: 'p', workspace_id: 'w', ref: 'NIM-1', type: 'feature',
@@ -30,7 +34,7 @@ describe('TimelineView', () => {
       ],
       isLoading: false, error: null,
     })
-    render(<TimelineView now={new Date(2026, 5, 25)} />)
+    render(inRouter(<TimelineView now={new Date(2026, 5, 25)} />))
     expect(screen.getByText('NIM-101')).toBeInTheDocument()
     expect(screen.getByText(/Unscheduled/i)).toBeInTheDocument()
     expect(screen.queryByText('Earlier')).toBeNull() // empty bucket hidden
@@ -38,15 +42,15 @@ describe('TimelineView', () => {
 
   it('shows loading / error / empty states', () => {
     useTasks.mockReturnValue({ data: undefined, isLoading: true, error: null })
-    const { rerender } = render(<TimelineView />)
+    const { rerender } = render(inRouter(<TimelineView />))
     expect(screen.getByRole('status')).toBeInTheDocument()
 
     useTasks.mockReturnValue({ data: undefined, isLoading: false, error: new Error('x') })
-    rerender(<TimelineView />)
+    rerender(inRouter(<TimelineView />))
     expect(screen.getByRole('alert')).toBeInTheDocument()
 
     useTasks.mockReturnValue({ data: [], isLoading: false, error: null })
-    rerender(<TimelineView />)
+    rerender(inRouter(<TimelineView />))
     expect(screen.getByText(/no tasks yet/i)).toBeInTheDocument()
   })
 })
