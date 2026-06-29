@@ -3,7 +3,7 @@ import { useComments, useAddComment } from '../../lib/hooks/useComments'
 import { relativeTime } from '../../lib/relativeTime'
 
 export function CommentThread({ taskId }: { taskId: string }) {
-  const { data } = useComments(taskId)
+  const { data, isLoading, error } = useComments(taskId)
   const add = useAddComment(taskId)
   const [draft, setDraft] = useState('')
 
@@ -16,6 +16,8 @@ export function CommentThread({ taskId }: { taskId: string }) {
   return (
     <section>
       <h3 className="mb-2 text-xs font-semibold text-[var(--muted)]">Comments</h3>
+      {isLoading && <p className="text-sm text-[var(--muted)]">Loading…</p>}
+      {error && <p className="text-sm text-[var(--text)]">Couldn't load comments.</p>}
       <ul className="space-y-3">
         {(data ?? []).map((c) => (
           <li key={c.id}>

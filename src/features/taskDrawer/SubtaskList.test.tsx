@@ -3,20 +3,22 @@ import { render, screen, fireEvent } from '@testing-library/react'
 
 const toggle = vi.fn()
 const add = vi.fn()
+const rows = [{ id: 's1', title: 'Spec it', done: true }, { id: 's2', title: 'Build it', done: false }]
+const subs: { data: typeof rows | undefined; isLoading: boolean; error: Error | null } =
+  { data: rows, isLoading: false, error: null }
 vi.mock('../../lib/hooks/useSubtasks', () => ({
-  useSubtasks: () => ({
-    data: [{ id: 's1', title: 'Spec it', done: true }, { id: 's2', title: 'Build it', done: false }],
-    isLoading: false, error: null,
-    add: { mutate: add }, toggle: { mutate: toggle }, remove: { mutate: vi.fn() },
-  }),
+  useSubtasks: () => ({ ...subs, add: { mutate: add }, toggle: { mutate: toggle }, remove: { mutate: vi.fn() } }),
 }))
 import { SubtaskList } from './SubtaskList'
 
 const draftBox = () => screen.getByLabelText('New subtask') as HTMLInputElement
 
-describe('SubtaskList', () => {
-  beforeEach(() => { add.mockReset(); toggle.mockReset() })
+beforeEach(() => {
+  add.mockReset(); toggle.mockReset()
+  subs.data = rows; subs.isLoading = false; subs.error = null
+})
 
+describe('SubtaskList', () => {
   it('shows progress and toggles a subtask', () => {
     render(<SubtaskList taskId="t1" />)
     expect(screen.getByText('1/2')).toBeInTheDocument()
@@ -38,5 +40,17 @@ describe('SubtaskList', () => {
     fireEvent.change(draftBox(), { target: { value: 'Ship it' } })
     fireEvent.keyDown(draftBox(), { key: 'Enter' })
     expect(draftBox().value).toBe('')
+  })
+
+  it('shows a loading line while subtasks load', () => {
+    subs.data = undefined; subs.isLoading = true
+    render(<SubtaskList taskId="t1" />)
+    expect(screen.getByText('Loading…')).toBeInTheDocument()
+  })
+
+  it('shows an error line when subtasks fail to load', () => {
+    subs.data = undefined; subs.error = new Error('boom')
+    render(<SubtaskList taskId="t1" />)
+    expect(screen.getByText(/couldn't load subtasks/i)).toBeInTheDocument()
   })
 })

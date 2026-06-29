@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useSubtasks } from '../../lib/hooks/useSubtasks'
 
 export function SubtaskList({ taskId }: { taskId: string }) {
-  const { data, add, toggle, remove } = useSubtasks(taskId)
+  const { data, isLoading, error, add, toggle, remove } = useSubtasks(taskId)
   const rows = data ?? []
   const done = rows.filter((s) => s.done).length
   const [draft, setDraft] = useState('')
@@ -18,6 +18,8 @@ export function SubtaskList({ taskId }: { taskId: string }) {
       <h3 className="mb-2 flex items-center gap-2 text-xs font-semibold text-[var(--muted)]">
         Subtasks {rows.length > 0 && <span className="tabular-nums">{done}/{rows.length}</span>}
       </h3>
+      {isLoading && <p className="text-sm text-[var(--muted)]">Loading…</p>}
+      {error && <p className="text-sm text-[var(--text)]">Couldn't load subtasks.</p>}
       <ul className="space-y-1">
         {rows.map((s) => (
           <li key={s.id} className="flex items-center gap-2">
