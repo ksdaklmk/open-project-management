@@ -28,7 +28,7 @@ export function Toolbar({ showSort }: { showSort: boolean }) {
       <input
         aria-label="Search tasks" placeholder="Search…" value={filters.q}
         onChange={(e) => setQ(e.target.value)}
-        className="rounded border border-[var(--border)] bg-[var(--surface)] px-2 py-1"
+        className="opm-input w-48"
       />
       <Group label="Status" selected={filters.status}
         options={STATUSES.map((s) => ({ id: s.id, label: s.label }))} onToggle={(id) => toggle('status', id)} />
@@ -44,13 +44,13 @@ export function Toolbar({ showSort }: { showSort: boolean }) {
         <label className="ml-auto flex items-center gap-1">
           <span className="text-[var(--muted)]">Sort</span>
           <select aria-label="Sort by" value={sort} onChange={(e) => setSort(e.target.value as SortKey)}
-            className="rounded border border-[var(--border)] bg-[var(--surface)] px-2 py-1">
+            className="opm-input w-auto">
             {SORTS.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
           </select>
         </label>
       )}
       {active ? (
-        <button onClick={clear} className={`rounded border border-[var(--border)] px-2 py-1${showSort ? '' : ' ml-auto'}`}>
+        <button onClick={clear} className={`opm-btn${showSort ? '' : ' ml-auto'}`}>
           Clear filters
         </button>
       ) : null}
@@ -67,7 +67,7 @@ function Group({ label, options, selected, onToggle }: {
 }) {
   return (
     <details className="relative">
-      <summary className="cursor-pointer list-none rounded border border-[var(--border)] px-2 py-1">
+      <summary className="opm-btn list-none">
         {label}{selected.length ? ` (${selected.length})` : ''}
       </summary>
       <div className="absolute z-20 mt-1 flex flex-col gap-1 rounded border border-[var(--border)] bg-[var(--surface)] p-2 shadow-lg">

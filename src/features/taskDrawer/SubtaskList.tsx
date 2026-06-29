@@ -35,7 +35,7 @@ export function SubtaskList({ taskId }: { taskId: string }) {
         aria-label="New subtask" placeholder="Add a subtask…" value={draft}
         onChange={(e) => setDraft(e.target.value)}
         onKeyDown={(e) => e.key === 'Enter' && submit()}
-        className="mt-2 w-full rounded border border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-sm"
+        className="opm-input mt-2 text-sm"
       />
     </section>
   )

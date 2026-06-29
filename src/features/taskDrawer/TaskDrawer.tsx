@@ -48,7 +48,7 @@ export function TaskDrawer() {
         data-testid="drawer-backdrop"
         aria-label="Close"
         onClick={close}
-        className="absolute inset-0 bg-black/30"
+        className="absolute inset-0 bg-black/30 opm-drawer-backdrop"
       />
       <div
         ref={dialogRef}
@@ -57,7 +57,7 @@ export function TaskDrawer() {
         aria-labelledby="drawer-title"
         tabIndex={-1}
         onKeyDown={onKeyDown}
-        className="relative h-full w-[420px] max-w-full overflow-y-auto border-l border-[var(--border)] bg-[var(--bg)] text-[var(--text)] shadow-xl"
+        className="opm-drawer-panel relative h-full w-[420px] max-w-full overflow-y-auto border-l border-[var(--border)] bg-[var(--bg)] text-[var(--text)] shadow-xl"
       >
         {task ? (
           <>
@@ -77,7 +77,7 @@ export function TaskDrawer() {
           <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
             <p id="drawer-title" className="font-semibold">Task not found</p>
             <p className="text-sm text-[var(--muted)]">It may have moved workspace or been removed.</p>
-            <button onClick={close} className="mt-2 rounded border border-[var(--border)] px-3 py-1">Close</button>
+            <button onClick={close} className="opm-btn mt-2">Close</button>
           </div>
         )}
       </div>

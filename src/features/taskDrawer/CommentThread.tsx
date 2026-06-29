@@ -32,9 +32,9 @@ export function CommentThread({ taskId }: { taskId: string }) {
         <textarea
           aria-label="Add a comment" rows={2} placeholder="Write a comment…" value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          className="w-full rounded border border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-sm"
+          className="opm-input text-sm"
         />
-        <button onClick={submit} className="rounded bg-[var(--primary)] px-3 py-1 text-sm text-white">Post</button>
+        <button onClick={submit} className="opm-btn-primary text-sm">Post</button>
       </div>
     </section>
   )

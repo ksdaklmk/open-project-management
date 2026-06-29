@@ -21,7 +21,7 @@ export function DrawerFields({ task, workspaceId }: { task: Task; workspaceId: s
           aria-label="Title" value={title}
           onChange={(e) => setTitle(e.target.value)}
           onBlur={() => title !== task.title && save({ title })}
-          className="w-full rounded border border-[var(--border)] bg-[var(--surface)] px-2 py-1"
+          className="opm-input"
         />
       </label>
 
@@ -33,7 +33,7 @@ export function DrawerFields({ task, workspaceId }: { task: Task; workspaceId: s
           <select
             aria-label="Type" value={task.type}
             onChange={(e) => save({ type: e.target.value as Task['type'] })}
-            className="w-full rounded border border-[var(--border)] bg-[var(--surface)] px-2 py-1"
+            className="opm-input"
           >
             {Object.entries(TASK_TYPES).map(([id, t]) => <option key={id} value={id}>{t.label}</option>)}
           </select>
@@ -45,21 +45,21 @@ export function DrawerFields({ task, workspaceId }: { task: Task; workspaceId: s
               const v = e.target.value === '' ? null : Number(e.target.value)
               if (v !== task.points) save({ points: v })
             }}
-            className="w-full rounded border border-[var(--border)] bg-[var(--surface)] px-2 py-1"
+            className="opm-input"
           />
         </Field>
         <Field label="Start">
           <input
             aria-label="Start date" type="date" defaultValue={task.start_date ?? ''}
             onChange={(e) => save({ start_date: e.target.value || null })}
-            className="w-full rounded border border-[var(--border)] bg-[var(--surface)] px-2 py-1"
+            className="opm-input"
           />
         </Field>
         <Field label="Due">
           <input
             aria-label="Due date" type="date" defaultValue={task.end_date ?? ''}
             onChange={(e) => save({ end_date: e.target.value || null })}
-            className="w-full rounded border border-[var(--border)] bg-[var(--surface)] px-2 py-1"
+            className="opm-input"
           />
         </Field>
       </div>
@@ -70,7 +70,7 @@ export function DrawerFields({ task, workspaceId }: { task: Task; workspaceId: s
           aria-label="Description" rows={4} value={desc}
           onChange={(e) => setDesc(e.target.value)}
           onBlur={() => desc !== task.description && save({ description: desc })}
-          className="w-full rounded border border-[var(--border)] bg-[var(--surface)] px-2 py-1"
+          className="opm-input"
         />
       </label>
     </div>
