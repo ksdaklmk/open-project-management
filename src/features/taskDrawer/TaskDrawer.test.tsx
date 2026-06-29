@@ -16,6 +16,9 @@ vi.mock('../../lib/hooks/useTasks', () => ({
 const mutate = vi.fn()
 vi.mock('../../lib/hooks/useUpdateTask', () => ({ useUpdateTask: () => ({ mutate }) }))
 vi.mock('../../lib/hooks/useMembers', () => ({ useMembers: () => ({ data: [] }) }))
+vi.mock('../../lib/hooks/useTaskTags', () => ({ useTaskTags: () => ({ add: { mutate: vi.fn() }, remove: { mutate: vi.fn() } }) }))
+vi.mock('../../lib/hooks/useSubtasks', () => ({ useSubtasks: () => ({ data: [], add: { mutate: vi.fn() }, toggle: { mutate: vi.fn() }, remove: { mutate: vi.fn() } }) }))
+vi.mock('../../lib/hooks/useComments', () => ({ useComments: () => ({ data: [] }), useAddComment: () => ({ mutate: vi.fn() }) }))
 
 import { TaskDrawer } from './TaskDrawer'
 

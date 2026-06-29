@@ -3,6 +3,9 @@ import { useViewState } from '../../app/useViewState'
 import { useActiveWorkspace } from '../../lib/workspace'
 import { useTasks } from '../../lib/hooks/useTasks'
 import { DrawerFields } from './DrawerFields'
+import { TagEditor } from './TagEditor'
+import { SubtaskList } from './SubtaskList'
+import { CommentThread } from './CommentThread'
 
 export function TaskDrawer() {
   const { taskRef, setTaskRef } = useViewState()
@@ -65,6 +68,9 @@ export function TaskDrawer() {
             </header>
             <div data-testid="drawer-body" className="space-y-5 px-4 py-4">
               <DrawerFields key={task.id} task={task} workspaceId={activeId ?? ''} />
+              <TagEditor task={task} workspaceId={activeId ?? ''} />
+              <SubtaskList taskId={task.id} />
+              <CommentThread taskId={task.id} />
             </div>
           </>
         ) : (
