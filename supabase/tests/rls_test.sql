@@ -19,7 +19,7 @@
 -- passing only because access is blanket-denied.
 
 begin;
-select plan(27);
+select plan(29);
 
 -- ---------------------------------------------------------------------------
 -- Service-role setup: two workspaces, three users, a task + subtask each.
@@ -114,6 +114,11 @@ select throws_ok(
              '00000000-0000-0000-0000-00000000000a','x') $$,
   '42501', null,
   'A cannot comment on a WS-B task');
+select throws_ok(
+  $$ insert into task_tags (task_id, tag)
+     values ('00000000-0000-0000-0000-0000000000b3','Frontend') $$,
+  '42501', null,
+  'A cannot tag a WS-B task');
 
 -- Positive controls: A CAN act within its own workspace. These prove the
 -- denials above are RLS scoping, not a blanket deny that would pass spuriously.
@@ -129,6 +134,10 @@ select is(
   (select count(*) from subtasks
    where id = '00000000-0000-0000-0000-0000000000a4')::int, 1,
   'A can read its own subtask');
+select lives_ok(
+  $$ insert into task_tags (task_id, tag)
+     values ('00000000-0000-0000-0000-0000000000a3','Frontend') $$,
+  'A can add a tag to its own task (tag write is not deny-all)');
 
 -- ---------------------------------------------------------------------------
 -- Security review fixes 2 & 3: identity is pinned on insert. A member of WS-A
