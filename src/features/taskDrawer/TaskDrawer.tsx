@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { useViewState } from '../../app/useViewState'
 import { useActiveWorkspace } from '../../lib/workspace'
 import { useTasks } from '../../lib/hooks/useTasks'
+import { DrawerFields } from './DrawerFields'
 
 export function TaskDrawer() {
   const { taskRef, setTaskRef } = useViewState()
@@ -62,7 +63,9 @@ export function TaskDrawer() {
               <h2 id="drawer-title" className="flex-1 truncate font-medium">{task.title}</h2>
               <button onClick={close} aria-label="Close" className="rounded px-2 py-1 hover:bg-[var(--surface)]">✕</button>
             </header>
-            <div data-testid="drawer-body" className="space-y-5 px-4 py-4" />
+            <div data-testid="drawer-body" className="space-y-5 px-4 py-4">
+              <DrawerFields task={task} workspaceId={activeId ?? ''} />
+            </div>
           </>
         ) : (
           <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center">

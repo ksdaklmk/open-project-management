@@ -13,6 +13,9 @@ vi.mock('../../lib/hooks/useTasks', () => ({
     isLoading: false, error: null,
   }),
 }))
+const mutate = vi.fn()
+vi.mock('../../lib/hooks/useUpdateTask', () => ({ useUpdateTask: () => ({ mutate }) }))
+vi.mock('../../lib/hooks/useMembers', () => ({ useMembers: () => ({ data: [] }) }))
 
 import { TaskDrawer } from './TaskDrawer'
 
@@ -48,5 +51,18 @@ describe('TaskDrawer', () => {
     state.taskRef = null
     const { container } = render(<TaskDrawer />)
     expect(container).toBeEmptyDOMElement()
+  })
+
+  it('saves a status edit through useUpdateTask', () => {
+    render(<TaskDrawer />)
+    fireEvent.change(screen.getByLabelText('Status'), { target: { value: 'done' } })
+    expect(mutate).toHaveBeenCalledWith({ id: 't1', patch: { status: 'done' } })
+  })
+  it('saves the title on blur', () => {
+    render(<TaskDrawer />)
+    const title = screen.getByLabelText('Title')
+    fireEvent.change(title, { target: { value: 'Build SSO' } })
+    fireEvent.blur(title)
+    expect(mutate).toHaveBeenCalledWith({ id: 't1', patch: { title: 'Build SSO' } })
   })
 })
