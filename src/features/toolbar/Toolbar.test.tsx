@@ -35,4 +35,12 @@ describe('Toolbar', () => {
     renderAt('/', true)
     expect(screen.getByLabelText('Sort by')).toBeInTheDocument()
   })
+  it('clear filters removes filter params but keeps view and task', () => {
+    renderAt('/?view=list&task=NIM-5&status=todo')
+    fireEvent.click(screen.getByText('Clear filters'))
+    const qs = screen.getByTestId('qs').textContent ?? ''
+    expect(qs).not.toContain('status=')
+    expect(qs).toContain('view=list')
+    expect(qs).toContain('task=NIM-5')
+  })
 })

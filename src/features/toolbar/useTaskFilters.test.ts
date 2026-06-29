@@ -31,4 +31,8 @@ describe('useTaskFilters', () => {
     act(() => result.current.clear())
     expect(result.current.filters).toEqual({ status: [], priority: [], assignee: [], type: [], tag: [], q: '' })
   })
+  it('falls back to priority sort for an invalid sort param', () => {
+    const { result } = renderHook(() => useTaskFilters(), { wrapper: wrap('/?sort=bogus') })
+    expect(result.current.sort).toBe('priority')
+  })
 })

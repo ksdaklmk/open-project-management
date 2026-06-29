@@ -4,6 +4,7 @@ import type { SortKey } from './sortTasks'
 
 const LIST_KEYS = ['status', 'priority', 'assignee', 'type', 'tag'] as const
 type ListKey = (typeof LIST_KEYS)[number]
+const SORT_KEYS: SortKey[] = ['priority', 'due', 'title', 'status']
 const csv = (v: string | null): string[] => (v ? v.split(',').filter(Boolean) : [])
 
 export function useTaskFilters() {
@@ -17,7 +18,8 @@ export function useTaskFilters() {
     tag: csv(params.get('tag')),
     q: params.get('q') ?? '',
   }
-  const sort = (params.get('sort') as SortKey | null) ?? 'priority'
+  const rawSort = params.get('sort')
+  const sort: SortKey = rawSort && SORT_KEYS.includes(rawSort as SortKey) ? (rawSort as SortKey) : 'priority'
 
   const setList = (key: ListKey, vals: string[]) =>
     setParams((p) => { vals.length ? p.set(key, vals.join(',')) : p.delete(key); return p }, { replace: true })
