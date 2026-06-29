@@ -10,8 +10,7 @@ export function SubtaskList({ taskId }: { taskId: string }) {
   const submit = () => {
     const t = draft.trim()
     if (!t) return
-    add.mutate(t)
-    setDraft('')
+    add.mutate(t, { onSuccess: () => setDraft('') })
   }
 
   return (
