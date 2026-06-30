@@ -73,7 +73,7 @@ export function TaskDrawer() {
               <DrawerFields key={task.id} task={task} workspaceId={activeId ?? ''} />
               <TagEditor task={task} workspaceId={activeId ?? ''} />
               <SubtaskList taskId={task.id} />
-              <CommentThread taskId={task.id} />
+              <CommentThread taskId={task.id} workspaceId={activeId ?? ''} />
             </div>
           </>
         ) : (

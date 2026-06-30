@@ -16,9 +16,24 @@ const MOVED = {
   actor: { name: 'Dana', color: '#6d5ef0' }, task: { ref: 'NIM-101', title: 'Fix login redirect' },
 }
 
+const COMMENTED = {
+  id: 'a3', verb: 'commented', from_status: null, to_status: null,
+  created_at: '2026-06-27T10:00:00Z',
+  actor: { name: 'Sam', color: '#6d5ef0' }, task: { ref: 'NIM-7', title: 'Add SSO' },
+}
+
 beforeEach(() => vi.clearAllMocks())
 
 describe('ActivityView', () => {
+  it('renders a commented activity row referencing the task', () => {
+    useActivity.mockReturnValue({ data: [COMMENTED], isLoading: false, error: null })
+    render(<ActivityView />)
+    expect(screen.getByText('Sam')).toBeInTheDocument()
+    expect(screen.getByText(/commented on/i)).toBeInTheDocument()
+    expect(screen.getByText('NIM-7')).toBeInTheDocument()
+    expect(screen.getByText(/Add SSO/)).toBeInTheDocument()
+  })
+
   it('renders a moved activity row with actor, task, and from/to statuses', () => {
     useActivity.mockReturnValue({ data: [MOVED], isLoading: false, error: null })
     render(<ActivityView />)

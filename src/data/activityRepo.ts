@@ -21,6 +21,21 @@ export async function logMove(params: {
   if (error) throw new Error(error.message)
 }
 
+// ponytail: comment_id omitted — the feed renders "commented on <task>", not a deep link to the comment. Add it when a comment permalink exists.
+export async function logComment(params: {
+  workspaceId: string
+  actorId: string
+  taskId: string
+}): Promise<void> {
+  const { error } = await supabase.from('activity').insert({
+    workspace_id: params.workspaceId,
+    actor_id: params.actorId,
+    task_id: params.taskId,
+    verb: 'commented',
+  })
+  if (error) throw new Error(error.message)
+}
+
 export interface ActivityItem {
   id: string
   verb: string

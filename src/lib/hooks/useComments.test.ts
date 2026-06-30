@@ -4,7 +4,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 
 const { listComments, addComment } = vi.hoisted(() => ({ listComments: vi.fn(), addComment: vi.fn() }))
+const { logComment } = vi.hoisted(() => ({ logComment: vi.fn() }))
 vi.mock('../../data/commentsRepo', () => ({ listComments, addComment }))
+vi.mock('../../data/activityRepo', () => ({ logComment }))
 vi.mock('sonner', () => ({ toast: { error: vi.fn() } }))
 vi.mock('./useSession', () => ({ useSession: () => ({ session: { user: { id: 'me' } }, loading: false }) }))
 
@@ -20,12 +22,22 @@ describe('useAddComment', () => {
     const qc = new QueryClient()
     qc.setQueryData(['comments', 't1'], [{ id: 'c1', body: 'old', created_at: 'a', author: null }])
     addComment.mockResolvedValueOnce(undefined)
-    const { result } = renderHook(() => useAddComment('t1'), { wrapper: wrap(qc) })
+    const { result } = renderHook(() => useAddComment('t1', 'w1'), { wrapper: wrap(qc) })
     result.current.mutate('hello')
     await waitFor(() => {
       const rows = qc.getQueryData(['comments', 't1']) as any[]
       expect(rows[rows.length - 1].body).toBe('hello')
     })
     expect(addComment).toHaveBeenCalledWith('t1', 'hello', 'me')
+  })
+
+  it('logs a commented activity to the workspace after the comment saves', async () => {
+    const qc = new QueryClient()
+    addComment.mockResolvedValueOnce(undefined)
+    logComment.mockResolvedValueOnce(undefined)
+    const { result } = renderHook(() => useAddComment('t1', 'w1'), { wrapper: wrap(qc) })
+    result.current.mutate('hello')
+    await waitFor(() =>
+      expect(logComment).toHaveBeenCalledWith({ workspaceId: 'w1', actorId: 'me', taskId: 't1' }))
   })
 })

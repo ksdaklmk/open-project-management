@@ -11,7 +11,7 @@ const { insert, limit, order, eq, select, from } = vi.hoisted(() => {
 })
 vi.mock('../lib/supabase', () => ({ supabase: { from } }))
 
-import { logMove, listActivity } from './activityRepo'
+import { logMove, logComment, listActivity } from './activityRepo'
 
 beforeEach(() => vi.clearAllMocks())
 
@@ -29,6 +29,21 @@ describe('activityRepo.logMove', () => {
     insert.mockResolvedValueOnce({ error: { message: 'boom' } })
     await expect(logMove({ workspaceId: 'w1', actorId: 'u1', taskId: 't1', fromStatus: 'todo', toStatus: 'done' }))
       .rejects.toThrow('boom')
+  })
+})
+
+describe('activityRepo.logComment', () => {
+  it('inserts a commented activity row', async () => {
+    insert.mockResolvedValueOnce({ error: null })
+    await logComment({ workspaceId: 'w1', actorId: 'u1', taskId: 't1' })
+    expect(from).toHaveBeenCalledWith('activity')
+    expect(insert).toHaveBeenCalledWith({
+      workspace_id: 'w1', actor_id: 'u1', task_id: 't1', verb: 'commented',
+    })
+  })
+  it('throws on error', async () => {
+    insert.mockResolvedValueOnce({ error: { message: 'boom' } })
+    await expect(logComment({ workspaceId: 'w1', actorId: 'u1', taskId: 't1' })).rejects.toThrow('boom')
   })
 })
 

@@ -20,7 +20,7 @@ beforeEach(() => {
 
 describe('CommentThread', () => {
   it('lists comments and posts a new one', () => {
-    render(<CommentThread taskId="t1" />)
+    render(<CommentThread taskId="t1" workspaceId="w1" />)
     expect(screen.getByText('First!')).toBeInTheDocument()
     expect(screen.getByText('Dana Lee')).toBeInTheDocument()
     fireEvent.change(draftBox(), { target: { value: 'Nice work' } })
@@ -29,7 +29,7 @@ describe('CommentThread', () => {
   })
 
   it('keeps the draft when the post has not succeeded (e.g. it failed)', () => {
-    render(<CommentThread taskId="t1" />)
+    render(<CommentThread taskId="t1" workspaceId="w1" />)
     fireEvent.change(draftBox(), { target: { value: 'Nice work' } })
     fireEvent.click(screen.getByRole('button', { name: /post/i }))
     expect(draftBox().value).toBe('Nice work')
@@ -37,7 +37,7 @@ describe('CommentThread', () => {
 
   it('clears the draft once the post succeeds', () => {
     post.mockImplementation((_body: string, opts?: { onSuccess?: () => void }) => opts?.onSuccess?.())
-    render(<CommentThread taskId="t1" />)
+    render(<CommentThread taskId="t1" workspaceId="w1" />)
     fireEvent.change(draftBox(), { target: { value: 'Nice work' } })
     fireEvent.click(screen.getByRole('button', { name: /post/i }))
     expect(draftBox().value).toBe('')
@@ -45,13 +45,13 @@ describe('CommentThread', () => {
 
   it('shows a loading line while comments load', () => {
     comments.data = undefined; comments.isLoading = true
-    render(<CommentThread taskId="t1" />)
+    render(<CommentThread taskId="t1" workspaceId="w1" />)
     expect(screen.getByText('Loading…')).toBeInTheDocument()
   })
 
   it('shows an error line when comments fail to load', () => {
     comments.data = undefined; comments.error = new Error('boom')
-    render(<CommentThread taskId="t1" />)
+    render(<CommentThread taskId="t1" workspaceId="w1" />)
     expect(screen.getByText(/couldn't load comments/i)).toBeInTheDocument()
   })
 })

@@ -2,9 +2,9 @@ import { useState } from 'react'
 import { useComments, useAddComment } from '../../lib/hooks/useComments'
 import { relativeTime } from '../../lib/relativeTime'
 
-export function CommentThread({ taskId }: { taskId: string }) {
+export function CommentThread({ taskId, workspaceId }: { taskId: string; workspaceId: string }) {
   const { data, isLoading, error } = useComments(taskId)
-  const add = useAddComment(taskId)
+  const add = useAddComment(taskId, workspaceId)
   const [draft, setDraft] = useState('')
 
   const submit = () => {

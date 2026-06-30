@@ -37,6 +37,17 @@ function StatusChip({ status }: { status: Status | null }) {
   )
 }
 
+function TaskRef({ task }: { task: ActivityItem['task'] }) {
+  if (!task) return <span className="text-[var(--muted)]">a task</span>
+  return (
+    <span>
+      <span className="font-mono text-[11px] tracking-tight text-[var(--muted)]">{task.ref}</span>
+      {' '}
+      {task.title}
+    </span>
+  )
+}
+
 export function ActivityRow({ item }: { item: ActivityItem }) {
   const name = item.actor?.name || 'Someone'
   const color = item.actor?.color || 'var(--muted)'
@@ -59,17 +70,12 @@ export function ActivityRow({ item }: { item: ActivityItem }) {
           {item.verb === 'moved' ? (
             <>
               <span className="text-[var(--muted)]"> moved </span>
-              {item.task ? (
-                <span>
-                  <span className="font-mono text-[11px] tracking-tight text-[var(--muted)]">
-                    {item.task.ref}
-                  </span>
-                  {' '}
-                  {item.task.title}
-                </span>
-              ) : (
-                <span className="text-[var(--muted)]">a task</span>
-              )}
+              <TaskRef task={item.task} />
+            </>
+          ) : item.verb === 'commented' ? (
+            <>
+              <span className="text-[var(--muted)]"> commented on </span>
+              <TaskRef task={item.task} />
             </>
           ) : (
             <span className="text-[var(--muted)]"> {item.verb}</span>
