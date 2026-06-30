@@ -47,6 +47,21 @@ insert into workspace_members (workspace_id, user_id, role) values
   ('00000000-0000-0000-0000-0000000000b1', '00000000-0000-0000-0000-00000000000b', 'owner'),
   ('00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-00000000000c', 'member');
 
+-- handle_new_user (0002) auto-joins every new auth.users row to the seeded
+-- "Northwind" demo workspace when it exists, silently giving A, B and C a
+-- shared workspace -- which breaks the isolation premise below (notably
+-- "A cannot read B's profile, no shared workspace"). Strip any membership
+-- outside the two fixture workspaces so the fixture is deterministic whether
+-- or not the demo seed is loaded.
+delete from workspace_members
+  where user_id in (
+    '00000000-0000-0000-0000-00000000000a',
+    '00000000-0000-0000-0000-00000000000b',
+    '00000000-0000-0000-0000-00000000000c')
+  and workspace_id not in (
+    '00000000-0000-0000-0000-0000000000a1',
+    '00000000-0000-0000-0000-0000000000b1');
+
 insert into projects (id, workspace_id, name, key) values
   ('00000000-0000-0000-0000-0000000000a2', '00000000-0000-0000-0000-0000000000a1', 'PA', 'PA'),
   ('00000000-0000-0000-0000-0000000000a9', '00000000-0000-0000-0000-0000000000a1', 'PD', 'PD'),
