@@ -46,6 +46,21 @@ describe('TaskDrawer', () => {
     expect(setTaskRef).toHaveBeenCalledWith(null)
   })
 
+  it('closes when the ✕ header button is clicked', () => {
+    render(<TaskDrawer />)
+    fireEvent.click(screen.getByText('✕'))
+    expect(setTaskRef).toHaveBeenCalledWith(null)
+  })
+
+  it('Shift+Tab from the open panel wraps to the last control instead of escaping backward', () => {
+    render(<TaskDrawer />)
+    const dialog = screen.getByRole('dialog')
+    expect(document.activeElement).toBe(dialog) // effect focuses the panel container on open
+    fireEvent.keyDown(dialog, { key: 'Tab', shiftKey: true })
+    const f = dialog.querySelectorAll<HTMLElement>('a[href],button,input,select,textarea,[tabindex]:not([tabindex="-1"])')
+    expect(document.activeElement).toBe(f[f.length - 1])
+  })
+
   it('shows a not-found panel for an unknown ref', () => {
     state.taskRef = 'NIM-999'
     render(<TaskDrawer />)

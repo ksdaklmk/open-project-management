@@ -38,7 +38,10 @@ export function TaskDrawer() {
     if (!f || f.length === 0) return
     const first = f[0]
     const last = f[f.length - 1]
-    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus() }
+    // On open the container itself holds focus (tabIndex -1); treat that as the
+    // backward boundary so Shift+Tab wraps to last instead of escaping the panel.
+    const onPanel = document.activeElement === dialogRef.current
+    if (e.shiftKey && (onPanel || document.activeElement === first)) { e.preventDefault(); last.focus() }
     else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus() }
   }
 
