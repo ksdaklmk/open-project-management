@@ -1,15 +1,17 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { useViewState, VIEWS, type ViewId } from './useViewState'
 import { getTheme, setTheme, type Theme } from '../lib/theme'
 import { WorkspaceSwitcher } from '../components/WorkspaceSwitcher'
-import { ListView } from '../features/listView/ListView'
-import { BoardView } from '../features/boardView/BoardView'
-import { ActivityView } from '../features/activityView/ActivityView'
-import { GanttView } from '../features/ganttView/GanttView'
-import { TimelineView } from '../features/timelineView/TimelineView'
-import { WorkloadView } from '../features/workloadView/WorkloadView'
 import { TaskDrawer } from '../features/taskDrawer/TaskDrawer'
 import { Toolbar } from '../features/toolbar/Toolbar'
+
+// Views are route-level code-split: the login/shell path no longer bundles all six.
+const ListView = lazy(() => import('../features/listView/ListView').then((m) => ({ default: m.ListView })))
+const BoardView = lazy(() => import('../features/boardView/BoardView').then((m) => ({ default: m.BoardView })))
+const ActivityView = lazy(() => import('../features/activityView/ActivityView').then((m) => ({ default: m.ActivityView })))
+const GanttView = lazy(() => import('../features/ganttView/GanttView').then((m) => ({ default: m.GanttView })))
+const TimelineView = lazy(() => import('../features/timelineView/TimelineView').then((m) => ({ default: m.TimelineView })))
+const WorkloadView = lazy(() => import('../features/workloadView/WorkloadView').then((m) => ({ default: m.WorkloadView })))
 
 const TASK_VIEWS: ViewId[] = ['list', 'board', 'gantt', 'timeline']
 
@@ -50,21 +52,23 @@ export function Shell() {
         </header>
         {TASK_VIEWS.includes(view) && <Toolbar showSort={view === 'list'} />}
         <main data-testid="view-region" className="flex-1 p-4 text-[var(--muted)]">
-          {view === 'list' ? (
-            <ListView />
-          ) : view === 'board' ? (
-            <BoardView />
-          ) : view === 'gantt' ? (
-            <GanttView />
-          ) : view === 'timeline' ? (
-            <TimelineView />
-          ) : view === 'activity' ? (
-            <ActivityView />
-          ) : view === 'workload' ? (
-            <WorkloadView />
-          ) : (
-            `${view} view — coming next.`
-          )}
+          <Suspense fallback={<p className="text-[var(--muted)]">Loading…</p>}>
+            {view === 'list' ? (
+              <ListView />
+            ) : view === 'board' ? (
+              <BoardView />
+            ) : view === 'gantt' ? (
+              <GanttView />
+            ) : view === 'timeline' ? (
+              <TimelineView />
+            ) : view === 'activity' ? (
+              <ActivityView />
+            ) : view === 'workload' ? (
+              <WorkloadView />
+            ) : (
+              `${view} view — coming next.`
+            )}
+          </Suspense>
         </main>
       </section>
       <TaskDrawer />

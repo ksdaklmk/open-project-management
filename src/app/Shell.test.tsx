@@ -50,7 +50,7 @@ describe('Shell', () => {
   it('switches the active view when a tab is clicked', async () => {
     renderShell()
     await userEvent.click(screen.getByRole('button', { name: 'Board' }))
-    expect(screen.getByTestId('view-region')).toHaveTextContent('board')
+    expect(await screen.findByText('board view')).toBeInTheDocument()
   })
 
   it('toggles the theme', async () => {
@@ -68,24 +68,24 @@ describe('Shell', () => {
   it('mounts the Activity view on the Activity tab', async () => {
     renderShell()
     await userEvent.click(screen.getByRole('button', { name: 'Activity' }))
-    expect(screen.getByTestId('view-region')).toHaveTextContent('activity feed mounted')
+    expect(await screen.findByText('activity feed mounted')).toBeInTheDocument()
   })
 
   it('mounts the Gantt view on the Gantt tab', async () => {
     renderShell()
     await userEvent.click(screen.getByRole('button', { name: 'Gantt' }))
-    expect(screen.getByTestId('view-region')).toHaveTextContent('gantt mounted')
+    expect(await screen.findByText('gantt mounted')).toBeInTheDocument()
   })
 
   it('mounts the Timeline view on the Timeline tab', async () => {
     renderShell()
     await userEvent.click(screen.getByRole('button', { name: 'Timeline' }))
-    expect(screen.getByTestId('view-region')).toHaveTextContent('timeline mounted')
+    expect(await screen.findByText('timeline mounted')).toBeInTheDocument()
   })
 
   it('mounts the Workload view on the Workload tab', async () => {
     renderShell()
     await userEvent.click(screen.getByRole('button', { name: 'Workload' }))
-    expect(screen.getByTestId('view-region')).toHaveTextContent('workload mounted')
+    expect(await screen.findByText('workload mounted')).toBeInTheDocument()
   })
 })
