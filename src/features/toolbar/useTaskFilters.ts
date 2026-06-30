@@ -5,7 +5,8 @@ import type { SortKey } from './sortTasks'
 const LIST_KEYS = ['status', 'priority', 'assignee', 'type', 'tag'] as const
 type ListKey = (typeof LIST_KEYS)[number]
 const SORT_KEYS: SortKey[] = ['priority', 'due', 'title', 'status']
-const csv = (v: string | null): string[] => (v ? v.split(',').filter(Boolean) : [])
+// Keep empty segments: '' is a meaningful assignee value (unassigned) and must round-trip.
+const csv = (v: string | null): string[] => (v === null ? [] : v.split(','))
 
 export function useTaskFilters() {
   const [params, setParams] = useSearchParams()

@@ -24,6 +24,11 @@ describe('Toolbar', () => {
     fireEvent.click(screen.getByLabelText('To Do'))
     expect(screen.getByTestId('qs').textContent).toContain('status=todo')
   })
+  it('selecting Unassigned filters to unassigned tasks and stays checked', () => {
+    renderAt('/')
+    fireEvent.click(screen.getByLabelText('Unassigned'))
+    expect((screen.getByLabelText('Unassigned') as HTMLInputElement).checked).toBe(true)
+  })
   it('typing in search sets q', () => {
     renderAt('/')
     fireEvent.change(screen.getByLabelText('Search tasks'), { target: { value: 'login' } })

@@ -39,7 +39,7 @@ export function Toolbar({ showSort }: { showSort: boolean }) {
       <Group label="Tag" selected={filters.tag}
         options={Object.keys(TAG_COLORS).map((t) => ({ id: t, label: t }))} onToggle={(id) => toggle('tag', id)} />
       <Group label="Assignee" selected={filters.assignee}
-        options={(members ?? []).map((m) => ({ id: m.user_id, label: m.name || 'Someone' }))} onToggle={(id) => toggle('assignee', id)} />
+        options={[{ id: '', label: 'Unassigned' }, ...(members ?? []).map((m) => ({ id: m.user_id, label: m.name || 'Someone' }))]} onToggle={(id) => toggle('assignee', id)} />
       {showSort && (
         <label className="ml-auto flex items-center gap-1">
           <span className="text-[var(--muted)]">Sort</span>

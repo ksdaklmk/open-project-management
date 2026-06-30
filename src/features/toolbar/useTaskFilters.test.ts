@@ -26,6 +26,11 @@ describe('useTaskFilters', () => {
     act(() => result.current.setList('status', []))
     expect(result.current.filters.status).toEqual([])
   })
+  it('round-trips an empty-string (unassigned) assignee', () => {
+    const { result } = renderHook(() => useTaskFilters(), { wrapper: wrap('/') })
+    act(() => result.current.setList('assignee', ['']))
+    expect(result.current.filters.assignee).toEqual([''])
+  })
   it('clear removes every filter key', () => {
     const { result } = renderHook(() => useTaskFilters(), { wrapper: wrap('/?status=todo&q=x&tag=API') })
     act(() => result.current.clear())
