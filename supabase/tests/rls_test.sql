@@ -19,7 +19,7 @@
 -- passing only because access is blanket-denied.
 
 begin;
-select plan(34);
+select plan(35);
 
 -- ---------------------------------------------------------------------------
 -- Service-role setup: two workspaces, three users, a task + subtask each.
@@ -354,6 +354,15 @@ select is(
   (select name from profiles where id = '00000000-0000-0000-0000-00000000000d'),
   'Dee Fixture',
   'handle_new_user coalesces full_name into profiles.name (OAuth variance)');
+
+insert into auth.users (id, email, raw_user_meta_data) values
+  ('00000000-0000-0000-0000-00000000000e', 'e@test.dev',
+   '{"name": "", "full_name": "Guarded Name"}'::jsonb);
+select is(
+  (select name from profiles where id = '00000000-0000-0000-0000-00000000000e'),
+  'Guarded Name',
+  'handle_new_user: an empty name key does not shadow full_name (nullif guard)');
+
 select is(
   (select count(*) from workspace_members
    where user_id = '00000000-0000-0000-0000-00000000000d'
