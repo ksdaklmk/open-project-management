@@ -36,6 +36,20 @@ export async function logComment(params: {
   if (error) throw new Error(error.message)
 }
 
+export async function logCreate(params: {
+  workspaceId: string
+  actorId: string
+  taskId: string
+}): Promise<void> {
+  const { error } = await supabase.from('activity').insert({
+    workspace_id: params.workspaceId,
+    actor_id: params.actorId,
+    task_id: params.taskId,
+    verb: 'created',
+  })
+  if (error) throw new Error(error.message)
+}
+
 export interface ActivityItem {
   id: string
   verb: string
