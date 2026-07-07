@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-Multi-tenant project-management web app: Vite + React + TS + Tailwind on Supabase (Postgres + Auth + RLS + Realtime). Design spec and plans live in `docs/superpowers/`. The six views (List/Board/Gantt/Timeline/Activity/Workload) are not built yet — the foundation is auth + schema + shell.
+Multi-tenant project-management web app: Vite + React + TS + Tailwind on Supabase (Postgres + Auth + RLS + Realtime). Design spec and plans live in `docs/superpowers/`. All six views (List/Board/Gantt/Timeline/Activity/Workload) plus the task drawer and filter/sort toolbar are built (`src/features/`).
 
 ## Commands
 
