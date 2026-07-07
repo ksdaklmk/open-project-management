@@ -19,7 +19,7 @@
 -- passing only because access is blanket-denied.
 
 begin;
-select plan(29);
+select plan(34);
 
 -- ---------------------------------------------------------------------------
 -- Service-role setup: two workspaces, three users, a task + subtask each.
@@ -313,6 +313,57 @@ with del as (
 select is(
   (select count(*)::int from del), 0,
   'plain member cannot delete a project (owner/admin only)');
+
+-- ---------------------------------------------------------------------------
+-- Task delete policy (make-it-adoptable): members delete inside their own
+-- workspace; cross-workspace deletes are RLS-filtered to no-ops. Coverage
+-- backfill — the policy shipped in 0002 but was never asserted.
+-- ---------------------------------------------------------------------------
+select set_config('request.jwt.claims',
+  json_build_object('sub','00000000-0000-0000-0000-00000000000a','role','authenticated')::text,
+  true);
+with del as (
+  delete from tasks where id = '00000000-0000-0000-0000-0000000000b3' returning 1)
+select is(
+  (select count(*)::int from del), 0,
+  'A cannot delete a WS-B task (RLS-filtered no-op)');
+with del as (
+  delete from tasks where id = '00000000-0000-0000-0000-0000000000a3' returning 1)
+select is(
+  (select count(*)::int from del), 1,
+  'A can delete a task in its own workspace (task_delete is not deny-all)');
+
+-- ---------------------------------------------------------------------------
+-- handle_new_user (0004): name coalesces OAuth metadata variants; the demo
+-- auto-join is pinned to the seed workspace UUID, so a workspace merely NAMED
+-- 'Northwind' attracts nothing. The demo row is ensured here (idempotent
+-- whether or not seed.sql ran); the decoy shares only the name.
+-- ---------------------------------------------------------------------------
+set local role postgres;
+insert into workspaces (id, name, created_by) values
+  ('20000000-0000-0000-0000-000000000001', 'Northwind', null)
+  on conflict (id) do nothing;
+insert into workspaces (id, name, created_by) values
+  ('00000000-0000-0000-0000-0000000000d1', 'Northwind', null);
+
+insert into auth.users (id, email, raw_user_meta_data) values
+  ('00000000-0000-0000-0000-00000000000d', 'd@test.dev',
+   '{"full_name": "Dee Fixture"}'::jsonb);
+
+select is(
+  (select name from profiles where id = '00000000-0000-0000-0000-00000000000d'),
+  'Dee Fixture',
+  'handle_new_user coalesces full_name into profiles.name (OAuth variance)');
+select is(
+  (select count(*) from workspace_members
+   where user_id = '00000000-0000-0000-0000-00000000000d'
+     and workspace_id = '20000000-0000-0000-0000-000000000001')::int, 1,
+  'new signup auto-joins the demo workspace by fixed UUID');
+select is(
+  (select count(*) from workspace_members
+   where user_id = '00000000-0000-0000-0000-00000000000d'
+     and workspace_id = '00000000-0000-0000-0000-0000000000d1')::int, 0,
+  'a workspace merely named Northwind attracts no auto-joins');
 
 select * from finish();
 rollback;
