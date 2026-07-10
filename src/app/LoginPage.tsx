@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 export function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [name, setName] = useState('')
   const [error, setError] = useState<string | null>(null)
 
   const signIn = async (e: React.FormEvent) => {
@@ -15,7 +16,11 @@ export function LoginPage() {
 
   const signUp = async () => {
     setError(null)
-    const { error } = await supabase.auth.signUp({ email, password })
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { name: name.trim() } },
+    })
     if (error) setError(error.message)
   }
 
@@ -48,6 +53,12 @@ export function LoginPage() {
           placeholder="Password"
           value={password}
           onChange={e => setPassword(e.target.value)}
+        />
+        <input
+          className="w-full px-3 py-2 rounded border border-[var(--border)] bg-[var(--bg)]"
+          placeholder="Name (used when signing up)"
+          value={name}
+          onChange={e => setName(e.target.value)}
         />
         {error && (
           <p style={{ color: 'var(--primary)' }}>{error}</p>

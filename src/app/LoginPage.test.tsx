@@ -73,4 +73,30 @@ describe('LoginPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'GitHub' }))
     await waitFor(() => expect(screen.getByText('Provider not enabled')).toBeInTheDocument())
   })
+
+  it('passes the name as signup metadata', async () => {
+    mockSignUp.mockResolvedValueOnce({ error: null })
+    render(<LoginPage />)
+    fireEvent.change(screen.getByPlaceholderText('Email'), { target: { value: 'new@team.dev' } })
+    fireEvent.change(screen.getByPlaceholderText('Password'), { target: { value: 'hunter22' } })
+    fireEvent.change(screen.getByPlaceholderText('Name (used when signing up)'), {
+      target: { value: '  Kit Klaimak ' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Sign up' }))
+    await waitFor(() =>
+      expect(mockSignUp).toHaveBeenCalledWith({
+        email: 'new@team.dev',
+        password: 'hunter22',
+        options: { data: { name: 'Kit Klaimak' } },
+      }))
+  })
+
+  it('sign-in ignores the name field', async () => {
+    mockSignIn.mockResolvedValueOnce({ error: null })
+    render(<LoginPage />)
+    fireEvent.change(screen.getByPlaceholderText('Email'), { target: { value: 'a@b.c' } })
+    fireEvent.change(screen.getByPlaceholderText('Password'), { target: { value: 'pw' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in' }))
+    await waitFor(() => expect(mockSignIn).toHaveBeenCalledWith({ email: 'a@b.c', password: 'pw' }))
+  })
 })

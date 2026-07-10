@@ -1,6 +1,8 @@
 import { useState, useEffect, lazy, Suspense } from 'react'
 import { useViewState, VIEWS, type ViewId } from './useViewState'
 import { getTheme, setTheme, type Theme } from '../lib/theme'
+import { useActiveWorkspace } from '../lib/workspace'
+import { signOut } from '../lib/hooks/useSession'
 import { WorkspaceSwitcher } from '../components/WorkspaceSwitcher'
 import { TaskDrawer } from '../features/taskDrawer/TaskDrawer'
 import { Toolbar } from '../features/toolbar/Toolbar'
@@ -23,6 +25,7 @@ const LABEL: Record<ViewId, string> = {
 export function Shell() {
   const { view, setView } = useViewState()
   const [theme, setThemeState] = useState<Theme>(getTheme())
+  const { activeId, loading: workspacesLoading } = useActiveWorkspace()
 
   // Apply the theme to the DOM (and persist it) on mount and on every change,
   // so the DOM always reflects state — self-healing across remounts/desyncs.
@@ -31,6 +34,17 @@ export function Shell() {
   }, [theme])
 
   const toggleTheme = () => setThemeState((t) => (t === 'bloom' ? 'slate' : 'bloom'))
+
+  if (!workspacesLoading && activeId === null)
+    return (
+      <div className="min-h-full grid place-items-center bg-[var(--bg)] text-[var(--text)]">
+        <div className="w-96 max-w-full space-y-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-6 text-center">
+          <h1 className="text-lg font-semibold">No workspace yet</h1>
+          <p className="text-sm text-[var(--muted)]">Ask your workspace admin to add you.</p>
+          <button onClick={() => signOut()} className="opm-btn">Sign out</button>
+        </div>
+      </div>
+    )
 
   return (
     <div className="min-h-full grid grid-cols-[200px_1fr] bg-[var(--bg)] text-[var(--text)]">

@@ -60,3 +60,8 @@ export function useActorId(): string {
   if (!session) throw new Error('useActorId requires a signed-in session')
   return session.user.id
 }
+
+// Carve-out file: the only non-data module allowed to touch supabase.auth.
+export function signOut() {
+  return supabase.auth.signOut()
+}

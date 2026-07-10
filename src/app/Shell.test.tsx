@@ -4,6 +4,15 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { Shell } from './Shell'
 
+const { ws, mockSignOut } = vi.hoisted(() => ({
+  ws: { activeId: 'w1' as string | null, loading: false },
+  mockSignOut: vi.fn(),
+}))
+vi.mock('../lib/workspace', () => ({
+  useActiveWorkspace: () => ({ ...ws, setActiveId: vi.fn() }),
+}))
+vi.mock('../lib/hooks/useSession', () => ({ signOut: mockSignOut }))
+
 vi.mock('../components/WorkspaceSwitcher', () => ({
   WorkspaceSwitcher: () => null,
 }))
@@ -39,6 +48,9 @@ describe('Shell', () => {
   beforeEach(() => {
     localStorage.clear()
     document.documentElement.removeAttribute('data-theme')
+    ws.activeId = 'w1'
+    ws.loading = false
+    mockSignOut.mockClear()
   })
 
   it('shows all six view tabs', async () => {
@@ -90,5 +102,28 @@ describe('Shell', () => {
     renderShell()
     await userEvent.click(screen.getByRole('button', { name: 'Workload' }))
     expect(await screen.findByText('workload mounted')).toBeInTheDocument()
+  })
+
+  it('shows the no-workspace state when the member list is loaded but empty', () => {
+    ws.activeId = null
+    renderShell()
+    expect(screen.getByText('No workspace yet')).toBeInTheDocument()
+    expect(screen.getByText('Ask your workspace admin to add you.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Board' })).toBeNull() // no app chrome
+  })
+
+  it('signs out from the no-workspace state', async () => {
+    ws.activeId = null
+    renderShell()
+    await userEvent.click(screen.getByRole('button', { name: 'Sign out' }))
+    expect(mockSignOut).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not flash the no-workspace state while workspaces load', () => {
+    ws.activeId = null
+    ws.loading = true
+    renderShell()
+    expect(screen.queryByText('No workspace yet')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Board' })).toBeInTheDocument()
   })
 })
