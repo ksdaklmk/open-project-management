@@ -25,7 +25,7 @@ const { range, order2, order1, eq, select: _select, update, updateEq, insert, de
 
 vi.mock('../lib/supabase', () => ({ supabase: { from, rpc } }))
 
-import { listTasks, updateTask, addTaskTag, removeTaskTag, createTask } from './tasksRepo'
+import { listTasks, updateTask, addTaskTag, removeTaskTag, createTask, deleteTask } from './tasksRepo'
 
 beforeEach(() => vi.clearAllMocks())
 
@@ -91,6 +91,13 @@ describe('tasksRepo', () => {
     expect(del).toHaveBeenCalled()
     expect(delEq1).toHaveBeenCalledWith('task_id', 't1')
     expect(delEq2).toHaveBeenCalledWith('tag', 'Frontend')
+  })
+
+  it('deletes a task scoped by id', async () => {
+    await deleteTask('t1')
+    expect(from).toHaveBeenCalledWith('tasks')
+    expect(del).toHaveBeenCalled()
+    expect(delEq1).toHaveBeenCalledWith('id', 't1')
   })
 
   describe('createTask', () => {

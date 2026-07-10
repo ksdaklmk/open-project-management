@@ -12,8 +12,10 @@ const TASKS = [{ id: 't1', ref: 'NIM-101', title: 'Build login', type: 'feature'
   end_date: null, position: 0, tags: [] }]
 const mutate = vi.fn()
 const moveMutate = vi.fn()
+const delMutate = vi.fn()
 vi.mock('../../lib/hooks/useUpdateTask', () => ({ useUpdateTask: () => ({ mutate }) }))
 vi.mock('../../lib/hooks/useMoveTask', () => ({ useMoveTask: () => ({ mutate: moveMutate }) }))
+vi.mock('../../lib/hooks/useDeleteTask', () => ({ useDeleteTask: () => ({ mutate: delMutate }) }))
 vi.mock('../../lib/hooks/useMembers', () => ({ useMembers: () => ({ data: [] }) }))
 vi.mock('../../lib/hooks/useTaskTags', () => ({ useTaskTags: () => ({ add: { mutate: vi.fn() }, remove: { mutate: vi.fn() } }) }))
 vi.mock('../../lib/hooks/useSubtasks', () => ({ useSubtasks: () => ({ data: [], add: { mutate: vi.fn() }, toggle: { mutate: vi.fn() }, remove: { mutate: vi.fn() } }) }))
@@ -23,7 +25,7 @@ import { TaskDrawer } from './TaskDrawer'
 
 beforeEach(() => {
   state.taskRef = 'NIM-101'
-  setTaskRef.mockClear(); mutate.mockClear(); moveMutate.mockClear()
+  setTaskRef.mockClear(); mutate.mockClear(); moveMutate.mockClear(); delMutate.mockClear()
   useTasks.mockReturnValue({ data: TASKS, isLoading: false, error: null })
 })
 
@@ -110,5 +112,31 @@ describe('TaskDrawer', () => {
     fireEvent.change(title, { target: { value: 'Build SSO' } })
     fireEvent.blur(title)
     expect(mutate).toHaveBeenCalledWith({ id: 't1', patch: { title: 'Build SSO' } })
+  })
+
+  it('delete is a two-step confirm: first click arms, Cancel disarms', () => {
+    render(<TaskDrawer />)
+    fireEvent.click(screen.getByRole('button', { name: 'Delete task' }))
+    expect(delMutate).not.toHaveBeenCalled()
+    expect(screen.getByText('Delete this task?')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(screen.queryByText('Delete this task?')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Delete task' })).toBeInTheDocument()
+  })
+
+  it('confirming deletes the task and closes the drawer on success', () => {
+    render(<TaskDrawer />)
+    fireEvent.click(screen.getByRole('button', { name: 'Delete task' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }))
+    expect(delMutate).toHaveBeenCalledTimes(1)
+    expect(delMutate.mock.calls[0][0]).toBe('t1')
+    delMutate.mock.calls[0][1].onSuccess()
+    expect(setTaskRef).toHaveBeenCalledWith(null)
+  })
+
+  it('focuses Cancel when the confirm is armed (destructive-action default)', () => {
+    render(<TaskDrawer />)
+    fireEvent.click(screen.getByRole('button', { name: 'Delete task' }))
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Cancel' }))
   })
 })

@@ -44,6 +44,11 @@ export async function updateTask(
   if (error) throw new Error(error.message)
 }
 
+export async function deleteTask(id: string): Promise<void> {
+  const { error } = await supabase.from('tasks').delete().eq('id', id)
+  if (error) throw new Error(error.message)
+}
+
 export async function addTaskTag(taskId: string, tag: string): Promise<void> {
   const { error } = await supabase.from('task_tags').insert({ task_id: taskId, tag })
   if (error) throw new Error(error.message)

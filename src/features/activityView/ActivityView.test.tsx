@@ -22,6 +22,12 @@ const COMMENTED = {
   actor: { name: 'Sam', color: '#6d5ef0' }, task: { ref: 'NIM-7', title: 'Add SSO' },
 }
 
+const CREATED = {
+  id: 'a4', verb: 'created', from_status: null, to_status: null,
+  created_at: '2026-07-07T10:00:00Z',
+  actor: { name: 'Kit', color: '#6d5ef0' }, task: { ref: 'NIM-107', title: 'Ship adoption' },
+}
+
 beforeEach(() => vi.clearAllMocks())
 
 describe('ActivityView', () => {
@@ -43,6 +49,15 @@ describe('ActivityView', () => {
     expect(screen.getByText(/moved/)).toBeInTheDocument()
     expect(screen.getByText('In Progress')).toBeInTheDocument()
     expect(screen.getByText('In Review')).toBeInTheDocument()
+  })
+
+  it('renders a created activity row referencing the task', () => {
+    useActivity.mockReturnValue({ data: [CREATED], isLoading: false, error: null })
+    render(<ActivityView />)
+    expect(screen.getByText('Kit')).toBeInTheDocument()
+    expect(screen.getByText(/created/)).toBeInTheDocument()
+    expect(screen.getByText('NIM-107')).toBeInTheDocument()
+    expect(screen.getByText(/Ship adoption/)).toBeInTheDocument()
   })
 
   it('shows the loading state', () => {

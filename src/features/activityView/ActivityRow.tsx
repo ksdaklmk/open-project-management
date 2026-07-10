@@ -77,6 +77,11 @@ export function ActivityRow({ item }: { item: ActivityItem }) {
               <span className="text-[var(--muted)]"> commented on </span>
               <TaskRef task={item.task} />
             </>
+          ) : item.verb === 'created' ? (
+            <>
+              <span className="text-[var(--muted)]"> created </span>
+              <TaskRef task={item.task} />
+            </>
           ) : (
             <span className="text-[var(--muted)]"> {item.verb}</span>
           )}

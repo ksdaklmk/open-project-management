@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useViewState } from '../../app/useViewState'
 import { useActiveWorkspace } from '../../lib/workspace'
 import { useTasks } from '../../lib/hooks/useTasks'
+import { useDeleteTask } from '../../lib/hooks/useDeleteTask'
 import { DrawerFields } from './DrawerFields'
 import { TagEditor } from './TagEditor'
 import { SubtaskList } from './SubtaskList'
@@ -79,6 +80,9 @@ export function TaskDrawer() {
               <TagEditor task={task} workspaceId={activeId ?? ''} />
               <SubtaskList taskId={task.id} />
               <CommentThread taskId={task.id} workspaceId={activeId ?? ''} />
+              <footer className="border-t border-[var(--border)] pt-4">
+                <DeleteTaskButton taskId={task.id} workspaceId={activeId ?? ''} onDeleted={close} />
+              </footer>
             </div>
           </>
         ) : isLoading ? (
@@ -99,6 +103,38 @@ export function TaskDrawer() {
           </div>
         )}
       </div>
+    </div>
+  )
+}
+
+function DeleteTaskButton({ taskId, workspaceId, onDeleted }: {
+  taskId: string
+  workspaceId: string
+  onDeleted: () => void
+}) {
+  const [confirming, setConfirming] = useState(false)
+  const del = useDeleteTask(workspaceId)
+
+  if (!confirming)
+    return (
+      <button onClick={() => setConfirming(true)} className="opm-btn">
+        Delete task
+      </button>
+    )
+
+  return (
+    <div className="flex items-center gap-2 text-sm">
+      <span>Delete this task?</span>
+      <button
+        onClick={() => del.mutate(taskId, { onSuccess: onDeleted })}
+        className="opm-btn font-semibold"
+      >
+        Delete
+      </button>
+      {/* autoFocus lands on the safe option; both stay inside the drawer's focus trap */}
+      <button autoFocus onClick={() => setConfirming(false)} className="opm-btn">
+        Cancel
+      </button>
     </div>
   )
 }
