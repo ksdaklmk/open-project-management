@@ -29,7 +29,7 @@ export function TimelineView({ now = new Date() }: { now?: Date } = {}) {
   const buckets = bucketTasks(all, now).filter((b) => b.tasks.length > 0)
 
   return (
-    <div className="mx-auto max-w-2xl space-y-7">
+    <div className="space-y-7">
       {buckets.map((b) => (
         <section key={b.id}>
           <h2 className="mb-2 flex items-center gap-2 px-0.5 text-[13px] font-semibold tracking-tight text-[var(--text)]">
@@ -60,7 +60,7 @@ export function TimelineView({ now = new Date() }: { now?: Date } = {}) {
 
 function TimelineSkeleton() {
   return (
-    <div role="status" aria-busy="true" className="mx-auto max-w-2xl space-y-7">
+    <div role="status" aria-busy="true" className="space-y-7">
       <span className="sr-only">Loading timeline…</span>
       {[0, 1].map((s) => (
         <div key={s}>

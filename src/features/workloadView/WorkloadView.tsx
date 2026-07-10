@@ -45,7 +45,7 @@ export function WorkloadView({ now = new Date() }: { now?: Date } = {}) {
   const notShown = wl.unscheduledPoints + wl.outOfRangePoints
 
   return (
-    <div className="mx-auto max-w-4xl rounded-xl border border-[var(--border)] bg-[var(--bg)] p-4">
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-4">
       <table className="w-full border-separate" style={{ tableLayout: 'fixed', borderSpacing: 5 }}>
         <caption className="sr-only">Workload by week</caption>
         <thead>
@@ -131,7 +131,7 @@ function WorkloadSkeleton() {
     <div
       role="status"
       aria-busy="true"
-      className="mx-auto max-w-4xl rounded-xl border border-[var(--border)] bg-[var(--bg)] p-4"
+      className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-4"
     >
       <span className="sr-only">Loading workload…</span>
       <div className="grid items-end" style={{ gridTemplateColumns: GRID_COLS, gap: 5 }}>

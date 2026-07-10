@@ -30,7 +30,7 @@ export function GanttView({ now = new Date() }: { now?: Date } = {}) {
   )
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div>
       {ordered.length === 0 ? (
         <div className="rounded-xl border border-dashed border-[var(--border)] bg-[var(--bg)] px-6 py-10 text-center">
           <p className="text-sm text-[var(--muted)]">
@@ -152,7 +152,7 @@ function GanttSkeleton() {
     <div
       role="status"
       aria-busy="true"
-      className="mx-auto max-w-4xl rounded-xl border border-[var(--border)] bg-[var(--bg)] p-4"
+      className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-4"
     >
       <span className="sr-only">Loading timeline…</span>
       <div className="grid border-b border-[var(--border)] pb-2" style={{ gridTemplateColumns: GRID }}>

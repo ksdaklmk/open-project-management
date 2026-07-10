@@ -17,7 +17,7 @@ export function ActivityView() {
   return (
     <ol
       aria-label="Activity feed"
-      className="mx-auto max-w-2xl overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg)] divide-y divide-[var(--border)]"
+      className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg)] divide-y divide-[var(--border)]"
     >
       {feed.map((item) => (
         <li key={item.id} className="opm-row">
@@ -33,7 +33,7 @@ function ActivitySkeleton() {
     <div
       role="status"
       aria-busy="true"
-      className="mx-auto max-w-2xl overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg)] divide-y divide-[var(--border)]"
+      className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg)] divide-y divide-[var(--border)]"
     >
       <span className="sr-only">Loading activity…</span>
       {SKEL_WIDTHS.map((w, i) => (
