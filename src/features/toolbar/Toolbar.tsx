@@ -1,6 +1,11 @@
+import { useState, useRef, useEffect } from 'react'
 import { STATUSES, PRIORITIES, TASK_TYPES, TAG_COLORS } from '../../types/constants'
+import { useViewState } from '../../app/useViewState'
 import { useActiveWorkspace } from '../../lib/workspace'
 import { useMembers } from '../../lib/hooks/useMembers'
+import { useProjects } from '../../lib/hooks/useProjects'
+import { useCreateTask } from '../../lib/hooks/useCreateTask'
+import type { ProjectOption } from '../../data/projectsRepo'
 import { useTaskFilters } from './useTaskFilters'
 import type { SortKey } from './sortTasks'
 
@@ -25,6 +30,7 @@ export function Toolbar({ showSort }: { showSort: boolean }) {
 
   return (
     <div className="flex flex-wrap items-center gap-2 border-b border-[var(--border)] px-4 py-2 text-sm">
+      <NewTask workspaceId={activeId ?? ''} />
       <input
         aria-label="Search tasks" placeholder="Search…" value={filters.q}
         onChange={(e) => setQ(e.target.value)}
@@ -79,5 +85,82 @@ function Group({ label, options, selected, onToggle }: {
         ))}
       </div>
     </details>
+  )
+}
+
+function NewTask({ workspaceId }: { workspaceId: string }) {
+  const [open, setOpen] = useState(false)
+  const [title, setTitle] = useState('')
+  const [projectId, setProjectId] = useState<string | null>(null)
+  const btnRef = useRef<HTMLButtonElement>(null)
+  const wasOpen = useRef(false)
+  const { data: projects } = useProjects(workspaceId)
+  const { setTaskRef } = useViewState()
+  const create = useCreateTask(workspaceId)
+
+  // Return focus to the button when the inline input closes (cancel or success).
+  useEffect(() => {
+    if (!open && wasOpen.current) btnRef.current?.focus()
+    wasOpen.current = open
+  }, [open])
+
+  const project: ProjectOption | undefined =
+    projects?.find((p) => p.id === projectId) ?? projects?.[0]
+
+  if (!open)
+    return (
+      <button
+        ref={btnRef}
+        className="opm-btn"
+        disabled={!projects?.length}
+        title={projects?.length ? undefined : 'Create a project first (see docs/admin.md)'}
+        onClick={() => setOpen(true)}
+      >
+        + New task
+      </button>
+    )
+
+  const submit = () => {
+    const t = title.trim()
+    if (!t || !project) return
+    create.mutate(
+      { title: t, project },
+      {
+        onSuccess: (task) => {
+          setTitle('')
+          setOpen(false)
+          setTaskRef(task.ref)
+        },
+      },
+    )
+  }
+
+  return (
+    <div className="flex items-center gap-1">
+      <input
+        aria-label="New task title"
+        placeholder="Task title…"
+        autoFocus
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') submit()
+          if (e.key === 'Escape') setOpen(false) // draft kept for reopening
+        }}
+        className="opm-input w-56"
+      />
+      {(projects?.length ?? 0) > 1 && (
+        <select
+          aria-label="Project"
+          value={project?.id ?? ''}
+          onChange={(e) => setProjectId(e.target.value)}
+          className="opm-input w-auto"
+        >
+          {projects?.map((p) => (
+            <option key={p.id} value={p.id}>{p.key} — {p.name}</option>
+          ))}
+        </select>
+      )}
+    </div>
   )
 }
