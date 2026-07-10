@@ -1,0 +1,22 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run test
+      # tsc -b + vite build — the type gate (bare tsc checks nothing here).
+      - run: npm run build
+      # pgTAP (supabase/tests/*.sql) needs a local Supabase stack; run it
+      # per the runbook in each test file's header.

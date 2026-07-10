@@ -7,7 +7,7 @@ const { updateTask, logMove } = vi.hoisted(() => ({ updateTask: vi.fn(), logMove
 vi.mock('../../data/tasksRepo', () => ({ updateTask }))
 vi.mock('../../data/activityRepo', () => ({ logMove }))
 vi.mock('sonner', () => ({ toast: { error: vi.fn() } }))
-vi.mock('./useSession', () => ({ useSession: () => ({ session: { user: { id: 'u1' } } }) }))
+vi.mock('./useSession', () => ({ useActorId: () => 'u1' }))
 
 import { useMoveTask } from './useMoveTask'
 import { toast } from 'sonner'

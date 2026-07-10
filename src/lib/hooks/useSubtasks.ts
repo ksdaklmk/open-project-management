@@ -8,7 +8,13 @@ export function useSubtasks(taskId: string) {
   const query = useQuery({ queryKey: key, queryFn: () => listSubtasks(taskId), enabled: !!taskId })
 
   const add = useMutation({
-    mutationFn: (title: string) => addSubtask(taskId, title, qc.getQueryData<Subtask[]>(key)?.length ?? 0),
+    mutationFn: (title: string) => {
+      // Max + 1, not array length: after a deletion the count collides with
+      // a live row's position and ordering turns ambiguous.
+      const rows = qc.getQueryData<Subtask[]>(key) ?? []
+      const position = rows.length ? Math.max(...rows.map((s) => s.position)) + 1 : 0
+      return addSubtask(taskId, title, position)
+    },
     onSettled: () => qc.invalidateQueries({ queryKey: key }),
   })
 

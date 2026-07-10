@@ -8,7 +8,7 @@ const { logComment } = vi.hoisted(() => ({ logComment: vi.fn() }))
 vi.mock('../../data/commentsRepo', () => ({ listComments, addComment }))
 vi.mock('../../data/activityRepo', () => ({ logComment }))
 vi.mock('sonner', () => ({ toast: { error: vi.fn() } }))
-vi.mock('./useSession', () => ({ useSession: () => ({ session: { user: { id: 'me' } }, loading: false }) }))
+vi.mock('./useSession', () => ({ useActorId: () => 'me' }))
 
 import { useAddComment } from './useComments'
 

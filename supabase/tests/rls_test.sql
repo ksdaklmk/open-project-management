@@ -19,7 +19,7 @@
 -- passing only because access is blanket-denied.
 
 begin;
-select plan(35);
+select plan(61);
 
 -- ---------------------------------------------------------------------------
 -- Service-role setup: two workspaces, three users, a task + subtask each.
@@ -373,6 +373,211 @@ select is(
    where user_id = '00000000-0000-0000-0000-00000000000d'
      and workspace_id = '00000000-0000-0000-0000-0000000000d1')::int, 0,
   'a workspace merely named Northwind attracts no auto-joins');
+
+-- ---------------------------------------------------------------------------
+-- RLS hardening (0005, docs/AUDIT.md finding 3). Membership-only UPDATE
+-- policies plus blanket UPDATE grants let a DUAL-workspace member re-parent
+-- rows across tenants (task -> other workspace's project, subtask/comment ->
+-- other workspace's task, project -> other workspace) and rewrite provenance
+-- (created_by, ref, ids, timestamps). 0005 revokes table-level UPDATE and
+-- re-grants only content columns, so those writes fail 42501 at the privilege
+-- gate. F is a member of BOTH WS-A and WS-B, so every denial below is a
+-- column lock, not membership scoping (the first assertion proves it).
+-- ---------------------------------------------------------------------------
+set local role postgres;
+
+insert into auth.users (id, email) values
+  ('00000000-0000-0000-0000-00000000000f', 'f@test.dev');
+-- Dual membership: F belongs to both fixture workspaces. Strip anything else
+-- (handle_new_user auto-joined F to the demo workspace ensured above).
+insert into workspace_members (workspace_id, user_id, role) values
+  ('00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-00000000000f', 'member'),
+  ('00000000-0000-0000-0000-0000000000b1', '00000000-0000-0000-0000-00000000000f', 'member');
+delete from workspace_members
+  where user_id = '00000000-0000-0000-0000-00000000000f'
+    and workspace_id not in ('00000000-0000-0000-0000-0000000000a1',
+                             '00000000-0000-0000-0000-0000000000b1');
+
+-- Fresh WS-A rows (a3/a4/a5 were consumed by the delete tests above).
+-- updated_at is explicitly backdated: 0003 touches it on UPDATE only, so the
+-- insert keeps 2020 and the touch assertion below can see the trigger reset it.
+insert into tasks (id, project_id, workspace_id, ref, title, created_by, updated_at) values
+  ('00000000-0000-0000-0000-0000000000a6', '00000000-0000-0000-0000-0000000000a2',
+   '00000000-0000-0000-0000-0000000000a1', 'PA-9', 'hardening fixture',
+   '00000000-0000-0000-0000-00000000000a', '2020-01-01');
+insert into subtasks (id, task_id, title) values
+  ('00000000-0000-0000-0000-0000000000a7', '00000000-0000-0000-0000-0000000000a6', 'sub f');
+insert into comments (id, task_id, author_id, body) values
+  ('00000000-0000-0000-0000-0000000000a8', '00000000-0000-0000-0000-0000000000a6',
+   '00000000-0000-0000-0000-00000000000f', 'f comment');
+insert into task_tags (task_id, tag) values
+  ('00000000-0000-0000-0000-0000000000a6', 'Frontend');
+
+-- Impersonate dual-member F.
+set local role authenticated;
+select set_config('request.jwt.claims',
+  json_build_object('sub','00000000-0000-0000-0000-00000000000f','role','authenticated')::text,
+  true);
+
+-- Positive controls first: the dual membership is real, and every column the
+-- app legitimately writes stays writable (guards against over-revoking).
+select is(
+  (select count(*) from tasks where id in
+    ('00000000-0000-0000-0000-0000000000a6','00000000-0000-0000-0000-0000000000b3'))::int, 2,
+  'F reads tasks in BOTH workspaces (dual membership is real, not scoping)');
+select lives_ok(
+  $$ update tasks set
+       status = 'todo', priority = 'high', type = 'bug', title = 'renamed',
+       description = 'd', points = 3, position = 5,
+       start_date = '2026-07-01', end_date = '2026-07-05',
+       assignee_id = '00000000-0000-0000-0000-00000000000f'
+     where id = '00000000-0000-0000-0000-0000000000a6' $$,
+  'F can update every app-editable task column (content grant not over-revoked)');
+select isnt(
+  (select updated_at from tasks where id = '00000000-0000-0000-0000-0000000000a6'),
+  '2020-01-01 00:00:00+00'::timestamptz,
+  'updated_at is server-maintained on update (0003 trigger still fires)');
+select lives_ok(
+  $$ update projects set name = 'renamed', color = '#123456'
+     where id = '00000000-0000-0000-0000-0000000000a2' $$,
+  'F can update project content columns (name/color)');
+select lives_ok(
+  $$ update subtasks set title = 'renamed', done = true, position = 2
+     where id = '00000000-0000-0000-0000-0000000000a7' $$,
+  'F can update subtask content columns (title/done/position)');
+select lives_ok(
+  $$ update profiles set name = 'Eff', color = '#000000'
+     where id = '00000000-0000-0000-0000-00000000000f' $$,
+  'F can update its own profile content columns (name/color)');
+
+-- Tasks: tenancy, parentage, identity and provenance are locked.
+select throws_ok(
+  $$ update tasks set project_id = '00000000-0000-0000-0000-0000000000b2'
+     where id = '00000000-0000-0000-0000-0000000000a6' $$,
+  '42501', null,
+  'dual-member F cannot re-parent a task into a WS-B project (project_id locked)');
+select throws_ok(
+  $$ update tasks set workspace_id = '00000000-0000-0000-0000-0000000000b1'
+     where id = '00000000-0000-0000-0000-0000000000a6' $$,
+  '42501', null,
+  'F cannot write tasks.workspace_id directly (tenant key locked)');
+select throws_ok(
+  $$ update tasks set created_by = '00000000-0000-0000-0000-00000000000b'
+     where id = '00000000-0000-0000-0000-0000000000a6' $$,
+  '42501', null,
+  'F cannot rewrite tasks.created_by (provenance locked)');
+select throws_ok(
+  $$ update tasks set ref = 'PA-999'
+     where id = '00000000-0000-0000-0000-0000000000a6' $$,
+  '42501', null,
+  'F cannot rewrite tasks.ref (task identity locked)');
+select throws_ok(
+  $$ update tasks set id = '00000000-0000-0000-0000-0000000000ff'
+     where id = '00000000-0000-0000-0000-0000000000a6' $$,
+  '42501', null,
+  'F cannot rewrite tasks.id (primary key locked)');
+select throws_ok(
+  $$ update tasks set created_at = now() - interval '1 day'
+     where id = '00000000-0000-0000-0000-0000000000a6' $$,
+  '42501', null,
+  'F cannot backdate tasks.created_at (timestamp locked)');
+select throws_ok(
+  $$ update tasks set updated_at = now() - interval '1 day'
+     where id = '00000000-0000-0000-0000-0000000000a6' $$,
+  '42501', null,
+  'F cannot write tasks.updated_at (trigger is the only writer)');
+
+-- Projects: tenant key and ref-prefix key are locked.
+select throws_ok(
+  $$ update projects set workspace_id = '00000000-0000-0000-0000-0000000000b1'
+     where id = '00000000-0000-0000-0000-0000000000a2' $$,
+  '42501', null,
+  'dual-member F cannot move a project into WS-B (workspace_id locked)');
+select throws_ok(
+  $$ update projects set key = 'ZZ'
+     where id = '00000000-0000-0000-0000-0000000000a2' $$,
+  '42501', null,
+  'F cannot rewrite projects.key (task-ref prefix locked)');
+
+-- Child tables: parent keys are locked, so a dual member cannot re-parent
+-- children across tenants (the membership WITH CHECK alone would allow it).
+select throws_ok(
+  $$ update subtasks set task_id = '00000000-0000-0000-0000-0000000000b3'
+     where id = '00000000-0000-0000-0000-0000000000a7' $$,
+  '42501', null,
+  'dual-member F cannot re-parent a subtask onto a WS-B task (task_id locked)');
+select throws_ok(
+  $$ update comments set task_id = '00000000-0000-0000-0000-0000000000b3'
+     where id = '00000000-0000-0000-0000-0000000000a8' $$,
+  '42501', null,
+  'dual-member author F cannot re-parent own comment onto a WS-B task (task_id locked)');
+select throws_ok(
+  $$ update comments set created_at = now() - interval '1 day'
+     where id = '00000000-0000-0000-0000-0000000000a8' $$,
+  '42501', null,
+  'F cannot backdate comments.created_at (thread order locked)');
+select throws_ok(
+  $$ update comments set author_id = '00000000-0000-0000-0000-00000000000b'
+     where id = '00000000-0000-0000-0000-0000000000a8' $$,
+  '42501', null,
+  'F cannot rewrite comments.author_id (authorship locked at privilege level)');
+select throws_ok(
+  $$ update task_tags set task_id = '00000000-0000-0000-0000-0000000000b3'
+     where task_id = '00000000-0000-0000-0000-0000000000a6' $$,
+  '42501', null,
+  'F cannot re-parent task_tags (tags are delete+insert, UPDATE revoked)');
+
+-- ---------------------------------------------------------------------------
+-- Server-side ref allocation (0006, docs/AUDIT.md finding 4). create_task()
+-- is SECURITY DEFINER (the per-project counter column is not client-writable
+-- under 0005), so it must enforce membership and authorship itself: refs
+-- allocate sequentially under the project row lock, skip refs taken out of
+-- band, and non-members are rejected. New projects start at KEY-101.
+-- F (dual member) is still impersonated from the section above.
+-- ---------------------------------------------------------------------------
+select is(
+  (create_task('00000000-0000-0000-0000-0000000000a2', 'rpc one')).ref,
+  'PA-101',
+  'create_task allocates the first ref from the project counter (KEY-101)');
+select is(
+  (create_task('00000000-0000-0000-0000-0000000000a2', 'rpc two')).ref,
+  'PA-102',
+  'create_task allocates sequential refs');
+select is(
+  (select count(*) from tasks
+   where project_id = '00000000-0000-0000-0000-0000000000a2'
+     and ref in ('PA-101','PA-102')
+     and created_by = '00000000-0000-0000-0000-00000000000f'
+     and workspace_id = '00000000-0000-0000-0000-0000000000a1')::int, 2,
+  'create_task pins created_by to the caller and derives workspace_id');
+
+-- An out-of-band insert takes the next number; the allocator skips past it
+-- instead of failing on the unique constraint.
+set local role postgres;
+insert into tasks (project_id, workspace_id, ref, title, created_by) values
+  ('00000000-0000-0000-0000-0000000000a2', '00000000-0000-0000-0000-0000000000a1',
+   'PA-103', 'squatter', '00000000-0000-0000-0000-00000000000a');
+set local role authenticated;
+select set_config('request.jwt.claims',
+  json_build_object('sub','00000000-0000-0000-0000-00000000000f','role','authenticated')::text,
+  true);
+select is(
+  (create_task('00000000-0000-0000-0000-0000000000a2', 'rpc after squat')).ref,
+  'PA-104',
+  'create_task skips a ref taken out of band (no collision failure)');
+
+-- Membership is enforced inside the definer function.
+select set_config('request.jwt.claims',
+  json_build_object('sub','00000000-0000-0000-0000-00000000000a','role','authenticated')::text,
+  true);
+select throws_ok(
+  $$ select create_task('00000000-0000-0000-0000-0000000000b2', 'cross') $$,
+  '42501', null,
+  'create_task rejects a caller who is not a member of the project''s workspace');
+select is(
+  (create_task('00000000-0000-0000-0000-0000000000a2', 'by A')).ref,
+  'PA-105',
+  'create_task works for any member of the workspace (not deny-all)');
 
 select * from finish();
 rollback;

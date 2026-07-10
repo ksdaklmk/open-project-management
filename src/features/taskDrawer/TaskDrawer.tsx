@@ -10,7 +10,7 @@ import { CommentThread } from './CommentThread'
 export function TaskDrawer() {
   const { taskRef, setTaskRef } = useViewState()
   const { activeId } = useActiveWorkspace()
-  const { data: tasks } = useTasks(activeId ?? '')
+  const { data: tasks, isLoading, error } = useTasks(activeId ?? '')
   const dialogRef = useRef<HTMLDivElement>(null)
   const openerRef = useRef<HTMLElement | null>(null)
 
@@ -30,7 +30,12 @@ export function TaskDrawer() {
   if (!taskRef) return null
 
   const onKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') return close()
+    if (e.key === 'Escape') {
+      // Title/description save on blur; unmounting never fires it. Blur the
+      // active field first so a dirty value is saved, not discarded.
+      ;(document.activeElement as HTMLElement | null)?.blur?.()
+      return close()
+    }
     if (e.key !== 'Tab') return
     const f = dialogRef.current?.querySelectorAll<HTMLElement>(
       'a[href],button,input,select,textarea,[tabindex]:not([tabindex="-1"])',
@@ -76,6 +81,16 @@ export function TaskDrawer() {
               <CommentThread taskId={task.id} workspaceId={activeId ?? ''} />
             </div>
           </>
+        ) : isLoading ? (
+          <div role="status" aria-busy="true" className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
+            <p id="drawer-title" className="text-[var(--muted)]">Loading…</p>
+          </div>
+        ) : error ? (
+          <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
+            <p id="drawer-title" className="font-semibold">Couldn't load this task</p>
+            <p className="text-sm text-[var(--muted)]">Check your connection, then try again.</p>
+            <button onClick={close} className="opm-btn mt-2">Close</button>
+          </div>
         ) : (
           <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
             <p id="drawer-title" className="font-semibold">Task not found</p>

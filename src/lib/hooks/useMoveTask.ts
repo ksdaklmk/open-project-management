@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { updateTask, type Task } from '../../data/tasksRepo'
 import { logMove } from '../../data/activityRepo'
-import { useSession } from './useSession'
+import { useActorId } from './useSession'
 
 interface MoveArgs {
   taskId: string
@@ -13,14 +13,14 @@ interface MoveArgs {
 
 export function useMoveTask(workspaceId: string) {
   const qc = useQueryClient()
-  const { session } = useSession()
+  const actorId = useActorId()
   const key = ['tasks', workspaceId]
   return useMutation({
     mutationFn: async ({ taskId, toStatus, position, fromStatus }: MoveArgs) => {
       await updateTask(taskId, { status: toStatus, position })
       if (toStatus !== fromStatus) {
         try {
-          await logMove({ workspaceId, actorId: session?.user.id ?? '', taskId, fromStatus, toStatus })
+          await logMove({ workspaceId, actorId, taskId, fromStatus, toStatus })
         } catch (e) {
           toast.error(`Move saved, but activity wasn't logged: ${(e as Error).message}`)
         }

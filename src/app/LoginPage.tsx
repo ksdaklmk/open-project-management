@@ -19,8 +19,14 @@ export function LoginPage() {
     if (error) setError(error.message)
   }
 
-  const oauth = (provider: 'google' | 'github') =>
-    supabase.auth.signInWithOAuth({ provider })
+  const oauth = async (provider: 'google' | 'github') => {
+    setError(null)
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: { redirectTo: window.location.origin },
+    })
+    if (error) setError(error.message)
+  }
 
   return (
     <div className="min-h-full grid place-items-center bg-[var(--bg)]">

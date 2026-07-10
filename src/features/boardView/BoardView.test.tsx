@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, act } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 
 const { useTasks, useMembers, useActiveWorkspace, moveMutate } = vi.hoisted(() => ({
@@ -53,9 +53,9 @@ describe('BoardView', () => {
 
     // jsdom has neither DragEvent nor DataTransfer; TaskCard uses optional chaining (e.dataTransfer?.setData).
     // React routes events by name so plain Events with drag names still invoke onDragStart/onDrop handlers.
-    card.dispatchEvent(new Event('dragstart', { bubbles: true }))
-    doneCol.dispatchEvent(new Event('dragover', { bubbles: true }))
-    doneCol.dispatchEvent(new Event('drop', { bubbles: true }))
+    act(() => { card.dispatchEvent(new Event('dragstart', { bubbles: true })) })
+    act(() => { doneCol.dispatchEvent(new Event('dragover', { bubbles: true })) })
+    act(() => { doneCol.dispatchEvent(new Event('drop', { bubbles: true })) })
 
     expect(moveMutate).toHaveBeenCalledWith(
       expect.objectContaining({ taskId: 't1', toStatus: 'done', fromStatus: 'todo' })

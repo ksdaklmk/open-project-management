@@ -1,39 +1,37 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const { order, eq, select: _select, update, updateEq, insert, insertSingle, del, delEq1, delEq2, from } =
+const { range, order2, order1, eq, select: _select, update, updateEq, insert, del, delEq1, delEq2, from, rpc } =
   vi.hoisted(() => {
-    const order = vi.fn()
-    const eq = vi.fn(() =>
-      Object.assign(
-        Promise.resolve<{ data: { ref: string }[]; error: null }>({ data: [], error: null }),
-        { order },
-      ))
+    const range = vi.fn(() =>
+      Promise.resolve<{ data: Record<string, unknown>[] | null; error: { message: string } | null }>(
+        { data: [], error: null }))
+    const order2 = vi.fn(() => ({ range }))
+    const order1 = vi.fn(() => ({ order: order2 }))
+    const eq = vi.fn(() => ({ order: order1 }))
     const select = vi.fn(() => ({ eq }))
     const updateEq = vi.fn(() => Promise.resolve({ error: null }))
     const update = vi.fn(() => ({ eq: updateEq }))
-    const insertSingle = vi.fn(() =>
-      Promise.resolve<{ data: Record<string, unknown> | null; error: { message: string; code?: string } | null }>(
-        { data: null, error: null }))
-    const insertSelect = vi.fn(() => ({ single: insertSingle }))
-    const insert = vi.fn(() =>
-      Object.assign(Promise.resolve({ error: null }), { select: insertSelect }))
+    const insert = vi.fn(() => Promise.resolve({ error: null }))
     const delEq2 = vi.fn(() => Promise.resolve({ error: null }))
     const delEq1 = vi.fn(() =>
       Object.assign(Promise.resolve({ error: null }), { eq: delEq2 }))
     const del = vi.fn(() => ({ eq: delEq1 }))
     const from = vi.fn(() => ({ select, update, insert, delete: del }))
-    return { order, eq, select, update, updateEq, insert, insertSelect, insertSingle, del, delEq1, delEq2, from }
+    const rpc = vi.fn(() =>
+      Promise.resolve<{ data: Record<string, unknown> | null; error: { message: string } | null }>(
+        { data: null, error: null }))
+    return { range, order2, order1, eq, select, update, updateEq, insert, del, delEq1, delEq2, from, rpc }
   })
 
-vi.mock('../lib/supabase', () => ({ supabase: { from } }))
+vi.mock('../lib/supabase', () => ({ supabase: { from, rpc } }))
 
-import { listTasks, updateTask, addTaskTag, removeTaskTag, nextRef, createTask } from './tasksRepo'
+import { listTasks, updateTask, addTaskTag, removeTaskTag, createTask } from './tasksRepo'
 
 beforeEach(() => vi.clearAllMocks())
 
 describe('tasksRepo', () => {
-  it('lists tasks with embedded tags, ordered by position', async () => {
-    order.mockResolvedValueOnce({
+  it('lists tasks with embedded tags, ordered by position with an id tiebreak', async () => {
+    range.mockResolvedValueOnce({
       data: [{ id: 't1', ref: 'NIM-101', task_tags: [{ tag: 'Backend' }, { tag: 'API' }] }],
       error: null,
     })
@@ -41,20 +39,39 @@ describe('tasksRepo', () => {
     expect(from).toHaveBeenCalledWith('tasks')
     expect(_select).toHaveBeenCalledWith('*, task_tags(tag)')
     expect(eq).toHaveBeenCalledWith('workspace_id', 'ws-1')
-    expect(order).toHaveBeenCalledWith('position', { ascending: true })
+    expect(order1).toHaveBeenCalledWith('position', { ascending: true })
+    expect(order2).toHaveBeenCalledWith('id', { ascending: true })
     expect(tasks[0].tags).toEqual(['Backend', 'API'])
     expect((tasks[0] as { task_tags?: unknown }).task_tags).toBeUndefined()
   })
 
   it('defaults tags to [] when none are embedded', async () => {
-    order.mockResolvedValueOnce({ data: [{ id: 't2', ref: 'NIM-102' }], error: null })
+    range.mockResolvedValueOnce({ data: [{ id: 't2', ref: 'NIM-102' }], error: null })
     const tasks = await listTasks('ws-1')
     expect(tasks[0].tags).toEqual([])
   })
 
   it('throws on a Supabase error', async () => {
-    order.mockResolvedValueOnce({ data: null, error: { message: 'boom' } })
+    range.mockResolvedValueOnce({ data: null, error: { message: 'boom' } })
     await expect(listTasks('ws-1')).rejects.toThrow('boom')
+  })
+
+  it('stops after one page when the page is not full', async () => {
+    range.mockResolvedValueOnce({ data: [{ id: 't1' }], error: null })
+    await listTasks('ws-1')
+    expect(range).toHaveBeenCalledTimes(1)
+    expect(range).toHaveBeenCalledWith(0, 999)
+  })
+
+  it('keeps fetching pages while they come back full (the 1,000-row API cap)', async () => {
+    const fullPage = Array.from({ length: 1000 }, (_, i) => ({ id: `t${i}` }))
+    range
+      .mockResolvedValueOnce({ data: fullPage, error: null })
+      .mockResolvedValueOnce({ data: [{ id: 't-last' }], error: null })
+    const tasks = await listTasks('ws-1')
+    expect(range).toHaveBeenNthCalledWith(1, 0, 999)
+    expect(range).toHaveBeenNthCalledWith(2, 1000, 1999)
+    expect(tasks).toHaveLength(1001)
   })
 
   it('updates a task with widened fields, scoped by id', async () => {
@@ -76,59 +93,23 @@ describe('tasksRepo', () => {
     expect(delEq2).toHaveBeenCalledWith('tag', 'Frontend')
   })
 
-  describe('nextRef', () => {
-    it.each([
-      [[], 'NIM', 'NIM-101'],                                   // empty project → seed convention
-      [['NIM-101', 'NIM-104'], 'NIM', 'NIM-105'],               // gaps: max + 1, not count
-      [['NIM-101', 'NIM-abc', 'OTHER-900'], 'NIM', 'NIM-102'],  // non-numeric + other keys ignored
-      [['NIM-9'], 'NIM', 'NIM-101'],                            // below the floor → still 101
-    ])('%j + %s → %s', (refs, key, expected) => {
-      expect(nextRef(refs as string[], key as string)).toBe(expected)
+  describe('createTask', () => {
+    const ROW = {
+      id: 't9', ref: 'NIM-110', title: 'New thing', workspace_id: 'ws-1',
+      project_id: 'p1', created_by: 'u1', status: 'backlog', priority: 'medium',
+    }
+
+    it('creates via the create_task RPC and returns the row with empty tags', async () => {
+      rpc.mockResolvedValueOnce({ data: ROW, error: null })
+      const task = await createTask({ projectId: 'p1', title: 'New thing' })
+      expect(rpc).toHaveBeenCalledWith('create_task', { p_project_id: 'p1', p_title: 'New thing' })
+      expect(task.ref).toBe('NIM-110')
+      expect(task.tags).toEqual([])
     })
-  })
 
-  const CREATE_INPUT = {
-    workspaceId: 'ws-1', projectId: 'p1', projectKey: 'NIM',
-    title: 'New thing', createdBy: 'u1',
-  }
-  const ROW = {
-    id: 't9', ref: 'NIM-103', title: 'New thing', workspace_id: 'ws-1',
-    project_id: 'p1', created_by: 'u1', status: 'backlog', priority: 'medium',
-  }
-
-  it('creates a task with the next ref and returns it with empty tags', async () => {
-    eq.mockImplementationOnce(() =>
-      Object.assign(Promise.resolve({ data: [{ ref: 'NIM-101' }, { ref: 'NIM-102' }], error: null }), { order }))
-    insertSingle.mockResolvedValueOnce({ data: ROW, error: null })
-    const task = await createTask(CREATE_INPUT)
-    expect(_select).toHaveBeenCalledWith('ref')
-    expect(eq).toHaveBeenCalledWith('project_id', 'p1')
-    expect(insert).toHaveBeenCalledWith({
-      workspace_id: 'ws-1', project_id: 'p1', ref: 'NIM-103',
-      title: 'New thing', created_by: 'u1',
+    it('throws on an RPC error', async () => {
+      rpc.mockResolvedValueOnce({ data: null, error: { message: 'not a member' } })
+      await expect(createTask({ projectId: 'p1', title: 'x' })).rejects.toThrow('not a member')
     })
-    expect(task.tags).toEqual([])
-    expect(task.ref).toBe('NIM-103')
-  })
-
-  it('retries exactly once on a 23505 ref race, with a recomputed ref', async () => {
-    eq.mockImplementationOnce(() =>
-        Object.assign(Promise.resolve({ data: [{ ref: 'NIM-102' }], error: null }), { order }))
-      .mockImplementationOnce(() =>
-        Object.assign(Promise.resolve({ data: [{ ref: 'NIM-102' }, { ref: 'NIM-103' }], error: null }), { order }))
-    insertSingle
-      .mockResolvedValueOnce({ data: null, error: { message: 'duplicate key', code: '23505' } })
-      .mockResolvedValueOnce({ data: { ...ROW, ref: 'NIM-104' }, error: null })
-    const task = await createTask(CREATE_INPUT)
-    expect(insert).toHaveBeenCalledTimes(2)
-    expect(insert).toHaveBeenNthCalledWith(1, expect.objectContaining({ ref: 'NIM-103' }))
-    expect(insert).toHaveBeenNthCalledWith(2, expect.objectContaining({ ref: 'NIM-104' }))
-    expect(task.ref).toBe('NIM-104')
-  })
-
-  it('does NOT retry non-23505 insert errors', async () => {
-    insertSingle.mockResolvedValueOnce({ data: null, error: { message: 'permission denied', code: '42501' } })
-    await expect(createTask(CREATE_INPUT)).rejects.toThrow('permission denied')
-    expect(insert).toHaveBeenCalledTimes(1)
   })
 })

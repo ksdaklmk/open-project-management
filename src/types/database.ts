@@ -166,6 +166,7 @@ export type Database = {
           id: string
           key: string
           name: string
+          next_task_num: number
           workspace_id: string
         }
         Insert: {
@@ -174,6 +175,7 @@ export type Database = {
           id?: string
           key: string
           name: string
+          next_task_num?: number
           workspace_id: string
         }
         Update: {
@@ -182,6 +184,7 @@ export type Database = {
           id?: string
           key?: string
           name?: string
+          next_task_num?: number
           workspace_id?: string
         }
         Relationships: [
@@ -501,6 +504,34 @@ export type Database = {
             }
             Returns: string
           }
+      create_task: {
+        Args: { p_project_id: string; p_title: string }
+        Returns: {
+          assignee_id: string | null
+          created_at: string
+          created_by: string | null
+          description: string
+          end_date: string | null
+          id: string
+          points: number | null
+          position: number
+          priority: Database["public"]["Enums"]["task_priority"]
+          project_id: string
+          ref: string
+          start_date: string | null
+          status: Database["public"]["Enums"]["task_status"]
+          title: string
+          type: Database["public"]["Enums"]["task_type"]
+          updated_at: string
+          workspace_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "tasks"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       diag:
         | {
             Args: { msg: unknown }

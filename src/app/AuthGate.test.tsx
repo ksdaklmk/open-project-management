@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react'
 import { AuthGate } from './AuthGate'
 
 const mockSession = vi.fn()
-vi.mock('../lib/hooks/useSession', () => ({ useSession: () => mockSession() }))
+vi.mock('../lib/hooks/useSession', () => ({ useSessionContext: () => mockSession() }))
 vi.mock('./LoginPage', () => ({ LoginPage: () => <div>login</div> }))
 
 describe('AuthGate', () => {

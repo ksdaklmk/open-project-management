@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { listComments, addComment, type CommentItem } from '../../data/commentsRepo'
 import { logComment } from '../../data/activityRepo'
-import { useSession } from './useSession'
+import { useActorId } from './useSession'
 
 export function useComments(taskId: string) {
   return useQuery({ queryKey: ['comments', taskId], queryFn: () => listComments(taskId), enabled: !!taskId })
@@ -10,11 +10,10 @@ export function useComments(taskId: string) {
 
 export function useAddComment(taskId: string, workspaceId: string) {
   const qc = useQueryClient()
-  const { session } = useSession()
+  const actorId = useActorId()
   const key = ['comments', taskId]
   return useMutation({
     mutationFn: async (body: string) => {
-      const actorId = session?.user.id ?? ''
       await addComment(taskId, body, actorId)
       try {
         await logComment({ workspaceId, actorId, taskId })

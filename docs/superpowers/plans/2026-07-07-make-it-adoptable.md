@@ -655,6 +655,7 @@ Expected: ~177 tests pass; build clean.
 
 **Interfaces:**
 - Consumes: `useProjects` (Task 2), `useCreateTask` (Task 3), existing `useViewState().setTaskRef` and `useActiveWorkspace()`.
+- Note (audit remediation, 2026-07-10): `useCreateTask` now seeds `['tasks', ws]` with the created task in its hook-level `onSuccess`, which TanStack runs **before** the mutate-site `onSuccess` below — so `setTaskRef(task.ref)` opens the drawer without racing the refetch into "Task not found". No extra cache handling is needed here. `createTask` also now takes `{ projectId, title }` only (refs and authorship are allocated server-side by the `create_task` RPC).
 - Produces: UI only — no new exports.
 
 - [ ] **Step 1: Write the failing tests**
@@ -1230,6 +1231,11 @@ export function signOut() {
 }
 ```
 
+Note (audit remediation, 2026-07-10): `SessionProvider` already clears the
+query cache on any identity change (sign-out or account switch), and the
+active-workspace storage key is scoped per user — `signOut()` needs no extra
+cache or storage handling.
+
 - [ ] **Step 4: Failing Shell tests**
 
 `Shell.test.tsx` renders `Shell` without a `WorkspaceProvider`, so adding `useActiveWorkspace` to Shell breaks every existing test until the module is mocked. Add at the top, with the other mocks:
@@ -1377,11 +1383,27 @@ auto-join is pinned to that UUID, not the name.
     update profiles set name = 'Real Name'
       where id = (select id from auth.users where email = 'teammate@example.com');
 
-## Remove a member (their tasks stay; assignee falls back to unassigned display)
+## Remove a member (unassign their tasks first — otherwise Workload silently drops their points)
 
+Never remove the last owner; check before removing an owner:
+
+    select count(*) from workspace_members
+      where workspace_id = '<workspace-id>' and role = 'owner';
+
+Then unassign and remove in one transaction:
+
+    begin;
+    update tasks set assignee_id = null
+      where workspace_id = '<workspace-id>'
+        and assignee_id = (select id from auth.users where email = 'teammate@example.com');
     delete from workspace_members
       where workspace_id = '<workspace-id>'
         and user_id = (select id from auth.users where email = 'teammate@example.com');
+    commit;
+
+Deleting the auth user afterwards is safe: attribution FKs
+(`created_by`/`author_id`/`actor_id`) null out (migration 0007) and history
+rows survive, rendering as "Someone".
 ```
 
 - [ ] **Step 2: Full unit + build gate**
@@ -1391,6 +1413,7 @@ npm run test && npm run build
 ```
 
 Expected: ~196 tests green across 44 files (164 baseline + 2 projects + 11 data/hooks + 7 toolbar + 7 delete/activity + 5 auth/shell); build clean, six view chunks, main chunk < 500 kB.
+(Audit remediation 2026-07-10 moved the pre-Task-4 baseline to 190 tests across 45 files — expect ~209 after Tasks 4–6.)
 
 - [ ] **Step 3: Browser smoke** (needs the stack)
 

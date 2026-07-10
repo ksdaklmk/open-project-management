@@ -1,23 +1,16 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { createTask } from '../../data/tasksRepo'
+import { createTask, type Task } from '../../data/tasksRepo'
 import { logCreate } from '../../data/activityRepo'
 import type { ProjectOption } from '../../data/projectsRepo'
-import { useSession } from './useSession'
+import { useActorId } from './useSession'
 
 export function useCreateTask(workspaceId: string) {
   const qc = useQueryClient()
-  const { session } = useSession()
+  const actorId = useActorId()
   return useMutation({
     mutationFn: async ({ title, project }: { title: string; project: ProjectOption }) => {
-      const actorId = session?.user.id ?? ''
-      const task = await createTask({
-        workspaceId,
-        projectId: project.id,
-        projectKey: project.key,
-        title,
-        createdBy: actorId,
-      })
+      const task = await createTask({ projectId: project.id, title })
       try {
         await logCreate({ workspaceId, actorId, taskId: task.id })
       } catch (e) {
@@ -26,6 +19,11 @@ export function useCreateTask(workspaceId: string) {
       return task
     },
     onError: (e) => toast.error(`Couldn't create task: ${(e as Error).message}`),
+    // Seed the cache so navigating straight to the new ref (drawer open on
+    // create) never races the refetch into a "Task not found".
+    onSuccess: (task) => {
+      qc.setQueryData<Task[]>(['tasks', workspaceId], (old) => (old ? [...old, task] : [task]))
+    },
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ['tasks', workspaceId] })
       qc.invalidateQueries({ queryKey: ['activity', workspaceId] })

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { Shell } from './Shell'
@@ -41,10 +41,13 @@ describe('Shell', () => {
     document.documentElement.removeAttribute('data-theme')
   })
 
-  it('shows all six view tabs', () => {
+  it('shows all six view tabs', async () => {
     renderShell()
     for (const t of ['List', 'Board', 'Gantt', 'Timeline', 'Activity', 'Workload'])
       expect(screen.getByRole('button', { name: t })).toBeInTheDocument()
+    // Flush the lazy view's resolution inside act so it doesn't land after
+    // the test and warn.
+    await act(async () => {})
   })
 
   it('switches the active view when a tab is clicked', async () => {

@@ -4,6 +4,7 @@ import React from 'react'
 
 const { useWorkspaces } = vi.hoisted(() => ({ useWorkspaces: vi.fn() }))
 vi.mock('./hooks/useWorkspaces', () => ({ useWorkspaces }))
+vi.mock('./hooks/useSession', () => ({ useActorId: () => 'u1' }))
 
 import { WorkspaceProvider, useActiveWorkspace } from './workspace'
 
@@ -23,14 +24,24 @@ describe('useActiveWorkspace', () => {
     const { result } = renderHook(() => useActiveWorkspace(), { wrapper })
     expect(result.current.activeId).toBe('a')
   })
-  it('persists and uses the chosen workspace', () => {
+  it('persists and uses the chosen workspace under a per-user key', () => {
     const { result } = renderHook(() => useActiveWorkspace(), { wrapper })
     act(() => result.current.setActiveId('b'))
-    expect(localStorage.getItem('activeWorkspace')).toBe('b')
+    expect(localStorage.getItem('activeWorkspace:u1')).toBe('b')
     expect(result.current.activeId).toBe('b')
   })
   it('ignores a stored workspace the user no longer belongs to', () => {
-    localStorage.setItem('activeWorkspace', 'gone')
+    localStorage.setItem('activeWorkspace:u1', 'gone')
+    const { result } = renderHook(() => useActiveWorkspace(), { wrapper })
+    expect(result.current.activeId).toBe('a')
+  })
+  it('restores this user\'s stored workspace', () => {
+    localStorage.setItem('activeWorkspace:u1', 'b')
+    const { result } = renderHook(() => useActiveWorkspace(), { wrapper })
+    expect(result.current.activeId).toBe('b')
+  })
+  it('does not inherit another user\'s stored workspace', () => {
+    localStorage.setItem('activeWorkspace:someone-else', 'b')
     const { result } = renderHook(() => useActiveWorkspace(), { wrapper })
     expect(result.current.activeId).toBe('a')
   })
