@@ -27,4 +27,5 @@ for ((run = 1; run <= repeat; run += 1)); do
   echo "Database test pass $run/$repeat"
   run_sql_file supabase/tests/schema_test.sql
   run_sql_file supabase/tests/rls_test.sql
+  run_sql_file supabase/tests/admin_rpc_test.sql
 done
