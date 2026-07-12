@@ -21,6 +21,9 @@ export function useUpdateTask(workspaceId: string) {
       if (ctx?.prev) qc.setQueryData(key, ctx.prev)
       toast.error(`Update failed: ${(err as Error).message}`)
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: key }),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: key })
+      qc.invalidateQueries({ queryKey: ['activity', workspaceId] })
+    },
   })
 }

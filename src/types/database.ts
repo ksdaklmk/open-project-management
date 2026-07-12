@@ -42,6 +42,8 @@ export type Database = {
           from_status: Database["public"]["Enums"]["task_status"] | null
           id: string
           task_id: string | null
+          task_ref_snapshot: string | null
+          task_title_snapshot: string | null
           to_status: Database["public"]["Enums"]["task_status"] | null
           verb: string
           workspace_id: string
@@ -53,6 +55,8 @@ export type Database = {
           from_status?: Database["public"]["Enums"]["task_status"] | null
           id?: string
           task_id?: string | null
+          task_ref_snapshot?: string | null
+          task_title_snapshot?: string | null
           to_status?: Database["public"]["Enums"]["task_status"] | null
           verb: string
           workspace_id: string
@@ -64,6 +68,8 @@ export type Database = {
           from_status?: Database["public"]["Enums"]["task_status"] | null
           id?: string
           task_id?: string | null
+          task_ref_snapshot?: string | null
+          task_title_snapshot?: string | null
           to_status?: Database["public"]["Enums"]["task_status"] | null
           verb?: string
           workspace_id?: string

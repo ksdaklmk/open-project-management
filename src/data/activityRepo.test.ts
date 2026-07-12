@@ -1,85 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const { insert, limit, order, eq, select, from } = vi.hoisted(() => {
-  const insert = vi.fn()
+const { limit, order, eq, select, from } = vi.hoisted(() => {
   const limit = vi.fn()
   const order = vi.fn(() => ({ limit }))
   const eq = vi.fn(() => ({ order }))
   const select = vi.fn(() => ({ eq }))
-  const from = vi.fn(() => ({ insert, select }))
-  return { insert, limit, order, eq, select, from }
+  const from = vi.fn(() => ({ select }))
+  return { limit, order, eq, select, from }
 })
 vi.mock('../lib/supabase', () => ({ supabase: { from } }))
 
-import { logMove, logComment, logCreate, listActivity } from './activityRepo'
+import { listActivity } from './activityRepo'
 
 beforeEach(() => vi.clearAllMocks())
-
-describe('activityRepo.logMove', () => {
-  it('inserts a moved activity row', async () => {
-    insert.mockResolvedValueOnce({ error: null })
-    await logMove({
-      workspaceId: 'w1',
-      actorId: 'u1',
-      taskId: 't1',
-      fromStatus: 'todo',
-      toStatus: 'done',
-    })
-    expect(from).toHaveBeenCalledWith('activity')
-    expect(insert).toHaveBeenCalledWith({
-      workspace_id: 'w1',
-      actor_id: 'u1',
-      task_id: 't1',
-      verb: 'moved',
-      from_status: 'todo',
-      to_status: 'done',
-    })
-  })
-  it('throws on error', async () => {
-    insert.mockResolvedValueOnce({ error: { message: 'boom' } })
-    await expect(
-      logMove({
-        workspaceId: 'w1',
-        actorId: 'u1',
-        taskId: 't1',
-        fromStatus: 'todo',
-        toStatus: 'done',
-      }),
-    ).rejects.toThrow('boom')
-  })
-})
-
-describe('activityRepo.logComment', () => {
-  it('inserts a commented activity row', async () => {
-    insert.mockResolvedValueOnce({ error: null })
-    await logComment({ workspaceId: 'w1', actorId: 'u1', taskId: 't1' })
-    expect(from).toHaveBeenCalledWith('activity')
-    expect(insert).toHaveBeenCalledWith({
-      workspace_id: 'w1',
-      actor_id: 'u1',
-      task_id: 't1',
-      verb: 'commented',
-    })
-  })
-  it('throws on error', async () => {
-    insert.mockResolvedValueOnce({ error: { message: 'boom' } })
-    await expect(logComment({ workspaceId: 'w1', actorId: 'u1', taskId: 't1' })).rejects.toThrow(
-      'boom',
-    )
-  })
-
-  it('logs a created activity row', async () => {
-    insert.mockResolvedValueOnce({ error: null })
-    await logCreate({ workspaceId: 'w1', actorId: 'u1', taskId: 't1' })
-    expect(from).toHaveBeenCalledWith('activity')
-    expect(insert).toHaveBeenCalledWith({
-      workspace_id: 'w1',
-      actor_id: 'u1',
-      task_id: 't1',
-      verb: 'created',
-    })
-  })
-})
 
 const ROW = {
   id: 'a1',
@@ -122,6 +55,23 @@ describe('activityRepo.listActivity', () => {
     const [item] = await listActivity('w1')
     expect(item.actor).toBeNull()
     expect(item.task).toBeNull()
+  })
+
+  it('uses the immutable task snapshot after task deletion', async () => {
+    limit.mockResolvedValueOnce({
+      data: [
+        {
+          ...ROW,
+          verb: 'deleted',
+          task: null,
+          task_ref_snapshot: 'NIM-101',
+          task_title_snapshot: 'Deleted task',
+        },
+      ],
+      error: null,
+    })
+    const [item] = await listActivity('w1')
+    expect(item.task).toEqual({ ref: 'NIM-101', title: 'Deleted task' })
   })
 
   it('throws on a Supabase error', async () => {

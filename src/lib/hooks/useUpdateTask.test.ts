@@ -21,11 +21,13 @@ beforeEach(() => vi.clearAllMocks())
 describe('useUpdateTask', () => {
   it('optimistically patches the cached task', async () => {
     const qc = new QueryClient()
+    const invalidate = vi.spyOn(qc, 'invalidateQueries')
     qc.setQueryData(['tasks', wsId], [{ id: 't1', status: 'todo' }])
     updateTask.mockResolvedValueOnce(undefined)
     const { result } = renderHook(() => useUpdateTask(wsId), { wrapper: wrap(qc) })
     result.current.mutate({ id: 't1', patch: { status: 'done' } })
     await waitFor(() => expect((qc.getQueryData(['tasks', wsId]) as any)[0].status).toBe('done'))
+    await waitFor(() => expect(invalidate).toHaveBeenCalledWith({ queryKey: ['activity', wsId] }))
   })
 
   it('rolls back and toasts on error', async () => {

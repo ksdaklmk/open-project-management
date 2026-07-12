@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { listComments, addComment, type CommentItem } from '../../data/commentsRepo'
-import { logComment } from '../../data/activityRepo'
 import { useActorId } from './useSession'
 
 export function useComments(taskId: string) {
@@ -17,14 +16,7 @@ export function useAddComment(taskId: string, workspaceId: string) {
   const actorId = useActorId()
   const key = ['comments', taskId]
   return useMutation({
-    mutationFn: async (body: string) => {
-      await addComment(taskId, body, actorId)
-      try {
-        await logComment({ workspaceId, actorId, taskId })
-      } catch (e) {
-        toast.error(`Comment saved, but activity wasn't logged: ${(e as Error).message}`)
-      }
-    },
+    mutationFn: (body: string) => addComment(taskId, body, actorId),
     onMutate: async (body) => {
       await qc.cancelQueries({ queryKey: key })
       const prev = qc.getQueryData<CommentItem[]>(key)

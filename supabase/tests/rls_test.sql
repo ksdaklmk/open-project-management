@@ -147,18 +147,19 @@ select lives_ok(
 -- Each denial is paired with a positive control so the assertion cannot pass
 -- merely because a policy is (accidentally) deny-all.
 -- ---------------------------------------------------------------------------
--- Activity actor cannot be forged (audit-log integrity).
+-- Activity is trigger-only; members cannot forge rows even with their own ID.
 select throws_ok(
   $$ insert into activity (workspace_id, actor_id, verb)
      values ('00000000-0000-0000-0000-0000000000a1',
              '00000000-0000-0000-0000-00000000000b', 'created') $$,
   '42501', null,
   'A cannot forge an activity actor_id (must equal auth.uid())');
-select lives_ok(
+select throws_ok(
   $$ insert into activity (workspace_id, actor_id, verb)
      values ('00000000-0000-0000-0000-0000000000a1',
              '00000000-0000-0000-0000-00000000000a', 'created') $$,
-  'A can log activity as itself (actor pin is not deny-all)');
+  '42501', null,
+  'A cannot insert activity directly as itself');
 
 -- Comment author cannot be spoofed (task a3 is an A-visible WS-A task).
 select throws_ok(

@@ -40,6 +40,13 @@ const CREATED = {
   task: { ref: 'NIM-107', title: 'Ship adoption' },
 }
 
+const DELETED = {
+  ...CREATED,
+  id: 'a5',
+  verb: 'deleted',
+  task: { ref: 'NIM-108', title: 'Retired task' },
+}
+
 beforeEach(() => vi.clearAllMocks())
 
 describe('ActivityView', () => {
@@ -70,6 +77,14 @@ describe('ActivityView', () => {
     expect(screen.getByText(/created/)).toBeInTheDocument()
     expect(screen.getByText('NIM-107')).toBeInTheDocument()
     expect(screen.getByText(/Ship adoption/)).toBeInTheDocument()
+  })
+
+  it('renders a deleted task from its retained snapshot', () => {
+    useActivity.mockReturnValue({ data: [DELETED], isLoading: false, error: null })
+    render(<ActivityView />)
+    expect(screen.getByText(/deleted/)).toBeInTheDocument()
+    expect(screen.getByText('NIM-108')).toBeInTheDocument()
+    expect(screen.getByText(/Retired task/)).toBeInTheDocument()
   })
 
   it('shows the loading state', () => {

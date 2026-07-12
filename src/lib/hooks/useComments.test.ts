@@ -7,9 +7,7 @@ const { listComments, addComment } = vi.hoisted(() => ({
   listComments: vi.fn(),
   addComment: vi.fn(),
 }))
-const { logComment } = vi.hoisted(() => ({ logComment: vi.fn() }))
 vi.mock('../../data/commentsRepo', () => ({ listComments, addComment }))
-vi.mock('../../data/activityRepo', () => ({ logComment }))
 vi.mock('sonner', () => ({ toast: { error: vi.fn() } }))
 vi.mock('./useSession', () => ({ useActorId: () => 'me' }))
 
@@ -36,14 +34,13 @@ describe('useAddComment', () => {
     expect(addComment).toHaveBeenCalledWith('t1', 'hello', 'me')
   })
 
-  it('logs a commented activity to the workspace after the comment saves', async () => {
+  it('invalidates server-authored activity after the comment saves', async () => {
     const qc = new QueryClient()
+    const invalidate = vi.spyOn(qc, 'invalidateQueries')
     addComment.mockResolvedValueOnce(undefined)
-    logComment.mockResolvedValueOnce(undefined)
     const { result } = renderHook(() => useAddComment('t1', 'w1'), { wrapper: wrap(qc) })
     result.current.mutate('hello')
-    await waitFor(() =>
-      expect(logComment).toHaveBeenCalledWith({ workspaceId: 'w1', actorId: 'me', taskId: 't1' }),
-    )
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['activity', 'w1'] })
   })
 })

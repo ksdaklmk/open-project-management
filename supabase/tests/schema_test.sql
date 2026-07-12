@@ -28,8 +28,9 @@ insert into tasks (id, project_id, workspace_id, ref, title, created_by) values
 insert into comments (id, task_id, author_id, body) values
   ('00000000-0000-0000-0000-000000000095', '00000000-0000-0000-0000-000000000094',
    '00000000-0000-0000-0000-000000000091', 'hello');
-insert into activity (workspace_id, actor_id, verb, task_id) values
-  ('00000000-0000-0000-0000-000000000092', '00000000-0000-0000-0000-000000000091',
+insert into activity (id, workspace_id, actor_id, verb, task_id) values
+  ('00000000-0000-0000-0000-000000000097', '00000000-0000-0000-0000-000000000092',
+   '00000000-0000-0000-0000-000000000091',
    'created', '00000000-0000-0000-0000-000000000094');
 
 -- ---------------------------------------------------------------------------
@@ -95,9 +96,8 @@ select is(
   null,
   'comments.author_id nulls out when the profile is deleted');
 select is(
-  (select count(*) from activity
-   where workspace_id = '00000000-0000-0000-0000-000000000092' and actor_id is null)::int,
-  1,
+  (select actor_id from activity where id = '00000000-0000-0000-0000-000000000097'),
+  null,
   'activity.actor_id nulls out when the profile is deleted');
 
 select * from finish(true);

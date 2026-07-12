@@ -81,6 +81,16 @@ export function ActivityRow({ item }: { item: ActivityItem }) {
               <span className="text-[var(--muted)]"> created </span>
               <TaskRef task={item.task} />
             </>
+          ) : item.verb === 'assigned' ? (
+            <>
+              <span className="text-[var(--muted)]"> changed the assignee for </span>
+              <TaskRef task={item.task} />
+            </>
+          ) : item.verb === 'deleted' ? (
+            <>
+              <span className="text-[var(--muted)]"> deleted </span>
+              <TaskRef task={item.task} />
+            </>
           ) : (
             <span className="text-[var(--muted)]"> {item.verb}</span>
           )}

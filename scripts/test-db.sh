@@ -29,4 +29,5 @@ for ((run = 1; run <= repeat; run += 1)); do
   run_sql_file supabase/tests/rls_test.sql
   run_sql_file supabase/tests/admin_rpc_test.sql
   run_sql_file supabase/tests/invitations_test.sql
+  run_sql_file supabase/tests/server_activity_test.sql
 done
