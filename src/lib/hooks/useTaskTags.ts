@@ -9,7 +9,8 @@ export function useTaskTags(workspaceId: string) {
   const patch = (id: string, fn: (tags: string[]) => string[]) => {
     const prev = qc.getQueryData<Task[]>(key)
     qc.setQueryData<Task[]>(key, (old) =>
-      (old ?? []).map((t) => (t.id === id ? { ...t, tags: fn(t.tags) } : t)))
+      (old ?? []).map((t) => (t.id === id ? { ...t, tags: fn(t.tags) } : t)),
+    )
     return prev
   }
 

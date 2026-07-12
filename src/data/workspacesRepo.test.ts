@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const { order, select: _select, from } = vi.hoisted(() => {
+const {
+  order,
+  select: _select,
+  from,
+} = vi.hoisted(() => {
   const order = vi.fn()
   const select = vi.fn(() => ({ order }))
   const from = vi.fn(() => ({ select }))

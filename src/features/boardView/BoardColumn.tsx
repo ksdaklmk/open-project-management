@@ -11,7 +11,14 @@ function DropIndicator() {
   return <div aria-hidden="true" className="opm-drop-line" />
 }
 
-export function BoardColumn({ status, tasks, members, onCardDragStart, onDrop, onOpen }: {
+export function BoardColumn({
+  status,
+  tasks,
+  members,
+  onCardDragStart,
+  onDrop,
+  onOpen,
+}: {
   status: Status
   tasks: Task[]
   members: Member[]
@@ -81,7 +88,12 @@ export function BoardColumn({ status, tasks, members, onCardDragStart, onDrop, o
                   setHoverIndex(e.clientY < r.top + r.height / 2 ? i : i + 1)
                 }}
               >
-                <TaskCard task={t} members={members} onDragStart={onCardDragStart} onOpen={onOpen} />
+                <TaskCard
+                  task={t}
+                  members={members}
+                  onDragStart={onCardDragStart}
+                  onOpen={onOpen}
+                />
                 {/* Indicator after this card */}
                 {hoverIndex === i + 1 && <DropIndicator />}
               </div>

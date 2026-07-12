@@ -10,9 +10,21 @@ export function useViewState() {
   const taskRef = params.get('task')
 
   const setView = (v: ViewId) =>
-    setParams(p => { p.set('view', v); return p }, { replace: true })
+    setParams(
+      (p) => {
+        p.set('view', v)
+        return p
+      },
+      { replace: true },
+    )
   const setTaskRef = (ref: string | null) =>
-    setParams(p => { ref ? p.set('task', ref) : p.delete('task'); return p }, { replace: true })
+    setParams(
+      (p) => {
+        ref ? p.set('task', ref) : p.delete('task')
+        return p
+      },
+      { replace: true },
+    )
 
   return { view, taskRef, setView, setTaskRef }
 }

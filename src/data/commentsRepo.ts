@@ -25,6 +25,8 @@ export async function listComments(taskId: string): Promise<CommentItem[]> {
 }
 
 export async function addComment(taskId: string, body: string, authorId: string): Promise<void> {
-  const { error } = await supabase.from('comments').insert({ task_id: taskId, body, author_id: authorId })
+  const { error } = await supabase
+    .from('comments')
+    .insert({ task_id: taskId, body, author_id: authorId })
   if (error) throw new Error(error.message)
 }

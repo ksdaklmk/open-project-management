@@ -30,9 +30,9 @@ function scanFiles(dir: string): string[] {
  * Paths are relative to the repo root.
  */
 const ALLOWLIST = new Set([
-  'src/lib/supabase.ts',        // defines the client
+  'src/lib/supabase.ts', // defines the client
   'src/lib/hooks/useSession.ts', // auth carve-out
-  'src/app/LoginPage.tsx',       // auth carve-out
+  'src/app/LoginPage.tsx', // auth carve-out
 ])
 
 function isAllowed(relPath: string): boolean {
@@ -57,15 +57,12 @@ describe('architecture', () => {
     const files = scanFiles(srcDir)
 
     const offenders = files
-      .filter(f => {
+      .filter((f) => {
         const rel = relative(ROOT, f)
         return !isAllowed(rel) && hasSupabaseImport(readFileSync(f, 'utf8'))
       })
-      .map(f => relative(ROOT, f))
+      .map((f) => relative(ROOT, f))
 
-    expect(
-      offenders,
-      `Files violating the data/ boundary: ${offenders.join(', ')}`
-    ).toEqual([])
+    expect(offenders, `Files violating the data/ boundary: ${offenders.join(', ')}`).toEqual([])
   })
 })

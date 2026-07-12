@@ -18,14 +18,21 @@ beforeEach(() => vi.clearAllMocks())
 describe('commentsRepo', () => {
   it('lists comments with the author name embedded', async () => {
     limit.mockResolvedValueOnce({
-      data: [{ id: 'c1', body: 'hi', created_at: '2026-06-28T00:00:00Z', author: { name: 'Dana Lee' } }],
+      data: [
+        { id: 'c1', body: 'hi', created_at: '2026-06-28T00:00:00Z', author: { name: 'Dana Lee' } },
+      ],
       error: null,
     })
     const rows = await listComments('t1')
     expect(from).toHaveBeenCalledWith('comments')
     expect(select).toHaveBeenCalledWith('id, body, created_at, author:profiles!author_id(name)')
     expect(eq).toHaveBeenCalledWith('task_id', 't1')
-    expect(rows[0]).toEqual({ id: 'c1', body: 'hi', created_at: '2026-06-28T00:00:00Z', author: { name: 'Dana Lee' } })
+    expect(rows[0]).toEqual({
+      id: 'c1',
+      body: 'hi',
+      created_at: '2026-06-28T00:00:00Z',
+      author: { name: 'Dana Lee' },
+    })
   })
   it('keeps the NEWEST 100 (fetches descending) and returns them oldest-first', async () => {
     limit.mockResolvedValueOnce({
@@ -41,7 +48,10 @@ describe('commentsRepo', () => {
     expect(rows.map((r) => r.id)).toEqual(['c1', 'c2'])
   })
   it('coalesces a missing author to null', async () => {
-    limit.mockResolvedValueOnce({ data: [{ id: 'c2', body: 'x', created_at: 'z', author: null }], error: null })
+    limit.mockResolvedValueOnce({
+      data: [{ id: 'c2', body: 'x', created_at: 'z', author: null }],
+      error: null,
+    })
     const rows = await listComments('t1')
     expect(rows[0].author).toBeNull()
   })

@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  test:
+  quality:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -15,8 +15,47 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm run lint
+      - run: npm run format:check
       - run: npm run test
-      # tsc -b + vite build — the type gate (bare tsc checks nothing here).
+      - run: npm run test:coverage
       - run: npm run build
-      # pgTAP (supabase/tests/*.sql) needs a local Supabase stack; run it
-      # per the runbook in each test file's header.
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: quality-reports
+          path: |
+            coverage/
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+
+  database:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.109.1
+      - name: Start clean Supabase stack
+        run: |
+          supabase start
+          supabase db reset --no-seed
+      - name: Run pgTAP three times without seed data
+        run: ./scripts/test-db.sh --repeat 3
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+      - name: Check migration schema drift
+        run: ./scripts/check-schema-drift.sh
+      - name: Check generated database types
+        run: ./scripts/check-generated-types.sh
+      - name: Capture database logs
+        if: failure()
+        run: docker logs supabase_db_open-project-management > supabase-db.log 2>&1
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: supabase-database-logs
+          path: supabase-db.log

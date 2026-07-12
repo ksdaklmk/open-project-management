@@ -39,7 +39,10 @@ vi.mock('../features/toolbar/Toolbar', () => ({ Toolbar: () => null }))
 
 const renderShell = () =>
   render(
-    <MemoryRouter initialEntries={['/']} future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+    <MemoryRouter
+      initialEntries={['/']}
+      future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+    >
       <Shell />
     </MemoryRouter>,
   )

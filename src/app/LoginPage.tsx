@@ -45,28 +45,23 @@ export function LoginPage() {
           placeholder="Email"
           type="email"
           value={email}
-          onChange={e => setEmail(e.target.value)}
+          onChange={(e) => setEmail(e.target.value)}
         />
         <input
           type="password"
           className="w-full px-3 py-2 rounded border border-[var(--border)] bg-[var(--bg)]"
           placeholder="Password"
           value={password}
-          onChange={e => setPassword(e.target.value)}
+          onChange={(e) => setPassword(e.target.value)}
         />
         <input
           className="w-full px-3 py-2 rounded border border-[var(--border)] bg-[var(--bg)]"
           placeholder="Name (used when signing up)"
           value={name}
-          onChange={e => setName(e.target.value)}
+          onChange={(e) => setName(e.target.value)}
         />
-        {error && (
-          <p style={{ color: 'var(--primary)' }}>{error}</p>
-        )}
-        <button
-          type="submit"
-          className="w-full py-2 rounded bg-[var(--primary)] text-white"
-        >
+        {error && <p style={{ color: 'var(--primary)' }}>{error}</p>}
+        <button type="submit" className="w-full py-2 rounded bg-[var(--primary)] text-white">
           Sign in
         </button>
         <button

@@ -20,16 +20,41 @@ export function useTaskFilters() {
     q: params.get('q') ?? '',
   }
   const rawSort = params.get('sort')
-  const sort: SortKey = rawSort && SORT_KEYS.includes(rawSort as SortKey) ? (rawSort as SortKey) : 'priority'
+  const sort: SortKey =
+    rawSort && SORT_KEYS.includes(rawSort as SortKey) ? (rawSort as SortKey) : 'priority'
 
   const setList = (key: ListKey, vals: string[]) =>
-    setParams((p) => { vals.length ? p.set(key, vals.join(',')) : p.delete(key); return p }, { replace: true })
+    setParams(
+      (p) => {
+        vals.length ? p.set(key, vals.join(',')) : p.delete(key)
+        return p
+      },
+      { replace: true },
+    )
   const setQ = (q: string) =>
-    setParams((p) => { q ? p.set('q', q) : p.delete('q'); return p }, { replace: true })
+    setParams(
+      (p) => {
+        q ? p.set('q', q) : p.delete('q')
+        return p
+      },
+      { replace: true },
+    )
   const setSort = (key: SortKey) =>
-    setParams((p) => { p.set('sort', key); return p }, { replace: true })
+    setParams(
+      (p) => {
+        p.set('sort', key)
+        return p
+      },
+      { replace: true },
+    )
   const clear = () =>
-    setParams((p) => { [...LIST_KEYS, 'q'].forEach((k) => p.delete(k)); return p }, { replace: true })
+    setParams(
+      (p) => {
+        ;[...LIST_KEYS, 'q'].forEach((k) => p.delete(k))
+        return p
+      },
+      { replace: true },
+    )
 
   return { filters, sort, setList, setQ, setSort, clear }
 }

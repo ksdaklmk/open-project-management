@@ -5,7 +5,11 @@ import { logComment } from '../../data/activityRepo'
 import { useActorId } from './useSession'
 
 export function useComments(taskId: string) {
-  return useQuery({ queryKey: ['comments', taskId], queryFn: () => listComments(taskId), enabled: !!taskId })
+  return useQuery({
+    queryKey: ['comments', taskId],
+    queryFn: () => listComments(taskId),
+    enabled: !!taskId,
+  })
 }
 
 export function useAddComment(taskId: string, workspaceId: string) {
@@ -25,7 +29,10 @@ export function useAddComment(taskId: string, workspaceId: string) {
       await qc.cancelQueries({ queryKey: key })
       const prev = qc.getQueryData<CommentItem[]>(key)
       const optimistic: CommentItem = {
-        id: `tmp-${Date.now()}`, body, created_at: new Date().toISOString(), author: null,
+        id: `tmp-${Date.now()}`,
+        body,
+        created_at: new Date().toISOString(),
+        author: null,
       }
       qc.setQueryData<CommentItem[]>(key, (old) => [...(old ?? []), optimistic])
       return { prev }

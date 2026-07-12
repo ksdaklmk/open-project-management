@@ -4,13 +4,33 @@ import type { Task } from '../../data/tasksRepo'
 import type { Member } from '../../data/membersRepo'
 
 const t = (over: Partial<Task>): Task => ({
-  id: 'x', project_id: 'p', workspace_id: 'w', ref: 'NIM-1', type: 'feature',
-  title: 't', description: '', status: 'todo', priority: 'low', assignee_id: null,
-  start_date: null, end_date: null, points: null, position: 0,
-  created_by: null, created_at: '', updated_at: '', tags: [], ...over,
+  id: 'x',
+  project_id: 'p',
+  workspace_id: 'w',
+  ref: 'NIM-1',
+  type: 'feature',
+  title: 't',
+  description: '',
+  status: 'todo',
+  priority: 'low',
+  assignee_id: null,
+  start_date: null,
+  end_date: null,
+  points: null,
+  position: 0,
+  created_by: null,
+  created_at: '',
+  updated_at: '',
+  tags: [],
+  ...over,
 })
 const m = (over: Partial<Member>): Member => ({
-  user_id: 'u', role: 'member', capacity_per_week: 10, color: '#fff', name: 'User', ...over,
+  user_id: 'u',
+  role: 'member',
+  capacity_per_week: 10,
+  color: '#fff',
+  name: 'User',
+  ...over,
 })
 
 const NOW = new Date(2026, 5, 28) // Sun 28 Jun 2026 → week starts Mon 22 Jun
@@ -36,7 +56,14 @@ describe('buildWorkload', () => {
   const wl = buildWorkload(tasks, members, NOW)
 
   it('builds six Monday-anchored week columns', () => {
-    expect(wl.weeks.map((w) => w.label)).toEqual(['Jun 22', 'Jun 29', 'Jul 6', 'Jul 13', 'Jul 20', 'Jul 27'])
+    expect(wl.weeks.map((w) => w.label)).toEqual([
+      'Jun 22',
+      'Jun 29',
+      'Jul 6',
+      'Jul 13',
+      'Jul 20',
+      'Jul 27',
+    ])
     expect(wl.weeks[0].key).toBe('2026-06-22')
     expect(wl.weeks[5].key).toBe('2026-07-27')
   })
@@ -44,7 +71,14 @@ describe('buildWorkload', () => {
   it('sums points per assignee per week and levels them, excluding done', () => {
     const alice = wl.rows.find((r) => r.id === 'a')!
     expect(alice.cells.map((c) => c.points)).toEqual([5, 13, 9, 0, 0, 0])
-    expect(alice.cells.map((c) => c.level)).toEqual(['under', 'over', 'near', 'none', 'none', 'none'])
+    expect(alice.cells.map((c) => c.level)).toEqual([
+      'under',
+      'over',
+      'near',
+      'none',
+      'none',
+      'none',
+    ])
     expect(alice.total).toBe(27) // 4-pt done task excluded
   })
 

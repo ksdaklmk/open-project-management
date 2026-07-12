@@ -1,0 +1,29 @@
+{
+  "captured_at": "2026-07-11",
+  "command": "npm audit --json",
+  "auditReportVersion": 2,
+  "summary": {
+    "info": 0,
+    "low": 0,
+    "moderate": 3,
+    "high": 1,
+    "critical": 1,
+    "total": 5
+  },
+  "direct_vulnerabilities": {
+    "vite": {
+      "installed": "5.4.21",
+      "severity": "high",
+      "affected_range": "<=6.4.2",
+      "recommended_fix": "8.1.4"
+    },
+    "vitest": {
+      "installed": "2.1.9",
+      "severity": "critical",
+      "affected_range": "<=3.2.5",
+      "recommended_fix": "4.1.10"
+    }
+  },
+  "transitive_vulnerabilities": ["@vitest/mocker", "esbuild", "vite-node"],
+  "production_dependencies_clean": true
+}

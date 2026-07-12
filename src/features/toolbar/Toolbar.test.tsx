@@ -2,7 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, act } from '@testing-library/react'
 import { MemoryRouter, useSearchParams } from 'react-router-dom'
 
-vi.mock('../../lib/workspace', () => ({ useActiveWorkspace: () => ({ activeId: 'w1', loading: false }) }))
+vi.mock('../../lib/workspace', () => ({
+  useActiveWorkspace: () => ({ activeId: 'w1', loading: false }),
+}))
 vi.mock('../../lib/hooks/useMembers', () => ({ useMembers: () => ({ data: [] }) }))
 const projects = {
   data: [{ id: 'p1', name: 'Nimbus', key: 'NIM' }] as
@@ -10,7 +12,9 @@ const projects = {
 }
 const createMutate = vi.fn()
 vi.mock('../../lib/hooks/useProjects', () => ({ useProjects: () => projects }))
-vi.mock('../../lib/hooks/useCreateTask', () => ({ useCreateTask: () => ({ mutate: createMutate }) }))
+vi.mock('../../lib/hooks/useCreateTask', () => ({
+  useCreateTask: () => ({ mutate: createMutate }),
+}))
 import { Toolbar } from './Toolbar'
 
 function Probe() {
@@ -19,7 +23,10 @@ function Probe() {
 }
 const renderAt = (initial: string, showSort = false) =>
   render(
-    <MemoryRouter initialEntries={[initial]} future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+    <MemoryRouter
+      initialEntries={[initial]}
+      future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+    >
       <Toolbar showSort={showSort} />
       <Probe />
     </MemoryRouter>,
@@ -124,7 +131,9 @@ describe('Toolbar', () => {
     fireEvent.click(screen.getAllByRole('button', { name: '+ New task' })[1])
     const sel = screen.getByLabelText('Project')
     fireEvent.change(sel, { target: { value: 'p2' } })
-    fireEvent.change(screen.getAllByLabelText('New task title')[0], { target: { value: 'In Zephyr' } })
+    fireEvent.change(screen.getAllByLabelText('New task title')[0], {
+      target: { value: 'In Zephyr' },
+    })
     fireEvent.keyDown(screen.getAllByLabelText('New task title')[0], { key: 'Enter' })
     expect(createMutate.mock.calls[0][0].project.id).toBe('p2')
   })

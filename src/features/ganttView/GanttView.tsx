@@ -26,7 +26,11 @@ export function GanttView({ now = new Date() }: { now?: Date } = {}) {
 
   const { scheduled, unscheduled } = splitGantt(all)
   const ordered = [...scheduled].sort((a, b) =>
-    a.start_date! < b.start_date! ? -1 : a.start_date! > b.start_date! ? 1 : a.ref.localeCompare(b.ref),
+    a.start_date! < b.start_date!
+      ? -1
+      : a.start_date! > b.start_date!
+        ? 1
+        : a.ref.localeCompare(b.ref),
   )
 
   return (
@@ -48,13 +52,19 @@ export function GanttView({ now = new Date() }: { now?: Date } = {}) {
           </h2>
           <ul className="overflow-hidden rounded-xl border border-dashed border-[var(--border)] bg-[var(--bg)] divide-y divide-[var(--border)]">
             {unscheduled.map((t) => (
-              <li key={t.id} onClick={() => setTaskRef(t.ref)} className="opm-row flex items-center gap-3 px-4 py-2.5 cursor-pointer">
+              <li
+                key={t.id}
+                onClick={() => setTaskRef(t.ref)}
+                className="opm-row flex items-center gap-3 px-4 py-2.5 cursor-pointer"
+              >
                 <span
                   aria-hidden="true"
                   className="h-2.5 w-2.5 shrink-0 rounded-full"
                   style={{ background: COLOR[t.status] ?? 'var(--muted)' }}
                 />
-                <span className="font-mono text-[11px] tracking-tight text-[var(--muted)]">{t.ref}</span>
+                <span className="font-mono text-[11px] tracking-tight text-[var(--muted)]">
+                  {t.ref}
+                </span>
                 <span className="flex-1 truncate text-sm text-[var(--text)]">{t.title}</span>
               </li>
             ))}
@@ -65,14 +75,25 @@ export function GanttView({ now = new Date() }: { now?: Date } = {}) {
   )
 }
 
-function GanttChart({ ordered, now, onOpen }: { ordered: Task[]; now: Date; onOpen: (ref: string) => void }) {
+function GanttChart({
+  ordered,
+  now,
+  onOpen,
+}: {
+  ordered: Task[]
+  now: Date
+  onOpen: (ref: string) => void
+}) {
   const scale = buildScale(ordered, now)
   const weekCount = scale.weeks.length
 
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-4">
       {/* Week axis */}
-      <div className="grid border-b border-[var(--border)] pb-2" style={{ gridTemplateColumns: GRID }}>
+      <div
+        className="grid border-b border-[var(--border)] pb-2"
+        style={{ gridTemplateColumns: GRID }}
+      >
         <div />
         <div className="relative h-4 text-[11px] font-medium text-[var(--muted)]">
           {scale.weeks.map((w, i) => (
@@ -90,7 +111,11 @@ function GanttChart({ ordered, now, onOpen }: { ordered: Task[]; now: Date; onOp
       {/* Plot */}
       <div className="relative">
         {/* Week gridlines — chart area only */}
-        <div aria-hidden="true" className="pointer-events-none absolute inset-y-0" style={{ left: LABEL_COL, right: 0 }}>
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-y-0"
+          style={{ left: LABEL_COL, right: 0 }}
+        >
           {scale.weeks.map((_, i) => (
             <span
               key={i}
@@ -101,11 +126,21 @@ function GanttChart({ ordered, now, onOpen }: { ordered: Task[]; now: Date; onOp
         </div>
 
         {ordered.map((t) => {
-          const { leftPct, widthPct } = scale.position(parseDate(t.start_date!), parseDate(t.end_date!))
+          const { leftPct, widthPct } = scale.position(
+            parseDate(t.start_date!),
+            parseDate(t.end_date!),
+          )
           return (
-            <div key={t.id} onClick={() => onOpen(t.ref)} className="opm-row grid items-center cursor-pointer" style={{ gridTemplateColumns: GRID, height: 34 }}>
+            <div
+              key={t.id}
+              onClick={() => onOpen(t.ref)}
+              className="opm-row grid items-center cursor-pointer"
+              style={{ gridTemplateColumns: GRID, height: 34 }}
+            >
               <div className="truncate pr-3">
-                <span className="font-mono text-[10px] tracking-tight text-[var(--muted)]">{t.ref}</span>{' '}
+                <span className="font-mono text-[10px] tracking-tight text-[var(--muted)]">
+                  {t.ref}
+                </span>{' '}
                 <span className="text-xs text-[var(--text)]">{t.title}</span>
               </div>
               <div className="relative h-full">
@@ -155,7 +190,10 @@ function GanttSkeleton() {
       className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-4"
     >
       <span className="sr-only">Loading timeline…</span>
-      <div className="grid border-b border-[var(--border)] pb-2" style={{ gridTemplateColumns: GRID }}>
+      <div
+        className="grid border-b border-[var(--border)] pb-2"
+        style={{ gridTemplateColumns: GRID }}
+      >
         <div />
         <div className="flex gap-10">
           {[0, 1, 2, 3].map((i) => (
@@ -170,12 +208,19 @@ function GanttSkeleton() {
           { left: '50%', width: '28%' },
           { left: '12%', width: '46%' },
         ].map((b, i) => (
-          <div key={i} className="grid items-center" style={{ gridTemplateColumns: GRID, height: 34 }}>
+          <div
+            key={i}
+            className="grid items-center"
+            style={{ gridTemplateColumns: GRID, height: 34 }}
+          >
             <div className="pr-3">
               <div className="opm-skel h-3 rounded" style={{ width: `${70 - i * 8}%` }} />
             </div>
             <div className="relative h-[18px]">
-              <div className="opm-skel absolute h-[18px] rounded-md" style={{ left: b.left, width: b.width }} />
+              <div
+                className="opm-skel absolute h-[18px] rounded-md"
+                style={{ left: b.left, width: b.width }}
+              />
             </div>
           </div>
         ))}
@@ -194,11 +239,18 @@ function GanttError() {
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M12 8.5v4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
           <circle cx="12" cy="16.3" r="1.05" fill="currentColor" />
-          <path d="M12 3.5 21 19.5H3L12 3.5Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+          <path
+            d="M12 3.5 21 19.5H3L12 3.5Z"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinejoin="round"
+          />
         </svg>
       </div>
       <p className="text-base font-semibold text-[var(--text)]">Couldn't load tasks.</p>
-      <p className="mt-1 max-w-xs text-sm text-[var(--muted)]">Check your connection and try again.</p>
+      <p className="mt-1 max-w-xs text-sm text-[var(--muted)]">
+        Check your connection and try again.
+      </p>
     </div>
   )
 }
@@ -217,7 +269,9 @@ function GanttEmpty() {
         </svg>
       </div>
       <p className="text-base font-semibold text-[var(--text)]">No tasks yet</p>
-      <p className="mt-1 max-w-xs text-sm text-[var(--muted)]">Create a task with dates to see it on the Gantt.</p>
+      <p className="mt-1 max-w-xs text-sm text-[var(--muted)]">
+        Create a task with dates to see it on the Gantt.
+      </p>
     </div>
   )
 }

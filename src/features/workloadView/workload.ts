@@ -3,9 +3,22 @@ import type { Task } from '../../data/tasksRepo'
 import type { Member } from '../../data/membersRepo'
 
 export type Level = 'none' | 'under' | 'near' | 'over'
-export interface Cell { points: number; ratio: number | null; level: Level }
-export interface Row { id: string; name: string; capacity: number | null; cells: Cell[]; total: number }
-export interface WeekCol { key: string; label: string }
+export interface Cell {
+  points: number
+  ratio: number | null
+  level: Level
+}
+export interface Row {
+  id: string
+  name: string
+  capacity: number | null
+  cells: Cell[]
+  total: number
+}
+export interface WeekCol {
+  key: string
+  label: string
+}
 export interface Workload {
   weeks: WeekCol[]
   rows: Row[]

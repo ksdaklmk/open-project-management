@@ -2,23 +2,42 @@
 @tailwind components;
 @tailwind utilities;
 
-:root, [data-theme='bloom'] {
-  --primary: #6d5ef0; --bg: #f7f7fb; --surface: #ffffff; --border: #e6e6ef;
-  --text: #1c1d22; --muted: #6b7280; --faint: #9aa0ad;
+:root,
+[data-theme='bloom'] {
+  --primary: #6d5ef0;
+  --bg: #f7f7fb;
+  --surface: #ffffff;
+  --border: #e6e6ef;
+  --text: #1c1d22;
+  --muted: #6b7280;
+  --faint: #9aa0ad;
   --load-boost: 1; /* Workload heatmap tint strength; bumped on dark so tints don't wash out */
   /* Solid CTA fill: kept dark enough that white label hits AA in BOTH themes
      (lighter --primary is for tints/rings, where it must read on a dark bg). */
-  --accent: #6d5ef0; --on-accent: #ffffff;
+  --accent: #6d5ef0;
+  --on-accent: #ffffff;
   color-scheme: light;
 }
 [data-theme='slate'] {
-  --primary: #8b7ff5; --bg: #0f1115; --surface: #171a21; --border: #262a33;
-  --text: #e8eaed; --muted: #9aa0ad; --faint: #5b616e;
+  --primary: #8b7ff5;
+  --bg: #0f1115;
+  --surface: #171a21;
+  --border: #262a33;
+  --text: #e8eaed;
+  --muted: #9aa0ad;
+  --faint: #5b616e;
   --load-boost: 1.4;
   color-scheme: dark; /* native date pickers / scrollbars render dark */
 }
-html, body, #root { height: 100%; }
-body { background: var(--bg); color: var(--text); }
+html,
+body,
+#root {
+  height: 100%;
+}
+body {
+  background: var(--bg);
+  color: var(--text);
+}
 
 @layer components {
   /* ---- Inline editor fields (status / priority / assignee / workspace) ----
@@ -50,7 +69,10 @@ body { background: var(--bg); color: var(--text); }
     padding: 3px 26px 3px 8px;
     cursor: pointer;
     text-overflow: ellipsis;
-    transition: background-color .15s ease, border-color .15s ease, box-shadow .15s ease;
+    transition:
+      background-color 0.15s ease,
+      border-color 0.15s ease,
+      box-shadow 0.15s ease;
   }
   .opm-select:hover {
     border-color: color-mix(in oklab, var(--text) 24%, var(--border));
@@ -90,7 +112,7 @@ body { background: var(--bg); color: var(--text); }
     width: 12px;
     height: 12px;
     color: inherit;
-    opacity: .8;
+    opacity: 0.8;
     pointer-events: none;
   }
 
@@ -106,9 +128,13 @@ body { background: var(--bg); color: var(--text); }
     border: 1px solid var(--border);
     border-radius: 6px;
     padding: 5px 8px;
-    transition: border-color .15s ease, box-shadow .15s ease;
+    transition:
+      border-color 0.15s ease,
+      box-shadow 0.15s ease;
   }
-  .opm-input::placeholder { color: var(--muted); } /* AA, not the faint default */
+  .opm-input::placeholder {
+    color: var(--muted);
+  } /* AA, not the faint default */
   .opm-input:hover {
     border-color: color-mix(in oklab, var(--text) 24%, var(--border));
   }
@@ -132,7 +158,10 @@ body { background: var(--bg); color: var(--text); }
     border-radius: 6px;
     padding: 4px 10px;
     cursor: pointer;
-    transition: background-color .15s ease, border-color .15s ease, box-shadow .15s ease;
+    transition:
+      background-color 0.15s ease,
+      border-color 0.15s ease,
+      box-shadow 0.15s ease;
   }
   .opm-btn:hover {
     border-color: color-mix(in oklab, var(--text) 24%, var(--border));
@@ -157,18 +186,31 @@ body { background: var(--bg); color: var(--text); }
     border-radius: 6px;
     padding: 5px 12px;
     cursor: pointer;
-    transition: background-color .15s ease, box-shadow .15s ease;
+    transition:
+      background-color 0.15s ease,
+      box-shadow 0.15s ease;
   }
-  .opm-btn-primary:hover { background: color-mix(in oklab, var(--accent) 88%, #000); }
+  .opm-btn-primary:hover {
+    background: color-mix(in oklab, var(--accent) 88%, #000);
+  }
   .opm-btn-primary:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px color-mix(in oklab, var(--accent) 55%, transparent);
+    box-shadow:
+      0 0 0 2px var(--surface),
+      0 0 0 4px color-mix(in oklab, var(--accent) 55%, transparent);
   }
-  .opm-btn-primary:disabled { opacity: .55; cursor: default; }
+  .opm-btn-primary:disabled {
+    opacity: 0.55;
+    cursor: default;
+  }
 
   /* ---- Task drawer entrance (state-conveying, not decoration) ---- */
-  .opm-drawer-backdrop { animation: opm-fade-in .15s ease-out; }
-  .opm-drawer-panel { animation: opm-slide-in .22s cubic-bezier(0.22, 1, 0.36, 1); }
+  .opm-drawer-backdrop {
+    animation: opm-fade-in 0.15s ease-out;
+  }
+  .opm-drawer-panel {
+    animation: opm-slide-in 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  }
 
   /* ---- Read-only tag chip ---- */
   .opm-tag {
@@ -186,7 +228,7 @@ body { background: var(--bg); color: var(--text); }
     border: 1px solid color-mix(in oklab, var(--chip) 22%, var(--surface));
   }
   .opm-tag::before {
-    content: "";
+    content: '';
     width: 6px;
     height: 6px;
     border-radius: 50%;
@@ -233,7 +275,7 @@ body { background: var(--bg); color: var(--text); }
 
   /* ---- Task rows ---- */
   .opm-row {
-    transition: background-color .12s ease;
+    transition: background-color 0.12s ease;
   }
   .opm-row:hover {
     background: var(--surface);
@@ -254,7 +296,7 @@ body { background: var(--bg); color: var(--text); }
     background: color-mix(in oklab, var(--text) 9%, var(--surface));
   }
   .opm-skel::after {
-    content: "";
+    content: '';
     position: absolute;
     inset: 0;
     transform: translateX(-100%);
@@ -269,7 +311,9 @@ body { background: var(--bg); color: var(--text); }
 
   /* ---- Board view ---- */
   .opm-board-card {
-    transition: border-color .15s ease, box-shadow .15s ease;
+    transition:
+      border-color 0.15s ease,
+      box-shadow 0.15s ease;
   }
   .opm-board-card:hover {
     border-color: color-mix(in oklab, var(--text) 24%, var(--border));
@@ -281,7 +325,7 @@ body { background: var(--bg); color: var(--text); }
   }
 
   .opm-board-col {
-    transition: border-color .12s ease;
+    transition: border-color 0.12s ease;
   }
   .opm-board-col.is-drag-over {
     border-color: color-mix(in oklab, var(--primary) 45%, var(--border));
@@ -297,14 +341,38 @@ body { background: var(--bg); color: var(--text); }
 }
 
 @keyframes opm-shimmer {
-  100% { transform: translateX(100%); }
+  100% {
+    transform: translateX(100%);
+  }
 }
-@keyframes opm-fade-in { from { opacity: 0; } }
-@keyframes opm-slide-in { from { transform: translateX(100%); } }
+@keyframes opm-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes opm-slide-in {
+  from {
+    transform: translateX(100%);
+  }
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .opm-skel::after { animation: none; }
-  .opm-row, .opm-select, .opm-input, .opm-btn, .opm-btn-primary { transition: none; }
-  .opm-board-card, .opm-board-col { transition: none; }
-  .opm-drawer-backdrop, .opm-drawer-panel { animation: none; }
+  .opm-skel::after {
+    animation: none;
+  }
+  .opm-row,
+  .opm-select,
+  .opm-input,
+  .opm-btn,
+  .opm-btn-primary {
+    transition: none;
+  }
+  .opm-board-card,
+  .opm-board-col {
+    transition: none;
+  }
+  .opm-drawer-backdrop,
+  .opm-drawer-panel {
+    animation: none;
+  }
 }

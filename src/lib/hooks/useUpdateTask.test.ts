@@ -25,8 +25,7 @@ describe('useUpdateTask', () => {
     updateTask.mockResolvedValueOnce(undefined)
     const { result } = renderHook(() => useUpdateTask(wsId), { wrapper: wrap(qc) })
     result.current.mutate({ id: 't1', patch: { status: 'done' } })
-    await waitFor(() =>
-      expect((qc.getQueryData(['tasks', wsId]) as any)[0].status).toBe('done'))
+    await waitFor(() => expect((qc.getQueryData(['tasks', wsId]) as any)[0].status).toBe('done'))
   })
 
   it('rolls back and toasts on error', async () => {

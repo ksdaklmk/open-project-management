@@ -18,17 +18,34 @@ beforeEach(() => vi.clearAllMocks())
 describe('activityRepo.logMove', () => {
   it('inserts a moved activity row', async () => {
     insert.mockResolvedValueOnce({ error: null })
-    await logMove({ workspaceId: 'w1', actorId: 'u1', taskId: 't1', fromStatus: 'todo', toStatus: 'done' })
+    await logMove({
+      workspaceId: 'w1',
+      actorId: 'u1',
+      taskId: 't1',
+      fromStatus: 'todo',
+      toStatus: 'done',
+    })
     expect(from).toHaveBeenCalledWith('activity')
     expect(insert).toHaveBeenCalledWith({
-      workspace_id: 'w1', actor_id: 'u1', task_id: 't1',
-      verb: 'moved', from_status: 'todo', to_status: 'done',
+      workspace_id: 'w1',
+      actor_id: 'u1',
+      task_id: 't1',
+      verb: 'moved',
+      from_status: 'todo',
+      to_status: 'done',
     })
   })
   it('throws on error', async () => {
     insert.mockResolvedValueOnce({ error: { message: 'boom' } })
-    await expect(logMove({ workspaceId: 'w1', actorId: 'u1', taskId: 't1', fromStatus: 'todo', toStatus: 'done' }))
-      .rejects.toThrow('boom')
+    await expect(
+      logMove({
+        workspaceId: 'w1',
+        actorId: 'u1',
+        taskId: 't1',
+        fromStatus: 'todo',
+        toStatus: 'done',
+      }),
+    ).rejects.toThrow('boom')
   })
 })
 
@@ -38,12 +55,17 @@ describe('activityRepo.logComment', () => {
     await logComment({ workspaceId: 'w1', actorId: 'u1', taskId: 't1' })
     expect(from).toHaveBeenCalledWith('activity')
     expect(insert).toHaveBeenCalledWith({
-      workspace_id: 'w1', actor_id: 'u1', task_id: 't1', verb: 'commented',
+      workspace_id: 'w1',
+      actor_id: 'u1',
+      task_id: 't1',
+      verb: 'commented',
     })
   })
   it('throws on error', async () => {
     insert.mockResolvedValueOnce({ error: { message: 'boom' } })
-    await expect(logComment({ workspaceId: 'w1', actorId: 'u1', taskId: 't1' })).rejects.toThrow('boom')
+    await expect(logComment({ workspaceId: 'w1', actorId: 'u1', taskId: 't1' })).rejects.toThrow(
+      'boom',
+    )
   })
 
   it('logs a created activity row', async () => {
@@ -51,15 +73,22 @@ describe('activityRepo.logComment', () => {
     await logCreate({ workspaceId: 'w1', actorId: 'u1', taskId: 't1' })
     expect(from).toHaveBeenCalledWith('activity')
     expect(insert).toHaveBeenCalledWith({
-      workspace_id: 'w1', actor_id: 'u1', task_id: 't1', verb: 'created',
+      workspace_id: 'w1',
+      actor_id: 'u1',
+      task_id: 't1',
+      verb: 'created',
     })
   })
 })
 
 const ROW = {
-  id: 'a1', verb: 'moved', from_status: 'todo', to_status: 'done',
+  id: 'a1',
+  verb: 'moved',
+  from_status: 'todo',
+  to_status: 'done',
   created_at: '2026-06-27T10:00:00Z',
-  actor: { name: 'Dana', color: '#abc' }, task: { ref: 'NIM-101', title: 'Fix login' },
+  actor: { name: 'Dana', color: '#abc' },
+  task: { ref: 'NIM-101', title: 'Fix login' },
 }
 
 describe('activityRepo.listActivity', () => {
@@ -77,7 +106,17 @@ describe('activityRepo.listActivity', () => {
 
   it('maps null actor/task without throwing', async () => {
     limit.mockResolvedValueOnce({
-      data: [{ id: 'a2', verb: 'moved', from_status: null, to_status: null, created_at: 'x', actor: null, task: null }],
+      data: [
+        {
+          id: 'a2',
+          verb: 'moved',
+          from_status: null,
+          to_status: null,
+          created_at: 'x',
+          actor: null,
+          task: null,
+        },
+      ],
       error: null,
     })
     const [item] = await listActivity('w1')

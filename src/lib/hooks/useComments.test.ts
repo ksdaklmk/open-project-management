@@ -3,7 +3,10 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 
-const { listComments, addComment } = vi.hoisted(() => ({ listComments: vi.fn(), addComment: vi.fn() }))
+const { listComments, addComment } = vi.hoisted(() => ({
+  listComments: vi.fn(),
+  addComment: vi.fn(),
+}))
 const { logComment } = vi.hoisted(() => ({ logComment: vi.fn() }))
 vi.mock('../../data/commentsRepo', () => ({ listComments, addComment }))
 vi.mock('../../data/activityRepo', () => ({ logComment }))
@@ -12,8 +15,10 @@ vi.mock('./useSession', () => ({ useActorId: () => 'me' }))
 
 import { useAddComment } from './useComments'
 
-const wrap = (qc: QueryClient) => ({ children }: { children: React.ReactNode }) =>
-  React.createElement(QueryClientProvider, { client: qc }, children)
+const wrap =
+  (qc: QueryClient) =>
+  ({ children }: { children: React.ReactNode }) =>
+    React.createElement(QueryClientProvider, { client: qc }, children)
 
 beforeEach(() => vi.clearAllMocks())
 
@@ -38,6 +43,7 @@ describe('useAddComment', () => {
     const { result } = renderHook(() => useAddComment('t1', 'w1'), { wrapper: wrap(qc) })
     result.current.mutate('hello')
     await waitFor(() =>
-      expect(logComment).toHaveBeenCalledWith({ workspaceId: 'w1', actorId: 'me', taskId: 't1' }))
+      expect(logComment).toHaveBeenCalledWith({ workspaceId: 'w1', actorId: 'me', taskId: 't1' }),
+    )
   })
 })

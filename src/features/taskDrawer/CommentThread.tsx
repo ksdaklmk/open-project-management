@@ -31,11 +31,16 @@ export function CommentThread({ taskId, workspaceId }: { taskId: string; workspa
       </ul>
       <div className="mt-3 space-y-2">
         <textarea
-          aria-label="Add a comment" rows={2} placeholder="Write a comment…" value={draft}
+          aria-label="Add a comment"
+          rows={2}
+          placeholder="Write a comment…"
+          value={draft}
           onChange={(e) => setDraft(e.target.value)}
           className="opm-input text-sm"
         />
-        <button onClick={submit} className="opm-btn-primary text-sm">Post</button>
+        <button onClick={submit} className="opm-btn-primary text-sm">
+          Post
+        </button>
       </div>
     </section>
   )

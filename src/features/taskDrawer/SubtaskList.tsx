@@ -16,7 +16,12 @@ export function SubtaskList({ taskId }: { taskId: string }) {
   return (
     <section>
       <h3 className="mb-2 flex items-center gap-2 text-xs font-semibold text-[var(--muted)]">
-        Subtasks {rows.length > 0 && <span className="tabular-nums">{done}/{rows.length}</span>}
+        Subtasks{' '}
+        {rows.length > 0 && (
+          <span className="tabular-nums">
+            {done}/{rows.length}
+          </span>
+        )}
       </h3>
       {isLoading && <p className="text-sm text-[var(--muted)]">Loading…</p>}
       {error && <p className="text-sm text-[var(--text)]">Couldn't load subtasks.</p>}
@@ -24,16 +29,28 @@ export function SubtaskList({ taskId }: { taskId: string }) {
         {rows.map((s) => (
           <li key={s.id} className="flex items-center gap-2">
             <input
-              type="checkbox" aria-label={s.title} checked={s.done}
+              type="checkbox"
+              aria-label={s.title}
+              checked={s.done}
               onChange={() => toggle.mutate({ id: s.id, done: !s.done })}
             />
-            <span className={`flex-1 text-sm ${s.done ? 'line-through text-[var(--muted)]' : ''}`}>{s.title}</span>
-            <button aria-label={`Remove ${s.title}`} onClick={() => remove.mutate(s.id)} className="text-[var(--muted)]">✕</button>
+            <span className={`flex-1 text-sm ${s.done ? 'line-through text-[var(--muted)]' : ''}`}>
+              {s.title}
+            </span>
+            <button
+              aria-label={`Remove ${s.title}`}
+              onClick={() => remove.mutate(s.id)}
+              className="text-[var(--muted)]"
+            >
+              ✕
+            </button>
           </li>
         ))}
       </ul>
       <input
-        aria-label="New subtask" placeholder="Add a subtask…" value={draft}
+        aria-label="New subtask"
+        placeholder="Add a subtask…"
+        value={draft}
         onChange={(e) => setDraft(e.target.value)}
         onKeyDown={(e) => e.key === 'Enter' && submit()}
         className="opm-input mt-2 text-sm"

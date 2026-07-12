@@ -13,7 +13,8 @@ export function useUpdateTask(workspaceId: string) {
       await qc.cancelQueries({ queryKey: key })
       const prev = qc.getQueryData<Task[]>(key)
       qc.setQueryData<Task[]>(key, (old) =>
-        (old ?? []).map((t) => (t.id === id ? { ...t, ...patch } : t)))
+        (old ?? []).map((t) => (t.id === id ? { ...t, ...patch } : t)),
+      )
       return { prev }
     },
     onError: (err, _vars, ctx) => {

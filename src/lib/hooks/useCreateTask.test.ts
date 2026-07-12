@@ -14,8 +14,10 @@ import { toast } from 'sonner'
 
 const ws = 'w1'
 const project = { id: 'p1', name: 'Nimbus', key: 'NIM' }
-const wrap = (qc: QueryClient) => ({ children }: { children: React.ReactNode }) =>
-  React.createElement(QueryClientProvider, { client: qc }, children)
+const wrap =
+  (qc: QueryClient) =>
+  ({ children }: { children: React.ReactNode }) =>
+    React.createElement(QueryClientProvider, { client: qc }, children)
 
 beforeEach(() => vi.clearAllMocks())
 

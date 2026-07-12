@@ -31,9 +31,16 @@ export function ListView() {
   return (
     <div className="overflow-x-auto pb-4">
       {groups.map((g) => (
-        <TaskTable key={g.status} status={g.status} tasks={g.tasks}
-          members={members ?? []} selectedRef={taskRef}
-          onSelect={setTaskRef} onPatch={onPatch} onMove={onMove} />
+        <TaskTable
+          key={g.status}
+          status={g.status}
+          tasks={g.tasks}
+          members={members ?? []}
+          selectedRef={taskRef}
+          onSelect={setTaskRef}
+          onPatch={onPatch}
+          onMove={onMove}
+        />
       ))}
     </div>
   )
@@ -78,8 +85,18 @@ function EmptyState() {
     <CenteredState>
       <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)]">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M8 6h12M8 12h12M8 18h12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-          <path d="M3.5 6h.01M3.5 12h.01M3.5 18h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          <path
+            d="M8 6h12M8 12h12M8 18h12"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+          />
+          <path
+            d="M3.5 6h.01M3.5 12h.01M3.5 18h.01"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
         </svg>
       </div>
       <p className="text-base font-semibold text-[var(--text)]">No tasks yet</p>
@@ -98,7 +115,12 @@ function ErrorState() {
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path d="M12 8.5v4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
             <circle cx="12" cy="16.3" r="1.05" fill="currentColor" />
-            <path d="M12 3.5 21 19.5H3L12 3.5Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+            <path
+              d="M12 3.5 21 19.5H3L12 3.5Z"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              strokeLinejoin="round"
+            />
           </svg>
         </div>
         <p className="text-base font-semibold text-[var(--text)]">Couldn't load tasks.</p>

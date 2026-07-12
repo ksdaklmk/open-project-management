@@ -8,5 +8,9 @@ export function relativeTime(iso: string, now: number = Date.now()): string {
   if (abs < 3600) return RTF.format(Math.round(diffSec / 60), 'minute')
   if (abs < 86400) return RTF.format(Math.round(diffSec / 3600), 'hour')
   if (abs < 604800) return RTF.format(Math.round(diffSec / 86400), 'day')
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
+  return new Date(iso).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  })
 }

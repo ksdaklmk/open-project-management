@@ -64,7 +64,8 @@ describe('LoginPage', () => {
       expect(mockOAuth).toHaveBeenCalledWith({
         provider: 'google',
         options: { redirectTo: window.location.origin },
-      }))
+      }),
+    )
   })
 
   it('shows the error when an OAuth provider fails to start', async () => {
@@ -88,7 +89,8 @@ describe('LoginPage', () => {
         email: 'new@team.dev',
         password: 'hunter22',
         options: { data: { name: 'Kit Klaimak' } },
-      }))
+      }),
+    )
   })
 
   it('sign-in ignores the name field', async () => {

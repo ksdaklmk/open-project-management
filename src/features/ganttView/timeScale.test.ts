@@ -4,10 +4,25 @@ import { parseDate } from '../../lib/weeks'
 import type { Task } from '../../data/tasksRepo'
 
 const t = (over: Partial<Task>): Task => ({
-  id: 'x', project_id: 'p', workspace_id: 'w', ref: 'NIM-1', type: 'feature',
-  title: 't', description: '', status: 'todo', priority: 'low', assignee_id: null,
-  start_date: null, end_date: null, points: null, position: 0,
-  created_by: null, created_at: '', updated_at: '', tags: [], ...over,
+  id: 'x',
+  project_id: 'p',
+  workspace_id: 'w',
+  ref: 'NIM-1',
+  type: 'feature',
+  title: 't',
+  description: '',
+  status: 'todo',
+  priority: 'low',
+  assignee_id: null,
+  start_date: null,
+  end_date: null,
+  points: null,
+  position: 0,
+  created_by: null,
+  created_at: '',
+  updated_at: '',
+  tags: [],
+  ...over,
 })
 
 describe('splitGantt', () => {

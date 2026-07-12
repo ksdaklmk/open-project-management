@@ -16,12 +16,29 @@ vi.mock('../../app/useViewState', () => ({ useViewState: () => ({ setTaskRef: vi
 
 import { BoardView } from './BoardView'
 
-const inRouter = (ui: React.ReactElement) =>
-  <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>{ui}</MemoryRouter>
+const inRouter = (ui: React.ReactElement) => (
+  <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+    {ui}
+  </MemoryRouter>
+)
 
-const TASK = { id: 't1', ref: 'NIM-1', title: 'Hello', status: 'todo', priority: 'low', position: 0, type: 'feature', assignee_id: null, points: null, tags: [] }
+const TASK = {
+  id: 't1',
+  ref: 'NIM-1',
+  title: 'Hello',
+  status: 'todo',
+  priority: 'low',
+  position: 0,
+  type: 'feature',
+  assignee_id: null,
+  points: null,
+  tags: [],
+}
 
-beforeEach(() => { vi.clearAllMocks(); useMembers.mockReturnValue({ data: [] }) })
+beforeEach(() => {
+  vi.clearAllMocks()
+  useMembers.mockReturnValue({ data: [] })
+})
 
 describe('BoardView', () => {
   it('renders all five columns and a card', () => {
@@ -53,12 +70,18 @@ describe('BoardView', () => {
 
     // jsdom has neither DragEvent nor DataTransfer; TaskCard uses optional chaining (e.dataTransfer?.setData).
     // React routes events by name so plain Events with drag names still invoke onDragStart/onDrop handlers.
-    act(() => { card.dispatchEvent(new Event('dragstart', { bubbles: true })) })
-    act(() => { doneCol.dispatchEvent(new Event('dragover', { bubbles: true })) })
-    act(() => { doneCol.dispatchEvent(new Event('drop', { bubbles: true })) })
+    act(() => {
+      card.dispatchEvent(new Event('dragstart', { bubbles: true }))
+    })
+    act(() => {
+      doneCol.dispatchEvent(new Event('dragover', { bubbles: true }))
+    })
+    act(() => {
+      doneCol.dispatchEvent(new Event('drop', { bubbles: true }))
+    })
 
     expect(moveMutate).toHaveBeenCalledWith(
-      expect.objectContaining({ taskId: 't1', toStatus: 'done', fromStatus: 'todo' })
+      expect.objectContaining({ taskId: 't1', toStatus: 'done', fromStatus: 'todo' }),
     )
   })
 })

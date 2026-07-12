@@ -35,8 +35,16 @@ function TypeMark({ typeId }: { typeId: string }) {
   )
 }
 
-export function TaskCard({ task, members, onDragStart, onOpen }: {
-  task: Task; members: Member[]; onDragStart: (taskId: string) => void; onOpen: (ref: string) => void
+export function TaskCard({
+  task,
+  members,
+  onDragStart,
+  onOpen,
+}: {
+  task: Task
+  members: Member[]
+  onDragStart: (taskId: string) => void
+  onOpen: (ref: string) => void
 }) {
   const [isDragging, setIsDragging] = useState(false)
   const priority = PRIORITIES.find((p) => p.id === task.priority)
@@ -61,9 +69,7 @@ export function TaskCard({ task, members, onDragStart, onOpen }: {
         <span className="text-xs font-medium tabular-nums tracking-tight text-[var(--muted)]">
           {task.ref}
         </span>
-        {task.points != null && (
-          <span className="opm-points ml-auto">{task.points}</span>
-        )}
+        {task.points != null && <span className="opm-points ml-auto">{task.points}</span>}
       </div>
 
       {/* Title — up to 2 lines */}

@@ -15,26 +15,51 @@ vi.mock('../../lib/workspace', () => ({ useActiveWorkspace }))
 import { WorkloadView } from './WorkloadView'
 
 const t = (over: Partial<Task>): Task => ({
-  id: 'x', project_id: 'p', workspace_id: 'w', ref: 'NIM-1', type: 'feature',
-  title: 't', description: '', status: 'todo', priority: 'low', assignee_id: null,
-  start_date: null, end_date: null, points: null, position: 0,
-  created_by: null, created_at: '', updated_at: '', tags: [], ...over,
+  id: 'x',
+  project_id: 'p',
+  workspace_id: 'w',
+  ref: 'NIM-1',
+  type: 'feature',
+  title: 't',
+  description: '',
+  status: 'todo',
+  priority: 'low',
+  assignee_id: null,
+  start_date: null,
+  end_date: null,
+  points: null,
+  position: 0,
+  created_by: null,
+  created_at: '',
+  updated_at: '',
+  tags: [],
+  ...over,
 })
 const m = (over: Partial<Member>): Member => ({
-  user_id: 'u', role: 'member', capacity_per_week: 10, color: '#fff', name: 'User', ...over,
+  user_id: 'u',
+  role: 'member',
+  capacity_per_week: 10,
+  color: '#fff',
+  name: 'User',
+  ...over,
 })
 
 beforeEach(() => vi.clearAllMocks())
 
 describe('WorkloadView', () => {
   it('renders an assignee row, an over-capacity cell, and the not-shown footer', () => {
-    useMembers.mockReturnValue({ data: [m({ user_id: 'a', name: 'Alice', capacity_per_week: 10 })], isLoading: false, error: null })
+    useMembers.mockReturnValue({
+      data: [m({ user_id: 'a', name: 'Alice', capacity_per_week: 10 })],
+      isLoading: false,
+      error: null,
+    })
     useTasks.mockReturnValue({
       data: [
         t({ id: '1', assignee_id: 'a', start_date: '2026-06-29', points: 13, status: 'todo' }),
         t({ id: '2', assignee_id: 'a', start_date: null, points: 4, status: 'todo' }),
       ],
-      isLoading: false, error: null,
+      isLoading: false,
+      error: null,
     })
     render(<WorkloadView now={new Date(2026, 5, 28)} />)
     expect(screen.getByText('Alice')).toBeInTheDocument()

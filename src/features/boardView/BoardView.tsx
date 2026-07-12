@@ -18,7 +18,9 @@ export function BoardView() {
   const { setTaskRef } = useViewState()
   const dragId = useRef<string | null>(null)
 
-  const onCardDragStart = (taskId: string) => { dragId.current = taskId }
+  const onCardDragStart = (taskId: string) => {
+    dragId.current = taskId
+  }
 
   const onDrop = (toStatus: Status, insertIndex: number) => {
     const taskId = dragId.current
@@ -27,9 +29,7 @@ export function BoardView() {
     const all = tasks ?? []
     const dragged = all.find((t) => t.id === taskId)
     if (!dragged) return
-    const sorted = all
-      .filter((t) => t.status === toStatus)
-      .sort((a, b) => a.position - b.position)
+    const sorted = all.filter((t) => t.status === toStatus).sort((a, b) => a.position - b.position)
     const position = dropPosition(sorted, taskId, insertIndex)
     move.mutate({ taskId, toStatus, position, fromStatus: dragged.status })
   }
@@ -93,7 +93,12 @@ function BoardError() {
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M12 8.5v4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
           <circle cx="12" cy="16.3" r="1.05" fill="currentColor" />
-          <path d="M12 3.5 21 19.5H3L12 3.5Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+          <path
+            d="M12 3.5 21 19.5H3L12 3.5Z"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinejoin="round"
+          />
         </svg>
       </div>
       <p className="text-base font-semibold text-[var(--text)]">Couldn't load tasks.</p>

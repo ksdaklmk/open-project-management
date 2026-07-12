@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { computeDropPosition, dropPosition } from './computeDropPosition'
 import type { Task } from '../../data/tasksRepo'
 
-const at = (pos: number, id = `t${pos}`): Task => ({ id, position: pos } as Task)
+const at = (pos: number, id = `t${pos}`): Task => ({ id, position: pos }) as Task
 
 describe('computeDropPosition', () => {
   it('returns 0 for an empty column', () => {

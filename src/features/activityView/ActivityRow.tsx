@@ -41,8 +41,7 @@ function TaskRef({ task }: { task: ActivityItem['task'] }) {
   if (!task) return <span className="text-[var(--muted)]">a task</span>
   return (
     <span>
-      <span className="font-mono text-[11px] tracking-tight text-[var(--muted)]">{task.ref}</span>
-      {' '}
+      <span className="font-mono text-[11px] tracking-tight text-[var(--muted)]">{task.ref}</span>{' '}
       {task.title}
     </span>
   )

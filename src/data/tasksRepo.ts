@@ -35,8 +35,16 @@ export async function updateTask(
   patch: Partial<
     Pick<
       Task,
-      'status' | 'priority' | 'assignee_id' | 'title' | 'position' |
-      'description' | 'type' | 'points' | 'start_date' | 'end_date'
+      | 'status'
+      | 'priority'
+      | 'assignee_id'
+      | 'title'
+      | 'position'
+      | 'description'
+      | 'type'
+      | 'points'
+      | 'start_date'
+      | 'end_date'
     >
   >,
 ): Promise<void> {

@@ -1,31 +1,70 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const { range, order2, order1, eq, select: _select, update, updateEq, insert, del, delEq1, delEq2, from, rpc } =
-  vi.hoisted(() => {
-    const range = vi.fn(() =>
-      Promise.resolve<{ data: Record<string, unknown>[] | null; error: { message: string } | null }>(
-        { data: [], error: null }))
-    const order2 = vi.fn(() => ({ range }))
-    const order1 = vi.fn(() => ({ order: order2 }))
-    const eq = vi.fn(() => ({ order: order1 }))
-    const select = vi.fn(() => ({ eq }))
-    const updateEq = vi.fn(() => Promise.resolve({ error: null }))
-    const update = vi.fn(() => ({ eq: updateEq }))
-    const insert = vi.fn(() => Promise.resolve({ error: null }))
-    const delEq2 = vi.fn(() => Promise.resolve({ error: null }))
-    const delEq1 = vi.fn(() =>
-      Object.assign(Promise.resolve({ error: null }), { eq: delEq2 }))
-    const del = vi.fn(() => ({ eq: delEq1 }))
-    const from = vi.fn(() => ({ select, update, insert, delete: del }))
-    const rpc = vi.fn(() =>
-      Promise.resolve<{ data: Record<string, unknown> | null; error: { message: string } | null }>(
-        { data: null, error: null }))
-    return { range, order2, order1, eq, select, update, updateEq, insert, del, delEq1, delEq2, from, rpc }
-  })
+const {
+  range,
+  order2,
+  order1,
+  eq,
+  select: _select,
+  update,
+  updateEq,
+  insert,
+  del,
+  delEq1,
+  delEq2,
+  from,
+  rpc,
+} = vi.hoisted(() => {
+  const range = vi.fn(() =>
+    Promise.resolve<{ data: Record<string, unknown>[] | null; error: { message: string } | null }>({
+      data: [],
+      error: null,
+    }),
+  )
+  const order2 = vi.fn(() => ({ range }))
+  const order1 = vi.fn(() => ({ order: order2 }))
+  const eq = vi.fn(() => ({ order: order1 }))
+  const select = vi.fn(() => ({ eq }))
+  const updateEq = vi.fn(() => Promise.resolve({ error: null }))
+  const update = vi.fn(() => ({ eq: updateEq }))
+  const insert = vi.fn(() => Promise.resolve({ error: null }))
+  const delEq2 = vi.fn(() => Promise.resolve({ error: null }))
+  const delEq1 = vi.fn(() => Object.assign(Promise.resolve({ error: null }), { eq: delEq2 }))
+  const del = vi.fn(() => ({ eq: delEq1 }))
+  const from = vi.fn(() => ({ select, update, insert, delete: del }))
+  const rpc = vi.fn(() =>
+    Promise.resolve<{ data: Record<string, unknown> | null; error: { message: string } | null }>({
+      data: null,
+      error: null,
+    }),
+  )
+  return {
+    range,
+    order2,
+    order1,
+    eq,
+    select,
+    update,
+    updateEq,
+    insert,
+    del,
+    delEq1,
+    delEq2,
+    from,
+    rpc,
+  }
+})
 
 vi.mock('../lib/supabase', () => ({ supabase: { from, rpc } }))
 
-import { listTasks, updateTask, addTaskTag, removeTaskTag, createTask, deleteTask } from './tasksRepo'
+import {
+  listTasks,
+  updateTask,
+  addTaskTag,
+  removeTaskTag,
+  createTask,
+  deleteTask,
+} from './tasksRepo'
 
 beforeEach(() => vi.clearAllMocks())
 
@@ -75,8 +114,20 @@ describe('tasksRepo', () => {
   })
 
   it('updates a task with widened fields, scoped by id', async () => {
-    await updateTask('t1', { description: 'd', type: 'bug', points: 3, start_date: '2026-07-01', end_date: '2026-07-09' })
-    expect(update).toHaveBeenCalledWith({ description: 'd', type: 'bug', points: 3, start_date: '2026-07-01', end_date: '2026-07-09' })
+    await updateTask('t1', {
+      description: 'd',
+      type: 'bug',
+      points: 3,
+      start_date: '2026-07-01',
+      end_date: '2026-07-09',
+    })
+    expect(update).toHaveBeenCalledWith({
+      description: 'd',
+      type: 'bug',
+      points: 3,
+      start_date: '2026-07-01',
+      end_date: '2026-07-09',
+    })
     expect(updateEq).toHaveBeenCalledWith('id', 't1')
   })
 
@@ -102,8 +153,14 @@ describe('tasksRepo', () => {
 
   describe('createTask', () => {
     const ROW = {
-      id: 't9', ref: 'NIM-110', title: 'New thing', workspace_id: 'ws-1',
-      project_id: 'p1', created_by: 'u1', status: 'backlog', priority: 'medium',
+      id: 't9',
+      ref: 'NIM-110',
+      title: 'New thing',
+      workspace_id: 'ws-1',
+      project_id: 'p1',
+      created_by: 'u1',
+      status: 'backlog',
+      priority: 'medium',
     }
 
     it('creates via the create_task RPC and returns the row with empty tags', async () => {

@@ -5,7 +5,12 @@ import { buildWorkload, type Level } from './workload'
 
 // Saturated load palette — used ONLY as the color-mix base for cell tints and as
 // the saturated legend dots. Never a surface or text color. (none → neutral.)
-const LEVEL_HEX: Record<Level, string> = { none: '', under: '#2bb673', near: '#f5a623', over: '#e5484d' }
+const LEVEL_HEX: Record<Level, string> = {
+  none: '',
+  under: '#2bb673',
+  near: '#f5a623',
+  over: '#e5484d',
+}
 
 // Per-level tint strength. Graduated so the alarm (over) reads loudest and a
 // healthy load (under) stays calm. Scaled per theme via --load-boost so the
@@ -68,7 +73,9 @@ export function WorkloadView({ now = new Date() }: { now?: Date } = {}) {
           {wl.rows.map((row) => (
             <tr key={row.id}>
               <th scope="row" className="pr-3 text-left align-middle">
-                <span className="block truncate text-[13px] font-medium text-[var(--text)]">{row.name}</span>
+                <span className="block truncate text-[13px] font-medium text-[var(--text)]">
+                  {row.name}
+                </span>
                 <span className="block text-[11px] tabular-nums text-[var(--muted)]">
                   {row.capacity === null ? 'no capacity' : `cap ${row.capacity}/wk`}
                 </span>
@@ -103,7 +110,10 @@ export function WorkloadView({ now = new Date() }: { now?: Date } = {}) {
       <div className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-[var(--border)] pt-3">
         <ul className="flex flex-wrap items-center gap-x-3.5 gap-y-1">
           {LEGEND.map(({ level, label }) => (
-            <li key={level} className="inline-flex items-center gap-1.5 text-[11px] text-[var(--muted)]">
+            <li
+              key={level}
+              className="inline-flex items-center gap-1.5 text-[11px] text-[var(--muted)]"
+            >
               <span
                 aria-hidden="true"
                 className="h-2.5 w-2.5 rounded-full"
@@ -142,7 +152,11 @@ function WorkloadSkeleton() {
       </div>
       <div className="mt-2.5 space-y-[5px]">
         {[0, 1, 2, 3].map((r) => (
-          <div key={r} className="grid items-center" style={{ gridTemplateColumns: GRID_COLS, gap: 5 }}>
+          <div
+            key={r}
+            className="grid items-center"
+            style={{ gridTemplateColumns: GRID_COLS, gap: 5 }}
+          >
             <div className="space-y-1.5 pr-3">
               <div className="opm-skel h-3 rounded" style={{ width: `${66 - r * 7}%` }} />
               <div className="opm-skel h-2 w-14 rounded" />
@@ -167,11 +181,18 @@ function WorkloadError() {
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M12 8.5v4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
           <circle cx="12" cy="16.3" r="1.05" fill="currentColor" />
-          <path d="M12 3.5 21 19.5H3L12 3.5Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+          <path
+            d="M12 3.5 21 19.5H3L12 3.5Z"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinejoin="round"
+          />
         </svg>
       </div>
       <p className="text-base font-semibold text-[var(--text)]">Couldn't load workload.</p>
-      <p className="mt-1 max-w-xs text-sm text-[var(--muted)]">Check your connection and try again.</p>
+      <p className="mt-1 max-w-xs text-sm text-[var(--muted)]">
+        Check your connection and try again.
+      </p>
     </div>
   )
 }

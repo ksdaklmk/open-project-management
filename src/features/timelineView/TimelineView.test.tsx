@@ -13,14 +13,32 @@ vi.mock('../../app/useViewState', () => ({ useViewState: () => ({ setTaskRef: vi
 
 import { TimelineView } from './TimelineView'
 
-const inRouter = (ui: React.ReactElement) =>
-  <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>{ui}</MemoryRouter>
+const inRouter = (ui: React.ReactElement) => (
+  <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+    {ui}
+  </MemoryRouter>
+)
 
 const t = (over: Partial<Task>): Task => ({
-  id: 'x', project_id: 'p', workspace_id: 'w', ref: 'NIM-1', type: 'feature',
-  title: 't', description: '', status: 'todo', priority: 'low', assignee_id: null,
-  start_date: null, end_date: null, points: null, position: 0,
-  created_by: null, created_at: '', updated_at: '', tags: [], ...over,
+  id: 'x',
+  project_id: 'p',
+  workspace_id: 'w',
+  ref: 'NIM-1',
+  type: 'feature',
+  title: 't',
+  description: '',
+  status: 'todo',
+  priority: 'low',
+  assignee_id: null,
+  start_date: null,
+  end_date: null,
+  points: null,
+  position: 0,
+  created_by: null,
+  created_at: '',
+  updated_at: '',
+  tags: [],
+  ...over,
 })
 
 beforeEach(() => vi.clearAllMocks())
@@ -32,7 +50,8 @@ describe('TimelineView', () => {
         t({ ref: 'NIM-101', title: 'Login', start_date: '2026-06-22', end_date: '2026-06-26' }),
         t({ ref: 'NIM-105', title: 'Emails', start_date: null }),
       ],
-      isLoading: false, error: null,
+      isLoading: false,
+      error: null,
     })
     render(inRouter(<TimelineView now={new Date(2026, 5, 25)} />))
     expect(screen.getByText('NIM-101')).toBeInTheDocument()

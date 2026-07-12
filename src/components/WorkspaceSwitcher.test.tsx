@@ -17,7 +17,12 @@ import { WorkspaceSwitcher } from './WorkspaceSwitcher'
 
 beforeEach(() => {
   vi.clearAllMocks()
-  useWorkspaces.mockReturnValue({ data: [{ id: 'a', name: 'Acme' }, { id: 'b', name: 'Beta' }] })
+  useWorkspaces.mockReturnValue({
+    data: [
+      { id: 'a', name: 'Acme' },
+      { id: 'b', name: 'Beta' },
+    ],
+  })
 })
 
 describe('WorkspaceSwitcher', () => {

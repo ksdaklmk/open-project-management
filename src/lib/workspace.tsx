@@ -21,7 +21,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(KEY, id)
     setStored(id)
   }
-  return <Ctx.Provider value={{ activeId, setActiveId, loading: isLoading }}>{children}</Ctx.Provider>
+  return (
+    <Ctx.Provider value={{ activeId, setActiveId, loading: isLoading }}>{children}</Ctx.Provider>
+  )
 }
 
 export function useActiveWorkspace(): WorkspaceCtx {

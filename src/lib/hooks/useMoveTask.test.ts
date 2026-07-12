@@ -13,8 +13,10 @@ import { useMoveTask } from './useMoveTask'
 import { toast } from 'sonner'
 
 const ws = 'w1'
-const wrap = (qc: QueryClient) => ({ children }: { children: React.ReactNode }) =>
-  React.createElement(QueryClientProvider, { client: qc }, children)
+const wrap =
+  (qc: QueryClient) =>
+  ({ children }: { children: React.ReactNode }) =>
+    React.createElement(QueryClientProvider, { client: qc }, children)
 
 beforeEach(() => vi.clearAllMocks())
 
@@ -23,15 +25,24 @@ describe('useMoveTask', () => {
     const qc = new QueryClient()
     const invalidate = vi.spyOn(qc, 'invalidateQueries')
     qc.setQueryData(['tasks', ws], [{ id: 't1', status: 'todo', position: 0 }])
-    updateTask.mockResolvedValueOnce(undefined); logMove.mockResolvedValueOnce(undefined)
+    updateTask.mockResolvedValueOnce(undefined)
+    logMove.mockResolvedValueOnce(undefined)
     const { result } = renderHook(() => useMoveTask(ws), { wrapper: wrap(qc) })
     result.current.mutate({ taskId: 't1', toStatus: 'done', position: 5, fromStatus: 'todo' })
     await waitFor(() => {
       const t = (qc.getQueryData(['tasks', ws]) as any)[0]
-      expect(t.status).toBe('done'); expect(t.position).toBe(5)
+      expect(t.status).toBe('done')
+      expect(t.position).toBe(5)
     })
-    await waitFor(() => expect(logMove).toHaveBeenCalledWith(
-      { workspaceId: ws, actorId: 'u1', taskId: 't1', fromStatus: 'todo', toStatus: 'done' }))
+    await waitFor(() =>
+      expect(logMove).toHaveBeenCalledWith({
+        workspaceId: ws,
+        actorId: 'u1',
+        taskId: 't1',
+        fromStatus: 'todo',
+        toStatus: 'done',
+      }),
+    )
     // onSettled invalidates BOTH the tasks and activity caches
     await waitFor(() => expect(invalidate).toHaveBeenCalledWith({ queryKey: ['activity', ws] }))
   })

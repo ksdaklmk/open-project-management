@@ -4,12 +4,28 @@ import { render, screen, fireEvent } from '@testing-library/react'
 const setTaskRef = vi.fn()
 const state = { taskRef: 'NIM-101' as string | null }
 vi.mock('../../app/useViewState', () => ({ useViewState: () => ({ ...state, setTaskRef }) }))
-vi.mock('../../lib/workspace', () => ({ useActiveWorkspace: () => ({ activeId: 'w1', loading: false }) }))
+vi.mock('../../lib/workspace', () => ({
+  useActiveWorkspace: () => ({ activeId: 'w1', loading: false }),
+}))
 const { useTasks } = vi.hoisted(() => ({ useTasks: vi.fn() }))
 vi.mock('../../lib/hooks/useTasks', () => ({ useTasks }))
-const TASKS = [{ id: 't1', ref: 'NIM-101', title: 'Build login', type: 'feature', status: 'todo',
-  priority: 'high', assignee_id: null, points: null, description: '', start_date: null,
-  end_date: null, position: 0, tags: [] }]
+const TASKS = [
+  {
+    id: 't1',
+    ref: 'NIM-101',
+    title: 'Build login',
+    type: 'feature',
+    status: 'todo',
+    priority: 'high',
+    assignee_id: null,
+    points: null,
+    description: '',
+    start_date: null,
+    end_date: null,
+    position: 0,
+    tags: [],
+  },
+]
 const mutate = vi.fn()
 const moveMutate = vi.fn()
 const delMutate = vi.fn()
@@ -17,15 +33,30 @@ vi.mock('../../lib/hooks/useUpdateTask', () => ({ useUpdateTask: () => ({ mutate
 vi.mock('../../lib/hooks/useMoveTask', () => ({ useMoveTask: () => ({ mutate: moveMutate }) }))
 vi.mock('../../lib/hooks/useDeleteTask', () => ({ useDeleteTask: () => ({ mutate: delMutate }) }))
 vi.mock('../../lib/hooks/useMembers', () => ({ useMembers: () => ({ data: [] }) }))
-vi.mock('../../lib/hooks/useTaskTags', () => ({ useTaskTags: () => ({ add: { mutate: vi.fn() }, remove: { mutate: vi.fn() } }) }))
-vi.mock('../../lib/hooks/useSubtasks', () => ({ useSubtasks: () => ({ data: [], add: { mutate: vi.fn() }, toggle: { mutate: vi.fn() }, remove: { mutate: vi.fn() } }) }))
-vi.mock('../../lib/hooks/useComments', () => ({ useComments: () => ({ data: [] }), useAddComment: () => ({ mutate: vi.fn() }) }))
+vi.mock('../../lib/hooks/useTaskTags', () => ({
+  useTaskTags: () => ({ add: { mutate: vi.fn() }, remove: { mutate: vi.fn() } }),
+}))
+vi.mock('../../lib/hooks/useSubtasks', () => ({
+  useSubtasks: () => ({
+    data: [],
+    add: { mutate: vi.fn() },
+    toggle: { mutate: vi.fn() },
+    remove: { mutate: vi.fn() },
+  }),
+}))
+vi.mock('../../lib/hooks/useComments', () => ({
+  useComments: () => ({ data: [] }),
+  useAddComment: () => ({ mutate: vi.fn() }),
+}))
 
 import { TaskDrawer } from './TaskDrawer'
 
 beforeEach(() => {
   state.taskRef = 'NIM-101'
-  setTaskRef.mockClear(); mutate.mockClear(); moveMutate.mockClear(); delMutate.mockClear()
+  setTaskRef.mockClear()
+  mutate.mockClear()
+  moveMutate.mockClear()
+  delMutate.mockClear()
   useTasks.mockReturnValue({ data: TASKS, isLoading: false, error: null })
 })
 
@@ -60,7 +91,9 @@ describe('TaskDrawer', () => {
     const dialog = screen.getByRole('dialog')
     expect(document.activeElement).toBe(dialog) // effect focuses the panel container on open
     fireEvent.keyDown(dialog, { key: 'Tab', shiftKey: true })
-    const f = dialog.querySelectorAll<HTMLElement>('a[href],button,input,select,textarea,[tabindex]:not([tabindex="-1"])')
+    const f = dialog.querySelectorAll<HTMLElement>(
+      'a[href],button,input,select,textarea,[tabindex]:not([tabindex="-1"])',
+    )
     expect(document.activeElement).toBe(f[f.length - 1])
   })
 
@@ -103,7 +136,12 @@ describe('TaskDrawer', () => {
   it('logs a status edit through useMoveTask (so it lands in Activity, like the List)', () => {
     render(<TaskDrawer />)
     fireEvent.change(screen.getByLabelText('Status'), { target: { value: 'done' } })
-    expect(moveMutate).toHaveBeenCalledWith({ taskId: 't1', toStatus: 'done', position: 0, fromStatus: 'todo' })
+    expect(moveMutate).toHaveBeenCalledWith({
+      taskId: 't1',
+      toStatus: 'done',
+      position: 0,
+      fromStatus: 'todo',
+    })
     expect(mutate).not.toHaveBeenCalled()
   })
   it('saves the title on blur', () => {

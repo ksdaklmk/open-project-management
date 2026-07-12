@@ -30,7 +30,8 @@ export function useMoveTask(workspaceId: string) {
       await qc.cancelQueries({ queryKey: key })
       const prev = qc.getQueryData<Task[]>(key)
       qc.setQueryData<Task[]>(key, (old) =>
-        (old ?? []).map((t) => (t.id === taskId ? { ...t, status: toStatus, position } : t)))
+        (old ?? []).map((t) => (t.id === taskId ? { ...t, status: toStatus, position } : t)),
+      )
       return { prev }
     },
     onError: (err, _vars, ctx) => {
