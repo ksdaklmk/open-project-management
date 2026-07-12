@@ -351,6 +351,60 @@ export type Database = {
           },
         ]
       }
+      workspace_invitations: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          email_normalized: string
+          expires_at: string
+          id: string
+          invited_by: string | null
+          last_sent_at: string
+          revoked_at: string | null
+          role: Database["public"]["Enums"]["member_role"]
+          workspace_id: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          email_normalized: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          last_sent_at?: string
+          revoked_at?: string | null
+          role?: Database["public"]["Enums"]["member_role"]
+          workspace_id: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          email_normalized?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          last_sent_at?: string
+          revoked_at?: string | null
+          role?: Database["public"]["Enums"]["member_role"]
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_invitations_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_invitations_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workspace_members: {
         Row: {
           capacity_per_week: number
@@ -424,6 +478,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_verified_invitations_for_user: {
+        Args: { p_user_id: string }
+        Returns: number
+      }
+      accept_workspace_invitations: { Args: never; Returns: number }
       archive_project: {
         Args: { p_project_id: string }
         Returns: {
@@ -516,6 +575,27 @@ export type Database = {
           unassigned_task_count: number
         }[]
       }
+      revoke_workspace_invitation: {
+        Args: { p_invitation_id: string }
+        Returns: {
+          accepted_at: string | null
+          created_at: string
+          email_normalized: string
+          expires_at: string
+          id: string
+          invited_by: string | null
+          last_sent_at: string
+          revoked_at: string | null
+          role: Database["public"]["Enums"]["member_role"]
+          workspace_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "workspace_invitations"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       set_member_capacity: {
         Args: { p_capacity: number; p_user_id: string; p_workspace_id: string }
         Returns: {
@@ -590,6 +670,31 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "workspaces"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      upsert_workspace_invitation: {
+        Args: {
+          p_email: string
+          p_role?: Database["public"]["Enums"]["member_role"]
+          p_workspace_id: string
+        }
+        Returns: {
+          accepted_at: string | null
+          created_at: string
+          email_normalized: string
+          expires_at: string
+          id: string
+          invited_by: string | null
+          last_sent_at: string
+          revoked_at: string | null
+          role: Database["public"]["Enums"]["member_role"]
+          workspace_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "workspace_invitations"
           isOneToOne: true
           isSetofReturn: false
         }

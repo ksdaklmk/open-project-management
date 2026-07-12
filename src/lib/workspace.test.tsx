@@ -5,6 +5,9 @@ import React from 'react'
 const { useWorkspaces } = vi.hoisted(() => ({ useWorkspaces: vi.fn() }))
 vi.mock('./hooks/useWorkspaces', () => ({ useWorkspaces }))
 vi.mock('./hooks/useSession', () => ({ useActorId: () => 'u1' }))
+vi.mock('./hooks/useInvitations', () => ({
+  useInvitationAcceptance: () => ({ isPending: false }),
+}))
 
 import { WorkspaceProvider, useActiveWorkspace } from './workspace'
 

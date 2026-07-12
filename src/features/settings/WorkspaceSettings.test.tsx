@@ -25,6 +25,9 @@ vi.mock('../../lib/hooks/useWorkspaceAdmin', () => ({
 }))
 vi.mock('./ProjectSettings', () => ({ ProjectSettings: () => <div>Project settings mounted</div> }))
 vi.mock('./MemberSettings', () => ({ MemberSettings: () => <div>Member settings mounted</div> }))
+vi.mock('./InvitationSettings', () => ({
+  InvitationSettings: () => <div>Invitation settings mounted</div>,
+}))
 
 import { WorkspaceSettings } from './WorkspaceSettings'
 
@@ -45,6 +48,7 @@ describe('WorkspaceSettings', () => {
     )
     state.update.mutate.mock.calls[0][1].onSuccess()
     expect(screen.getByText('Project settings mounted')).toBeInTheDocument()
+    expect(screen.getByText('Invitation settings mounted')).toBeInTheDocument()
     expect(screen.getByText('Member settings mounted')).toBeInTheDocument()
   })
 

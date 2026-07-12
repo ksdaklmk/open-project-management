@@ -7,6 +7,7 @@ import { useCreateWorkspace, useUpdateWorkspace } from '../../lib/hooks/useWorks
 import { settingsPermissions } from './settingsPermissions'
 import { ProjectSettings } from './ProjectSettings'
 import { MemberSettings } from './MemberSettings'
+import { InvitationSettings } from './InvitationSettings'
 
 export function CreateWorkspaceForm({ embedded = false }: { embedded?: boolean }) {
   const create = useCreateWorkspace()
@@ -144,6 +145,7 @@ export function WorkspaceSettings() {
         </form>
       </section>
       <ProjectSettings workspaceId={activeId} />
+      <InvitationSettings workspaceId={activeId} actorRole={actorRole!} />
       <MemberSettings workspaceId={activeId} actorId={actorId} actorRole={actorRole!} />
       <CreateWorkspaceForm embedded />
     </div>
