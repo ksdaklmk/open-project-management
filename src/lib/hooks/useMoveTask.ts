@@ -41,12 +41,19 @@ export function useMoveTask(workspaceId: string) {
   const key = ['tasks', workspaceId]
   return useMutation({
     mutationFn: async (args: MoveArgs) => {
+      const initialNeighbours =
+        args.beforeTaskId === undefined && args.afterTaskId === undefined
+          ? refreshedMoveNeighbours(qc.getQueryData<Task[]>(key) ?? [], args)
+          : {
+              beforeTaskId: args.beforeTaskId ?? null,
+              afterTaskId: args.afterTaskId ?? null,
+            }
       try {
         await moveTask(
           args.taskId,
           args.toStatus,
-          args.beforeTaskId ?? null,
-          args.afterTaskId ?? null,
+          initialNeighbours.beforeTaskId,
+          initialNeighbours.afterTaskId,
         )
       } catch (error) {
         if (!(error instanceof TaskMoveConflict)) throw error

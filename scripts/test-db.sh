@@ -31,4 +31,5 @@ for ((run = 1; run <= repeat; run += 1)); do
   run_sql_file supabase/tests/invitations_test.sql
   run_sql_file supabase/tests/server_activity_test.sql
   run_sql_file supabase/tests/atomic_move_test.sql
+  run_sql_file supabase/tests/realtime_test.sql
 done

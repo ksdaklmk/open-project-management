@@ -63,6 +63,30 @@ describe('useMoveTask', () => {
     expect(moveTask).toHaveBeenCalledWith('t1', 'todo', 'a', 'b')
   })
 
+  it('derives a complete-column anchor for status selectors that omit neighbours', async () => {
+    const qc = new QueryClient()
+    qc.setQueryData(
+      ['tasks', ws],
+      [
+        { id: 't1', status: 'backlog', position: 0 },
+        { id: 'first', status: 'done', position: 10 },
+        { id: 'second', status: 'done', position: 20 },
+      ],
+    )
+    moveTask.mockResolvedValueOnce(undefined)
+    const { result } = renderHook(() => useMoveTask(ws), { wrapper: wrap(qc) })
+
+    result.current.mutate({
+      taskId: 't1',
+      toStatus: 'done',
+      position: 0,
+      fromStatus: 'backlog',
+    })
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(moveTask).toHaveBeenCalledWith('t1', 'done', null, 'first')
+  })
+
   it('rolls back and toasts on error', async () => {
     const qc = new QueryClient()
     qc.setQueryData(['tasks', ws], [{ id: 't1', status: 'todo', position: 0 }])

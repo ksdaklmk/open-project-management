@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { TASK_TYPES } from '../../types/constants'
 import { StatusCell, PriorityCell, AssigneeCell, type Patch } from '../listView/cells'
 import { useUpdateTask } from '../../lib/hooks/useUpdateTask'
@@ -27,6 +27,17 @@ export function DrawerFields({ task, workspaceId }: { task: Task; workspaceId: s
 
   const [title, setTitle] = useState(task.title)
   const [desc, setDesc] = useState(task.description)
+  const previousTask = useRef({ title: task.title, description: task.description })
+
+  // Realtime can replace the cached task while the drawer stays mounted. Adopt
+  // remote values only when the corresponding local draft is still pristine,
+  // so another user's edit appears without overwriting in-progress typing.
+  useEffect(() => {
+    const previous = previousTask.current
+    setTitle((current) => (current === previous.title ? task.title : current))
+    setDesc((current) => (current === previous.description ? task.description : current))
+    previousTask.current = { title: task.title, description: task.description }
+  }, [task.title, task.description])
 
   return (
     <div className="space-y-4">

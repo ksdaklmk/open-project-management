@@ -10,6 +10,7 @@ import { SessionProvider } from './lib/hooks/useSession'
 import { AuthGate } from './app/AuthGate'
 import { Shell } from './app/Shell'
 import { WorkspaceProvider } from './lib/workspace'
+import { WorkspaceRealtimeProvider } from './lib/realtime/WorkspaceRealtimeProvider'
 
 setTheme(getTheme())
 
@@ -20,7 +21,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <SessionProvider>
           <AuthGate>
             <WorkspaceProvider>
-              <Shell />
+              <WorkspaceRealtimeProvider>
+                <Shell />
+              </WorkspaceRealtimeProvider>
             </WorkspaceProvider>
           </AuthGate>
         </SessionProvider>
