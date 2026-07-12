@@ -52,6 +52,32 @@ export async function updateTask(
   if (error) throw new Error(error.message)
 }
 
+export class TaskMoveConflict extends Error {
+  readonly retryable = true
+
+  constructor(message = 'Task ordering changed. Refresh and retry.') {
+    super(message)
+    this.name = 'TaskMoveConflict'
+  }
+}
+
+export async function moveTask(
+  taskId: string,
+  toStatus: Task['status'],
+  beforeTaskId: string | null,
+  afterTaskId: string | null,
+): Promise<Task> {
+  const { data, error } = await supabase.rpc('move_task', {
+    p_task_id: taskId,
+    p_to_status: toStatus,
+    p_before_task_id: beforeTaskId ?? undefined,
+    p_after_task_id: afterTaskId ?? undefined,
+  })
+  if (error?.code === '40001') throw new TaskMoveConflict()
+  if (error) throw new Error(error.message)
+  return { ...data, tags: [] }
+}
+
 export async function deleteTask(id: string): Promise<void> {
   const { error } = await supabase.from('tasks').delete().eq('id', id)
   if (error) throw new Error(error.message)

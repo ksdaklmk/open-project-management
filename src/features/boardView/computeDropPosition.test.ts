@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { computeDropPosition, dropPosition } from './computeDropPosition'
+import { computeDropPosition, dropPosition, dropTarget } from './computeDropPosition'
 import type { Task } from '../../data/tasksRepo'
 
 const at = (pos: number, id = `t${pos}`): Task => ({ id, position: pos }) as Task
@@ -55,5 +55,23 @@ describe('dropPosition', () => {
     // T1 at index 0, insertIndex 0 (top slot). draggedIdx=0, insertIndex=0, adj=0
     // colTasks=[T2,T3], computeDropPosition([T2,T3],0) = T2.position - 1 = 0
     expect(dropPosition(col, 'T1', 0)).toBe(0)
+  })
+})
+
+describe('dropTarget', () => {
+  it('returns visible neighbour IDs and an optimistic position', () => {
+    expect(dropTarget([at(10, 'a'), at(20, 'b')], 'x', 1)).toEqual({
+      beforeTaskId: 'a',
+      afterTaskId: 'b',
+      position: 15,
+    })
+  })
+
+  it('adjusts downward same-column drops around the dragged card', () => {
+    expect(dropTarget([at(10, 'a'), at(20, 'drag'), at(30, 'b')], 'drag', 3)).toEqual({
+      beforeTaskId: 'b',
+      afterTaskId: null,
+      position: 31,
+    })
   })
 })

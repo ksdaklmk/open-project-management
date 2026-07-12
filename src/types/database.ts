@@ -574,6 +574,39 @@ export type Database = {
         Returns: boolean
       }
       is_member: { Args: { ws: string }; Returns: boolean }
+      move_task: {
+        Args: {
+          p_after_task_id?: string
+          p_before_task_id?: string
+          p_task_id: string
+          p_to_status: Database["public"]["Enums"]["task_status"]
+        }
+        Returns: {
+          assignee_id: string | null
+          created_at: string
+          created_by: string | null
+          description: string
+          end_date: string | null
+          id: string
+          points: number | null
+          position: number
+          priority: Database["public"]["Enums"]["task_priority"]
+          project_id: string
+          ref: string
+          start_date: string | null
+          status: Database["public"]["Enums"]["task_status"]
+          title: string
+          type: Database["public"]["Enums"]["task_type"]
+          updated_at: string
+          workspace_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "tasks"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       remove_workspace_member: {
         Args: { p_user_id: string; p_workspace_id: string }
         Returns: {

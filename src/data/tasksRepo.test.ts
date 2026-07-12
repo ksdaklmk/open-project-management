@@ -64,6 +64,8 @@ import {
   removeTaskTag,
   createTask,
   deleteTask,
+  moveTask,
+  TaskMoveConflict,
 } from './tasksRepo'
 
 beforeEach(() => vi.clearAllMocks())
@@ -174,6 +176,24 @@ describe('tasksRepo', () => {
     it('throws on an RPC error', async () => {
       rpc.mockResolvedValueOnce({ data: null, error: { message: 'not a member' } })
       await expect(createTask({ projectId: 'p1', title: 'x' })).rejects.toThrow('not a member')
+    })
+  })
+
+  describe('moveTask', () => {
+    it('moves through the atomic neighbour RPC', async () => {
+      rpc.mockResolvedValueOnce({ data: { id: 't1', status: 'done' }, error: null })
+      await moveTask('t1', 'done', 'before', 'after')
+      expect(rpc).toHaveBeenCalledWith('move_task', {
+        p_task_id: 't1',
+        p_to_status: 'done',
+        p_before_task_id: 'before',
+        p_after_task_id: 'after',
+      })
+    })
+
+    it('maps serialization failures to a retryable conflict', async () => {
+      rpc.mockResolvedValueOnce({ data: null, error: { code: '40001', message: 'stale' } } as any)
+      await expect(moveTask('t1', 'done', null, null)).rejects.toBeInstanceOf(TaskMoveConflict)
     })
   })
 })

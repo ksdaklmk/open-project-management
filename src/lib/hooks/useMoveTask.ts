@@ -1,20 +1,61 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { updateTask, type Task } from '../../data/tasksRepo'
+import { moveTask, TaskMoveConflict, type Task } from '../../data/tasksRepo'
 
 interface MoveArgs {
   taskId: string
   toStatus: Task['status']
   position: number
   fromStatus: Task['status']
+  beforeTaskId?: string | null
+  afterTaskId?: string | null
+}
+
+export function refreshedMoveNeighbours(tasks: Task[], args: MoveArgs) {
+  const target = tasks
+    .filter((task) => task.id !== args.taskId && task.status === args.toStatus)
+    .sort((a, b) => a.position - b.position || a.id.localeCompare(b.id))
+  const beforeIndex = args.beforeTaskId
+    ? target.findIndex((task) => task.id === args.beforeTaskId)
+    : -1
+  if (beforeIndex >= 0) {
+    return {
+      beforeTaskId: target[beforeIndex].id,
+      afterTaskId: target[beforeIndex + 1]?.id ?? null,
+    }
+  }
+  const afterIndex = args.afterTaskId
+    ? target.findIndex((task) => task.id === args.afterTaskId)
+    : -1
+  if (afterIndex >= 0) {
+    return {
+      beforeTaskId: target[afterIndex - 1]?.id ?? null,
+      afterTaskId: target[afterIndex].id,
+    }
+  }
+  return { beforeTaskId: null, afterTaskId: target[0]?.id ?? null }
 }
 
 export function useMoveTask(workspaceId: string) {
   const qc = useQueryClient()
   const key = ['tasks', workspaceId]
   return useMutation({
-    mutationFn: ({ taskId, toStatus, position }: MoveArgs) =>
-      updateTask(taskId, { status: toStatus, position }),
+    mutationFn: async (args: MoveArgs) => {
+      try {
+        await moveTask(
+          args.taskId,
+          args.toStatus,
+          args.beforeTaskId ?? null,
+          args.afterTaskId ?? null,
+        )
+      } catch (error) {
+        if (!(error instanceof TaskMoveConflict)) throw error
+        await qc.invalidateQueries({ queryKey: key })
+        const refreshed = qc.getQueryData<Task[]>(key) ?? []
+        const neighbours = refreshedMoveNeighbours(refreshed, args)
+        await moveTask(args.taskId, args.toStatus, neighbours.beforeTaskId, neighbours.afterTaskId)
+      }
+    },
     onMutate: async ({ taskId, toStatus, position }) => {
       await qc.cancelQueries({ queryKey: key })
       const prev = qc.getQueryData<Task[]>(key)

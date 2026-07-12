@@ -24,3 +24,15 @@ export function dropPosition(
   const colTasks = columnInclDragged.filter((t) => t.id !== draggedId)
   return computeDropPosition(colTasks, adj)
 }
+
+export function dropTarget(columnInclDragged: Task[], draggedId: string, insertIndex: number) {
+  const draggedIdx = columnInclDragged.findIndex((task) => task.id === draggedId)
+  const adjustedIndex = draggedIdx >= 0 && insertIndex > draggedIdx ? insertIndex - 1 : insertIndex
+  const columnTasks = columnInclDragged.filter((task) => task.id !== draggedId)
+  const boundedIndex = Math.max(0, Math.min(adjustedIndex, columnTasks.length))
+  return {
+    beforeTaskId: columnTasks[boundedIndex - 1]?.id ?? null,
+    afterTaskId: columnTasks[boundedIndex]?.id ?? null,
+    position: computeDropPosition(columnTasks, boundedIndex),
+  }
+}

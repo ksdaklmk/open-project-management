@@ -7,7 +7,7 @@ import { useViewState } from '../../app/useViewState'
 import { STATUSES } from '../../types/constants'
 import { boardColumns } from './boardColumns'
 import { BoardColumn } from './BoardColumn'
-import { dropPosition } from './computeDropPosition'
+import { dropTarget } from './computeDropPosition'
 import type { Status } from '../../types/constants'
 
 export function BoardView() {
@@ -30,8 +30,8 @@ export function BoardView() {
     const dragged = all.find((t) => t.id === taskId)
     if (!dragged) return
     const sorted = all.filter((t) => t.status === toStatus).sort((a, b) => a.position - b.position)
-    const position = dropPosition(sorted, taskId, insertIndex)
-    move.mutate({ taskId, toStatus, position, fromStatus: dragged.status })
+    const target = dropTarget(sorted, taskId, insertIndex)
+    move.mutate({ taskId, toStatus, ...target, fromStatus: dragged.status })
   }
 
   if (wsLoading || isLoading) return <BoardSkeleton />
