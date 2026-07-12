@@ -333,6 +333,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "tasks_workspace_assignee_fkey"
+            columns: ["workspace_id", "assignee_id"]
+            isOneToOne: false
+            referencedRelation: "workspace_members"
+            referencedColumns: ["workspace_id", "user_id"]
+          },
+          {
             foreignKeyName: "tasks_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
@@ -556,6 +563,13 @@ export type Database = {
       finish: { Args: { exception_on_failure?: boolean }; Returns: string[] }
       format_type_string: { Args: { "": string }; Returns: string }
       has_unique: { Args: { "": string }; Returns: string }
+      has_workspace_role: {
+        Args: {
+          allowed: Database["public"]["Enums"]["member_role"][]
+          ws: string
+        }
+        Returns: boolean
+      }
       in_todo: { Args: never; Returns: boolean }
       is_empty: { Args: { "": string }; Returns: string }
       is_member: { Args: { ws: string }; Returns: boolean }

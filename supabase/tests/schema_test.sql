@@ -12,11 +12,13 @@ select plan(12);
 set local role postgres;
 
 insert into auth.users (id, email) values
-  ('00000000-0000-0000-0000-000000000091', 'schema@test.dev');
+  ('00000000-0000-0000-0000-000000000091', 'schema@test.dev'),
+  ('00000000-0000-0000-0000-000000000096', 'replacement-owner@test.dev');
 insert into workspaces (id, name, created_by) values
   ('00000000-0000-0000-0000-000000000092', 'SX', '00000000-0000-0000-0000-000000000091');
 insert into workspace_members (workspace_id, user_id, role) values
-  ('00000000-0000-0000-0000-000000000092', '00000000-0000-0000-0000-000000000091', 'owner');
+  ('00000000-0000-0000-0000-000000000092', '00000000-0000-0000-0000-000000000091', 'owner'),
+  ('00000000-0000-0000-0000-000000000092', '00000000-0000-0000-0000-000000000096', 'owner');
 insert into projects (id, workspace_id, name, key) values
   ('00000000-0000-0000-0000-000000000093', '00000000-0000-0000-0000-000000000092', 'SX', 'SX');
 insert into tasks (id, project_id, workspace_id, ref, title, created_by) values
@@ -78,7 +80,8 @@ select throws_ok(
 
 -- ---------------------------------------------------------------------------
 -- Attribution FKs: deleting an auth user (cascades to the profile) must not
--- be blocked by historical rows; history survives with null attribution.
+-- be blocked by historical rows once another workspace owner remains; history
+-- survives with null attribution.
 -- ---------------------------------------------------------------------------
 select lives_ok(
   $$ delete from auth.users where id = '00000000-0000-0000-0000-000000000091' $$,
@@ -97,5 +100,5 @@ select is(
   1,
   'activity.actor_id nulls out when the profile is deleted');
 
-select * from finish();
+select * from finish(true);
 rollback;
