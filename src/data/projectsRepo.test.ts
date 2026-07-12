@@ -1,12 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const { order, eq, select, from, rpc } = vi.hoisted(() => {
+const { order, is, eq, select, from, rpc } = vi.hoisted(() => {
   const order = vi.fn()
-  const eq = vi.fn(() => ({ order }))
+  const is = vi.fn(() => ({ order }))
+  const eq = vi.fn(() => ({ is }))
   const select = vi.fn(() => ({ eq }))
   const from = vi.fn(() => ({ select }))
   const rpc = vi.fn()
-  return { order, eq, select, from, rpc }
+  return { order, is, eq, select, from, rpc }
 })
 
 vi.mock('../lib/supabase', () => ({ supabase: { from, rpc } }))
@@ -25,6 +26,7 @@ describe('projectsRepo', () => {
     expect(from).toHaveBeenCalledWith('projects')
     expect(select).toHaveBeenCalledWith('id, name, key')
     expect(eq).toHaveBeenCalledWith('workspace_id', 'ws-1')
+    expect(is).toHaveBeenCalledWith('archived_at', null)
     expect(order).toHaveBeenCalledWith('name')
     expect(projects).toEqual([{ id: 'p1', name: 'Nimbus', key: 'NIM' }])
   })

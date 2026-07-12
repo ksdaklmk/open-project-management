@@ -4,14 +4,16 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { Shell } from './Shell'
 
-const { ws, mockSignOut } = vi.hoisted(() => ({
+const { ws, mockSignOut, members } = vi.hoisted(() => ({
   ws: { activeId: 'w1' as string | null, loading: false },
   mockSignOut: vi.fn(),
+  members: { data: [{ user_id: 'u1', role: 'owner' }] as { user_id: string; role: string }[] },
 }))
 vi.mock('../lib/workspace', () => ({
   useActiveWorkspace: () => ({ ...ws, setActiveId: vi.fn() }),
 }))
-vi.mock('../lib/hooks/useSession', () => ({ signOut: mockSignOut }))
+vi.mock('../lib/hooks/useSession', () => ({ signOut: mockSignOut, useActorId: () => 'u1' }))
+vi.mock('../lib/hooks/useMembers', () => ({ useMembers: () => members }))
 
 vi.mock('../components/WorkspaceSwitcher', () => ({
   WorkspaceSwitcher: () => null,
@@ -34,6 +36,10 @@ vi.mock('../features/timelineView/TimelineView', () => ({
 vi.mock('../features/workloadView/WorkloadView', () => ({
   WorkloadView: () => <div>workload mounted</div>,
 }))
+vi.mock('../features/settings/WorkspaceSettings', () => ({
+  WorkspaceSettings: () => <div>settings mounted</div>,
+  CreateWorkspaceForm: () => <div>Create your workspace</div>,
+}))
 vi.mock('../features/taskDrawer/TaskDrawer', () => ({ TaskDrawer: () => null }))
 vi.mock('../features/toolbar/Toolbar', () => ({ Toolbar: () => null }))
 
@@ -54,15 +60,30 @@ describe('Shell', () => {
     ws.activeId = 'w1'
     ws.loading = false
     mockSignOut.mockClear()
+    members.data = [{ user_id: 'u1', role: 'owner' }]
   })
 
-  it('shows all six view tabs', async () => {
+  it('shows all six work views and settings to an owner', async () => {
     renderShell()
     for (const t of ['List', 'Board', 'Gantt', 'Timeline', 'Activity', 'Workload'])
       expect(screen.getByRole('button', { name: t })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Settings' })).toBeInTheDocument()
     // Flush the lazy view's resolution inside act so it doesn't land after
     // the test and warn.
     await act(async () => {})
+  })
+
+  it('hides settings navigation from ordinary members', async () => {
+    members.data = [{ user_id: 'u1', role: 'member' }]
+    renderShell()
+    expect(screen.queryByRole('button', { name: 'Settings' })).toBeNull()
+    await act(async () => {})
+  })
+
+  it('mounts settings for an owner', async () => {
+    renderShell()
+    await userEvent.click(screen.getByRole('button', { name: 'Settings' }))
+    expect(await screen.findByText('settings mounted')).toBeInTheDocument()
   })
 
   it('switches the active view when a tab is clicked', async () => {
@@ -107,11 +128,10 @@ describe('Shell', () => {
     expect(await screen.findByText('workload mounted')).toBeInTheDocument()
   })
 
-  it('shows the no-workspace state when the member list is loaded but empty', () => {
+  it('shows the no-workspace state when the member list is loaded but empty', async () => {
     ws.activeId = null
     renderShell()
-    expect(screen.getByText('No workspace yet')).toBeInTheDocument()
-    expect(screen.getByText('Ask your workspace admin to add you.')).toBeInTheDocument()
+    expect(await screen.findByText('Create your workspace')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Board' })).toBeNull() // no app chrome
   })
 

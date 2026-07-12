@@ -15,6 +15,7 @@ export async function listProjects(workspaceId: string): Promise<ProjectOption[]
     .from('projects')
     .select('id, name, key')
     .eq('workspace_id', workspaceId)
+    .is('archived_at', null)
     .order('name')
   if (error) throw new Error(error.message)
   return data ?? []

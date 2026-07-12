@@ -3,6 +3,9 @@ import { useViewState, VIEWS, type ViewId } from './useViewState'
 import { getTheme, setTheme, type Theme } from '../lib/theme'
 import { useActiveWorkspace } from '../lib/workspace'
 import { signOut } from '../lib/hooks/useSession'
+import { useActorId } from '../lib/hooks/useSession'
+import { useMembers } from '../lib/hooks/useMembers'
+import { settingsPermissions } from '../features/settings/settingsPermissions'
 import { WorkspaceSwitcher } from '../components/WorkspaceSwitcher'
 import { TaskDrawer } from '../features/taskDrawer/TaskDrawer'
 import { Toolbar } from '../features/toolbar/Toolbar'
@@ -26,6 +29,14 @@ const TimelineView = lazy(() =>
 const WorkloadView = lazy(() =>
   import('../features/workloadView/WorkloadView').then((m) => ({ default: m.WorkloadView })),
 )
+const WorkspaceSettings = lazy(() =>
+  import('../features/settings/WorkspaceSettings').then((m) => ({ default: m.WorkspaceSettings })),
+)
+const CreateWorkspaceForm = lazy(() =>
+  import('../features/settings/WorkspaceSettings').then((m) => ({
+    default: m.CreateWorkspaceForm,
+  })),
+)
 
 const TASK_VIEWS: ViewId[] = ['list', 'board', 'gantt', 'timeline']
 
@@ -36,12 +47,17 @@ const LABEL: Record<ViewId, string> = {
   timeline: 'Timeline',
   activity: 'Activity',
   workload: 'Workload',
+  settings: 'Settings',
 }
 
 export function Shell() {
   const { view, setView } = useViewState()
   const [theme, setThemeState] = useState<Theme>(getTheme())
   const { activeId, loading: workspacesLoading } = useActiveWorkspace()
+  const actorId = useActorId()
+  const members = useMembers(activeId ?? '')
+  const actorRole = members.data?.find((member) => member.user_id === actorId)?.role
+  const canManageSettings = settingsPermissions(actorRole).canManage
 
   // Apply the theme to the DOM (and persist it) on mount and on every change,
   // so the DOM always reflects state — self-healing across remounts/desyncs.
@@ -54,9 +70,10 @@ export function Shell() {
   if (!workspacesLoading && activeId === null)
     return (
       <div className="min-h-full grid place-items-center bg-[var(--bg)] text-[var(--text)]">
-        <div className="w-96 max-w-full space-y-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-6 text-center">
-          <h1 className="text-lg font-semibold">No workspace yet</h1>
-          <p className="text-sm text-[var(--muted)]">Ask your workspace admin to add you.</p>
+        <div className="w-full max-w-xl space-y-3 p-4 text-center">
+          <Suspense fallback={<p>Loading…</p>}>
+            <CreateWorkspaceForm />
+          </Suspense>
           <button onClick={() => signOut()} className="opm-btn">
             Sign out
           </button>
@@ -65,12 +82,12 @@ export function Shell() {
     )
 
   return (
-    <div className="min-h-full grid grid-cols-[200px_1fr] bg-[var(--bg)] text-[var(--text)]">
-      <aside className="border-r border-[var(--border)] p-3 space-y-1">
+    <div className="opm-shell min-h-full bg-[var(--bg)] text-[var(--text)]">
+      <aside className="opm-sidebar border-r border-[var(--border)] p-3 space-y-1">
         <div className="mb-3">
           <WorkspaceSwitcher />
         </div>
-        {VIEWS.map((v) => (
+        {VIEWS.filter((v) => v !== 'settings' || canManageSettings).map((v) => (
           <button
             key={v}
             onClick={() => setView(v)}
@@ -108,6 +125,8 @@ export function Shell() {
               <ActivityView />
             ) : view === 'workload' ? (
               <WorkloadView />
+            ) : view === 'settings' ? (
+              <WorkspaceSettings />
             ) : (
               `${view} view — coming next.`
             )}

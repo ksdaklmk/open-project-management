@@ -1,7 +1,15 @@
 import { useSearchParams } from 'react-router-dom'
 
-export type ViewId = 'list' | 'board' | 'gantt' | 'timeline' | 'activity' | 'workload'
-export const VIEWS: ViewId[] = ['list', 'board', 'gantt', 'timeline', 'activity', 'workload']
+export type ViewId = 'list' | 'board' | 'gantt' | 'timeline' | 'activity' | 'workload' | 'settings'
+export const VIEWS: ViewId[] = [
+  'list',
+  'board',
+  'gantt',
+  'timeline',
+  'activity',
+  'workload',
+  'settings',
+]
 
 export function useViewState() {
   const [params, setParams] = useSearchParams()

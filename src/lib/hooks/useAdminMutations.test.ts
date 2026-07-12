@@ -65,6 +65,23 @@ describe('workspace administration hooks', () => {
 })
 
 describe('project administration hook', () => {
+  it('creates and updates projects, invalidating the project list', async () => {
+    const queryClient = new QueryClient()
+    const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
+    repos.createProject.mockResolvedValueOnce({ id: 'p2' })
+    repos.updateProject.mockResolvedValueOnce({ id: 'p1' })
+    const { result } = renderHook(() => useProjectAdmin(workspaceId), {
+      wrapper: wrap(queryClient),
+    })
+    result.current.create.mutate({ name: 'Delivery', key: 'DEL' })
+    await waitFor(() => expect(result.current.create.isSuccess).toBe(true))
+    result.current.update.mutate({ projectId: 'p1', name: 'Renamed' })
+    await waitFor(() => expect(result.current.update.isSuccess).toBe(true))
+    expect(repos.createProject).toHaveBeenCalledWith(workspaceId, 'Delivery', 'DEL')
+    expect(repos.updateProject).toHaveBeenCalledWith('p1', 'Renamed')
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['projects', workspaceId] })
+  })
+
   it('invalidates projects and tasks after archival', async () => {
     const queryClient = new QueryClient()
     const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
@@ -80,6 +97,24 @@ describe('project administration hook', () => {
 })
 
 describe('member administration hook', () => {
+  it('updates role, capacity, and ownership then invalidates members', async () => {
+    const queryClient = new QueryClient()
+    const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
+    repos.setMemberRole.mockResolvedValueOnce({ user_id: 'u2' })
+    repos.setMemberCapacity.mockResolvedValueOnce({ user_id: 'u2' })
+    repos.transferWorkspaceOwnership.mockResolvedValueOnce({ newOwnerId: 'u2' })
+    const { result } = renderHook(() => useMemberAdmin(workspaceId), {
+      wrapper: wrap(queryClient),
+    })
+    result.current.setRole.mutate({ userId: 'u2', role: 'admin' })
+    await waitFor(() => expect(result.current.setRole.isSuccess).toBe(true))
+    result.current.setCapacity.mutate({ userId: 'u2', capacity: 24 })
+    await waitFor(() => expect(result.current.setCapacity.isSuccess).toBe(true))
+    result.current.transferOwnership.mutate('u2')
+    await waitFor(() => expect(result.current.transferOwnership.isSuccess).toBe(true))
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['members', workspaceId] })
+  })
+
   it('waits for removal success, then invalidates members and tasks', async () => {
     const queryClient = new QueryClient()
     const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
