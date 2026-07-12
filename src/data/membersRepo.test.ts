@@ -4,15 +4,23 @@ const {
   eq,
   select: _select,
   from,
+  rpc,
 } = vi.hoisted(() => {
   const eq = vi.fn()
   const select = vi.fn(() => ({ eq }))
   const from = vi.fn(() => ({ select }))
-  return { eq, select, from }
+  const rpc = vi.fn()
+  return { eq, select, from, rpc }
 })
-vi.mock('../lib/supabase', () => ({ supabase: { from } }))
+vi.mock('../lib/supabase', () => ({ supabase: { from, rpc } }))
 
-import { listMembers } from './membersRepo'
+import {
+  listMembers,
+  removeWorkspaceMember,
+  setMemberCapacity,
+  setMemberRole,
+  transferWorkspaceOwnership,
+} from './membersRepo'
 
 beforeEach(() => vi.clearAllMocks())
 
@@ -46,5 +54,45 @@ describe('membersRepo.listMembers', () => {
     })
     const out = await listMembers('w1')
     expect(out[0].name).toBe('')
+  })
+})
+
+describe('member administration', () => {
+  it('routes role and capacity changes through RPCs', async () => {
+    rpc.mockResolvedValue({ data: { user_id: 'u1' }, error: null })
+    await setMemberRole('w1', 'u1', 'admin')
+    await setMemberCapacity('w1', 'u1', 32)
+    expect(rpc.mock.calls).toEqual([
+      ['set_member_role', { p_workspace_id: 'w1', p_user_id: 'u1', p_role: 'admin' }],
+      ['set_member_capacity', { p_workspace_id: 'w1', p_user_id: 'u1', p_capacity: 32 }],
+    ])
+  })
+
+  it('normalises member removal and ownership transfer results', async () => {
+    rpc
+      .mockResolvedValueOnce({
+        data: [{ removed_user_id: 'u2', unassigned_task_count: 3 }],
+        error: null,
+      })
+      .mockResolvedValueOnce({
+        data: [{ previous_owner_id: 'u1', new_owner_id: 'u2' }],
+        error: null,
+      })
+    await expect(removeWorkspaceMember('w1', 'u2')).resolves.toEqual({
+      removedUserId: 'u2',
+      unassignedTaskCount: 3,
+    })
+    await expect(transferWorkspaceOwnership('w1', 'u2')).resolves.toEqual({
+      previousOwnerId: 'u1',
+      newOwnerId: 'u2',
+    })
+  })
+
+  it('maps final-owner failures to actionable copy', async () => {
+    rpc.mockResolvedValueOnce({
+      data: null,
+      error: { code: '23514', message: 'workspace_members_owner_required' },
+    })
+    await expect(removeWorkspaceMember('w1', 'u1')).rejects.toThrow('Transfer ownership')
   })
 })
