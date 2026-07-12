@@ -1,5 +1,7 @@
 -- Minimal deterministic database-test bootstrap. Product fixtures live inside
 -- each transactional test file, so tests never depend on supabase/seed.sql.
+-- In particular, do not create the local Northwind demo here: production-style
+-- signup tests must prove that profiles receive no implicit workspace access.
 create extension if not exists pgtap with schema extensions;
 
 -- Older local stacks may already have pgTAP in public. Keep test-only objects

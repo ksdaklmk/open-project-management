@@ -50,22 +50,6 @@ insert into workspace_members (workspace_id, user_id, role) values
   ('00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-00000000000c', 'member'),
   ('00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-000000000010', 'admin');
 
--- handle_new_user (0002) auto-joins every new auth.users row to the seeded
--- "Northwind" demo workspace when it exists, silently giving A, B and C a
--- shared workspace -- which breaks the isolation premise below (notably
--- "A cannot read B's profile, no shared workspace"). Strip any membership
--- outside the two fixture workspaces so the fixture is deterministic whether
--- or not the demo seed is loaded.
-delete from workspace_members
-  where user_id in (
-    '00000000-0000-0000-0000-00000000000a',
-    '00000000-0000-0000-0000-00000000000b',
-    '00000000-0000-0000-0000-00000000000c',
-    '00000000-0000-0000-0000-000000000010')
-  and workspace_id not in (
-    '00000000-0000-0000-0000-0000000000a1',
-    '00000000-0000-0000-0000-0000000000b1');
-
 insert into projects (id, workspace_id, name, key) values
   ('00000000-0000-0000-0000-0000000000a2', '00000000-0000-0000-0000-0000000000a1', 'PA', 'PA'),
   ('00000000-0000-0000-0000-0000000000a9', '00000000-0000-0000-0000-0000000000a1', 'PD', 'PD'),
@@ -101,8 +85,7 @@ select set_config('request.jwt.claims',
   true);
 
 -- SELECT isolation on tasks (the brief's two assertions). Scoped to WS-A's
--- workspace_id so an out-of-band seed (e.g. a demo Northwind that
--- handle_new_user would auto-join A to) cannot flake the count.
+-- workspace_id so unrelated local fixtures cannot flake the count.
 select is(
   (select count(*) from tasks
    where workspace_id = '00000000-0000-0000-0000-0000000000a1')::int, 1,
@@ -439,18 +422,13 @@ select is(
   'member C can delete a task in its own workspace');
 
 -- ---------------------------------------------------------------------------
--- handle_new_user (0004): name coalesces OAuth metadata variants; the demo
--- auto-join is pinned to the seed workspace UUID, so a workspace merely NAMED
--- 'Northwind' attracts nothing. The demo row is ensured here (idempotent
--- whether or not seed.sql ran); the decoy shares only the name.
+-- handle_new_user (0011): name coalesces OAuth metadata variants and creates
+-- no workspace membership, even if the local demo workspace exists.
 -- ---------------------------------------------------------------------------
 set local role postgres;
 insert into workspaces (id, name, created_by) values
   ('20000000-0000-0000-0000-000000000001', 'Northwind', null)
   on conflict (id) do nothing;
-insert into workspaces (id, name, created_by) values
-  ('00000000-0000-0000-0000-0000000000d1', 'Northwind', null);
-
 insert into auth.users (id, email, raw_user_meta_data) values
   ('00000000-0000-0000-0000-00000000000d', 'd@test.dev',
    '{"full_name": "Dee Fixture"}'::jsonb);
@@ -470,14 +448,12 @@ select is(
 
 select is(
   (select count(*) from workspace_members
-   where user_id = '00000000-0000-0000-0000-00000000000d'
-     and workspace_id = '20000000-0000-0000-0000-000000000001')::int, 1,
-  'new signup auto-joins the demo workspace by fixed UUID');
+   where user_id = '00000000-0000-0000-0000-00000000000d')::int, 0,
+  'an arbitrary production signup receives no workspace membership');
 select is(
   (select count(*) from workspace_members
-   where user_id = '00000000-0000-0000-0000-00000000000d'
-     and workspace_id = '00000000-0000-0000-0000-0000000000d1')::int, 0,
-  'a workspace merely named Northwind attracts no auto-joins');
+   where user_id = '00000000-0000-0000-0000-00000000000e')::int, 0,
+  'OAuth-style signup also receives no implicit workspace membership');
 
 -- ---------------------------------------------------------------------------
 -- RLS hardening (0005, docs/AUDIT.md finding 3). Membership-only UPDATE
@@ -493,8 +469,7 @@ set local role postgres;
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000f', 'f@test.dev');
--- Dual membership: F belongs to both fixture workspaces. Strip anything else
--- (handle_new_user auto-joined F to the demo workspace ensured above).
+-- Dual membership: F belongs to both fixture workspaces and nothing else.
 insert into workspace_members (workspace_id, user_id, role) values
   ('00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-00000000000f', 'member'),
   ('00000000-0000-0000-0000-0000000000b1', '00000000-0000-0000-0000-00000000000f', 'member');

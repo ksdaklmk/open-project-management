@@ -33,8 +33,8 @@ browser code never receives a service-role key.
 6. Copy `.env.example` to `.env.local` and fill in the anon key printed by `supabase status`.
 7. Start Vite: `npm run dev`, then open `http://localhost:5173`.
 
-The local seed creates the Northwind demonstration workspace. Production must not run
-`supabase/seed.sql`.
+The local seed creates Northwind and its explicit demonstration memberships. New signups never
+auto-join it. Production must not run `supabase/seed.sql`.
 
 ## Quality commands
 
@@ -85,7 +85,7 @@ procedures. Current privileged workspace administration is documented in [admin]
 
 ## Known limitations
 
-The repository is an internal beta at the Phase 0 production-readiness baseline. Normal workspace,
-project, membership, invitation, and ownership administration still requires the SQL runbook;
-realtime reconciliation and server-authored activity are not yet implemented; large task sets are
-not yet paginated; and the full responsive/accessibility production gate remains pending.
+The repository is an internal beta. Owners and admins can manage normal workspace, project,
+membership, invitation, and ownership flows in the settings UI. Realtime reconciliation and
+server-authored activity are not yet implemented; large task sets are not yet paginated; and the
+full responsive/accessibility production gate remains pending.
