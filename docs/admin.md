@@ -1,47 +1,38 @@
-# Admin Runbook (admin-by-SQL)
+# Workspace administration
 
-This app deliberately has no UI for workspace, project, or member management —
-the owner administers by SQL (post-v1 roadmap decision, spec
-`2026-07-07-make-it-adoptable-design.md`). Run these in the Supabase SQL editor
-(hosted) or `psql` (local); both run as a privileged role, bypassing RLS by design.
+Normal workspace administration uses authenticated database RPCs. Do not edit `workspaces`,
+`projects`, or `workspace_members` directly in the SQL editor: direct membership writes are
+revoked, and bypassing the RPCs would skip their permission checks and transactional behaviour.
 
-Local psql:
+The settings interface introduced by Phase 1 Task 1.5 calls these operations. Until that interface
+is available, they can be exercised through an authenticated Supabase client with `supabase.rpc`.
 
-    podman exec -it supabase_db_open-project-management psql -U postgres -d postgres
+| Operation                              | RPC                            | Required role      |
+| -------------------------------------- | ------------------------------ | ------------------ |
+| Create a workspace and initial project | `create_workspace`             | Authenticated user |
+| Rename a workspace                     | `update_workspace`             | Owner or admin     |
+| Create a project                       | `create_project`               | Owner or admin     |
+| Rename a project                       | `update_project`               | Owner or admin     |
+| Archive a project                      | `archive_project`              | Owner or admin     |
+| Promote or demote an admin             | `set_member_role`              | Owner              |
+| Change weekly capacity                 | `set_member_capacity`          | Owner or admin     |
+| Remove a member                        | `remove_workspace_member`      | Owner or admin     |
+| Transfer ownership                     | `transfer_workspace_ownership` | Owner              |
 
-## Create a workspace (and make yourself its owner)
+Member invitations are deliberately not replaced by an insecure “add user ID” RPC. Secure email
+invitations and acceptance are introduced by Phase 1 Task 1.6.
 
-    insert into workspaces (name, created_by)
-      values ('Acme Team', (select id from auth.users where email = 'you@example.com'))
-      returning id;
-    insert into workspace_members (workspace_id, user_id, role)
-      values ('<workspace-id-from-above>',
-              (select id from auth.users where email = 'you@example.com'),
-              'owner');
+## Safety guarantees
 
-Do **not** name a real workspace with the demo seed UUID
-`20000000-0000-0000-0000-000000000001`; the name "Northwind" is fine —
-auto-join is pinned to that UUID, not the name.
+- RPCs authenticate with `auth.uid()` and return the same authorisation error for missing and
+  foreign-tenant resources.
+- Workspace creation, its owner membership, and the initial project commit or roll back together.
+- A workspace always retains an owner. Ownership transfer promotes the replacement before
+  demoting the previous owner.
+- Member removal unassigns their tasks before deleting membership and reports the affected task
+  count. If removal fails, both changes roll back.
+- Project keys are normalised to uppercase and remain immutable after creation.
+- Anonymous callers cannot execute administration RPCs.
 
-## Add a member (they must have signed up first)
-
-    insert into workspace_members (workspace_id, user_id, role)
-      values ('<workspace-id>',
-              (select id from auth.users where email = 'teammate@example.com'),
-              'member');
-
-## Create a project (key becomes the task-ref prefix, e.g. ACME-101)
-
-    insert into projects (workspace_id, name, key)
-      values ('<workspace-id>', 'Acme Website', 'ACME');
-
-## Fix a profile name (blank names render as "Someone")
-
-    update profiles set name = 'Real Name'
-      where id = (select id from auth.users where email = 'teammate@example.com');
-
-## Remove a member (their tasks stay; assignee falls back to unassigned display)
-
-    delete from workspace_members
-      where workspace_id = '<workspace-id>'
-        and user_id = (select id from auth.users where email = 'teammate@example.com');
+For emergency operator intervention, follow the incident and change-control procedures in
+`docs/operations.md`; privileged SQL is not a normal product administration path.

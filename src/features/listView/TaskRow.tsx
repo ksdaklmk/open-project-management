@@ -9,39 +9,59 @@ const cssVars = (color?: string) => ({ '--chip': color }) as CSSProperties
 function shapeStyle(shape: string, color: string): CSSProperties {
   const base: CSSProperties = { background: color, display: 'block' }
   switch (shape) {
-    case 'circle':   return { ...base, width: 9, height: 9, borderRadius: '50%' }
-    case 'line':     return { ...base, width: 11, height: 3, borderRadius: 2 }
-    case 'triangle': return { ...base, width: 11, height: 9, clipPath: 'polygon(50% 0, 100% 100%, 0 100%)' }
-    default:         return { ...base, width: 9, height: 9, borderRadius: 2 } // square (feature)
+    case 'circle':
+      return { ...base, width: 9, height: 9, borderRadius: '50%' }
+    case 'line':
+      return { ...base, width: 11, height: 3, borderRadius: 2 }
+    case 'triangle':
+      return { ...base, width: 11, height: 9, clipPath: 'polygon(50% 0, 100% 100%, 0 100%)' }
+    default:
+      return { ...base, width: 9, height: 9, borderRadius: 2 } // square (feature)
   }
 }
 
-export function TaskRow({ task, members, selected, onSelect, onPatch, onMove }: {
-  task: Task; members: Member[]; selected?: boolean
-  onSelect: (ref: string) => void; onPatch: (id: string, p: Patch) => void
+export function TaskRow({
+  task,
+  members,
+  selected,
+  onSelect,
+  onPatch,
+  onMove,
+}: {
+  task: Task
+  members: Member[]
+  selected?: boolean
+  onSelect: (ref: string) => void
+  onPatch: (id: string, p: Patch) => void
   onMove: (task: Task, toStatus: Task['status']) => void
 }) {
   const type = TASK_TYPES[task.type]
   const tags = task.tags
   return (
-    <tr
-      onClick={() => onSelect(task.ref)}
-      tabIndex={0}
-      onKeyDown={(e) => e.key === 'Enter' && onSelect(task.ref)}
-      aria-selected={selected || undefined}
-      className="opm-row cursor-pointer border-b border-[var(--border)]"
-    >
+    <tr data-selected={selected || undefined} className="opm-row border-b border-[var(--border)]">
       <td className="py-1.5 pl-3 pr-1 align-middle">
-        <span className="inline-flex h-4 w-4 items-center justify-center"
-          role="img" aria-label={type.label} title={type.label}>
+        <span
+          className="inline-flex h-4 w-4 items-center justify-center"
+          role="img"
+          aria-label={type.label}
+          title={type.label}
+        >
           <span style={shapeStyle(type.shape, type.color)} />
         </span>
       </td>
       <td className="px-2 py-1.5 align-middle">
-        <span className="text-xs font-medium tabular-nums tracking-tight text-[var(--muted)]">{task.ref}</span>
+        <span className="opm-task-ref">{task.ref}</span>
       </td>
       <td className="px-2 py-1.5 align-middle">
-        <span className="block truncate font-medium text-[var(--text)]">{task.title}</span>
+        <button
+          type="button"
+          aria-label={`Open ${task.ref}: ${task.title}`}
+          aria-current={selected ? 'true' : undefined}
+          onClick={() => onSelect(task.ref)}
+          className="opm-task-open opm-task-title block w-full truncate text-left text-[var(--text)]"
+        >
+          {task.title}
+        </button>
       </td>
       <td className="px-2 py-1.5 align-middle">
         <StatusCell task={task} onChange={(p) => p.status && onMove(task, p.status)} />
@@ -56,7 +76,9 @@ export function TaskRow({ task, members, selected, onSelect, onPatch, onMove }: 
         {tags?.length ? (
           <div className="flex flex-wrap gap-1">
             {tags.map((tg) => (
-              <span key={tg} className="opm-tag" style={cssVars(TAG_COLORS[tg] ?? 'var(--faint)')}>{tg}</span>
+              <span key={tg} className="opm-tag" style={cssVars(TAG_COLORS[tg] ?? 'var(--faint)')}>
+                {tg}
+              </span>
             ))}
           </div>
         ) : null}

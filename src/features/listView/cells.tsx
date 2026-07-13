@@ -34,7 +34,9 @@ export function StatusCell({ task, onChange }: { task: Task; onChange: (p: Patch
         onChange={(e) => onChange({ status: e.target.value as Task['status'] })}
       >
         {STATUSES.map((s) => (
-          <option key={s.id} value={s.id}>{s.label}</option>
+          <option key={s.id} value={s.id}>
+            {s.label}
+          </option>
         ))}
       </select>
       <Caret />
@@ -55,7 +57,9 @@ export function PriorityCell({ task, onChange }: { task: Task; onChange: (p: Pat
         onChange={(e) => onChange({ priority: e.target.value as Task['priority'] })}
       >
         {PRIORITIES.map((p) => (
-          <option key={p.id} value={p.id}>{p.label}</option>
+          <option key={p.id} value={p.id}>
+            {p.label}
+          </option>
         ))}
       </select>
       <Caret />
@@ -63,8 +67,14 @@ export function PriorityCell({ task, onChange }: { task: Task; onChange: (p: Pat
   )
 }
 
-export function AssigneeCell({ task, members, onChange }: {
-  task: Task; members: Member[]; onChange: (p: Patch) => void
+export function AssigneeCell({
+  task,
+  members,
+  onChange,
+}: {
+  task: Task
+  members: Member[]
+  onChange: (p: Patch) => void
 }) {
   return (
     <span className="opm-field">
@@ -77,7 +87,9 @@ export function AssigneeCell({ task, members, onChange }: {
       >
         <option value="">Unassigned</option>
         {members.map((m) => (
-          <option key={m.user_id} value={m.user_id}>{m.name}</option>
+          <option key={m.user_id} value={m.user_id}>
+            {m.name}
+          </option>
         ))}
       </select>
       <Caret />

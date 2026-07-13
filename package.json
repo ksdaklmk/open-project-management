@@ -7,8 +7,17 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
+    "lint": "eslint . --max-warnings=0",
+    "format:check": "prettier . --check",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "env -u NO_COLOR playwright test",
+    "test:db": "./scripts/test-db.sh",
+    "test:performance": "npm run build && node scripts/check-bundle-budget.mjs",
+    "test:performance:db": "./scripts/check-scale-query-budget.sh",
+    "test:restore": "./scripts/restore-rehearsal.sh",
+    "validate:release-env": "node scripts/validate-release-environments.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
@@ -19,21 +28,33 @@
     "sonner": "^1.5.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.12.1",
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.61.1",
     "@testing-library/jest-dom": "^6.5.0",
     "@testing-library/react": "^16.0.1",
     "@testing-library/user-event": "^14.5.2",
+    "@types/jest-axe": "^3.5.9",
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
-    "@vitejs/plugin-react": "^4.3.1",
+    "@vitejs/plugin-react": "^6.0.3",
+    "@vitest/coverage-v8": "^4.1.10",
     "autoprefixer": "^10.4.20",
-    "jsdom": "^25.0.0",
+    "eslint": "^10.7.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.3",
+    "globals": "^17.7.0",
+    "jest-axe": "^10.0.0",
+    "jsdom": "^29.1.1",
     "postcss": "^8.4.45",
+    "prettier": "^3.9.5",
     "tailwindcss": "^3.4.11",
     "typescript": "^5.5.3",
-    "vite": "^5.4.1",
-    "vitest": "^2.1.1"
+    "typescript-eslint": "^8.63.0",
+    "vite": "^8.1.4",
+    "vitest": "^4.1.10"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": "^20.19.0 || >=22.13.0"
   }
 }

@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, type ReactNode } from 'react'
 import { useWorkspaces } from './hooks/useWorkspaces'
 import { useActorId } from './hooks/useSession'
+import { useInvitationAcceptance } from './hooks/useInvitations'
 
 interface WorkspaceCtx {
   activeId: string | null
@@ -12,8 +13,10 @@ const Ctx = createContext<WorkspaceCtx | null>(null)
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
   // Storage is scoped per signed-in user so one account's last-open workspace
   // never leaks into another account on the same browser (audit finding 1).
-  const KEY = `activeWorkspace:${useActorId()}`
-  const { data: workspaces, isLoading } = useWorkspaces()
+  const actorId = useActorId()
+  const KEY = `activeWorkspace:${actorId}`
+  const acceptance = useInvitationAcceptance(actorId)
+  const { data: workspaces, isLoading } = useWorkspaces(!acceptance.isPending)
   const [stored, setStored] = useState<string | null>(() => localStorage.getItem(KEY))
   const valid = workspaces?.some((w) => w.id === stored) ? stored : null
   const activeId = valid ?? workspaces?.[0]?.id ?? null
@@ -21,7 +24,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(KEY, id)
     setStored(id)
   }
-  return <Ctx.Provider value={{ activeId, setActiveId, loading: isLoading }}>{children}</Ctx.Provider>
+  return (
+    <Ctx.Provider value={{ activeId, setActiveId, loading: acceptance.isPending || isLoading }}>
+      {children}
+    </Ctx.Provider>
+  )
 }
 
 export function useActiveWorkspace(): WorkspaceCtx {

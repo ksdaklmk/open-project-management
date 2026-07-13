@@ -18,7 +18,7 @@ let authCb: (event: string, session: Session | null) => void
 
 function Probe() {
   const { session, loading } = useSessionContext()
-  return <div>{loading ? 'loading' : (session ? `uid:${session.user.id}` : 'signed-out')}</div>
+  return <div>{loading ? 'loading' : session ? `uid:${session.user.id}` : 'signed-out'}</div>
 }
 
 function ActorProbe() {
@@ -102,7 +102,12 @@ describe('SessionProvider', () => {
 describe('useActorId', () => {
   it('returns the signed-in user id', async () => {
     getSession.mockResolvedValue({ data: { session: sessionFor('alice') } })
-    mount(new QueryClient(), <Gated><ActorProbe /></Gated>)
+    mount(
+      new QueryClient(),
+      <Gated>
+        <ActorProbe />
+      </Gated>,
+    )
     expect(await screen.findByText('actor:alice')).toBeInTheDocument()
   })
 })

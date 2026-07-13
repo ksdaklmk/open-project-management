@@ -17,7 +17,8 @@ export function filterTasks(tasks: Task[], f: TaskFilters): Task[] {
     if (f.assignee.length && !f.assignee.includes(t.assignee_id ?? '')) return false
     if (f.type.length && !f.type.includes(t.type)) return false
     if (f.tag.length && !t.tags.some((tg) => f.tag.includes(tg))) return false
-    if (q && !t.title.toLowerCase().includes(q) && !t.description.toLowerCase().includes(q)) return false
+    if (q && !t.title.toLowerCase().includes(q) && !t.description.toLowerCase().includes(q))
+      return false
     return true
   })
 }

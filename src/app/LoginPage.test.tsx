@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { LoginPage } from './LoginPage'
+import { expectNoA11yViolations } from '../test-a11y'
 
 const { mockSignIn, mockSignUp, mockOAuth } = vi.hoisted(() => ({
   mockSignIn: vi.fn(),
@@ -23,6 +24,11 @@ beforeEach(() => {
 })
 
 describe('LoginPage', () => {
+  it('has no automated accessibility violations', async () => {
+    const { container } = render(<LoginPage />)
+    await expectNoA11yViolations(container)
+  })
+
   it('renders the error message when sign-in fails', async () => {
     mockSignIn.mockResolvedValueOnce({ error: { message: 'Invalid login credentials' } })
     render(<LoginPage />)
@@ -64,7 +70,8 @@ describe('LoginPage', () => {
       expect(mockOAuth).toHaveBeenCalledWith({
         provider: 'google',
         options: { redirectTo: window.location.origin },
-      }))
+      }),
+    )
   })
 
   it('shows the error when an OAuth provider fails to start', async () => {
@@ -88,7 +95,8 @@ describe('LoginPage', () => {
         email: 'new@team.dev',
         password: 'hunter22',
         options: { data: { name: 'Kit Klaimak' } },
-      }))
+      }),
+    )
   })
 
   it('sign-in ignores the name field', async () => {

@@ -3,30 +3,58 @@ import { useActiveWorkspace } from '../../lib/workspace'
 import { useViewState } from '../../app/useViewState'
 import { STATUSES } from '../../types/constants'
 import { splitGantt, buildScale } from './timeScale'
-import { parseDate } from '../../lib/weeks'
+import { addDays, isoLocal, parseDate, startOfWeek } from '../../lib/weeks'
 import type { Task } from '../../data/tasksRepo'
+import { LoadMoreButton } from '../../components/LoadMoreButton'
 
 const COLOR: Record<string, string> = Object.fromEntries(STATUSES.map((s) => [s.id, s.color]))
+const STATUS_LABEL: Record<string, string> = Object.fromEntries(
+  STATUSES.map((s) => [s.id, s.label]),
+)
 const fmt = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 const LABEL_COL = 168
 const GRID = `${LABEL_COL}px 1fr`
 const GRIDLINE = 'color-mix(in oklab, var(--border) 75%, transparent)'
-const BAR_SHADOW = '0 1px 2px color-mix(in oklab, var(--text) 14%, transparent)'
 
 export function GanttView({ now = new Date() }: { now?: Date } = {}) {
   const { activeId, loading: wsLoading } = useActiveWorkspace()
-  const { data: tasks, isLoading, error } = useFilteredTasks(activeId ?? '')
+  const windowStart = isoLocal(addDays(startOfWeek(now), -84))
+  const windowEnd = isoLocal(addDays(startOfWeek(now), 364))
+  const scheduledQ = useFilteredTasks(activeId ?? '', {
+    sort: 'due',
+    schedule: 'gantt',
+    windowStart,
+    windowEnd,
+    limit: 500,
+  })
+  const unscheduledQ = useFilteredTasks(activeId ?? '', {
+    sort: 'position',
+    schedule: 'unscheduled',
+    limit: 100,
+  })
   const { setTaskRef } = useViewState()
 
-  if (wsLoading || isLoading) return <GanttSkeleton />
-  if (error) return <GanttError />
+  if (wsLoading || scheduledQ.isLoading || unscheduledQ.isLoading) return <GanttSkeleton />
+  if (scheduledQ.error || unscheduledQ.error)
+    return (
+      <GanttError
+        onRetry={() => {
+          void scheduledQ.refetch()
+          void unscheduledQ.refetch()
+        }}
+      />
+    )
 
-  const all = tasks ?? []
+  const all = [...(scheduledQ.data ?? []), ...(unscheduledQ.data ?? [])]
   if (all.length === 0) return <GanttEmpty />
 
   const { scheduled, unscheduled } = splitGantt(all)
   const ordered = [...scheduled].sort((a, b) =>
-    a.start_date! < b.start_date! ? -1 : a.start_date! > b.start_date! ? 1 : a.ref.localeCompare(b.ref),
+    a.start_date! < b.start_date!
+      ? -1
+      : a.start_date! > b.start_date!
+        ? 1
+        : a.ref.localeCompare(b.ref),
   )
 
   return (
@@ -38,43 +66,85 @@ export function GanttView({ now = new Date() }: { now?: Date } = {}) {
           </p>
         </div>
       ) : (
-        <GanttChart ordered={ordered} now={now} onOpen={setTaskRef} />
+        <div
+          role="region"
+          aria-label="Gantt chart, horizontally scrollable"
+          tabIndex={0}
+          className="opm-chart-scroll"
+        >
+          <GanttChart ordered={ordered} now={now} onOpen={setTaskRef} />
+        </div>
       )}
       {unscheduled.length > 0 && (
         <div className="mt-7">
-          <h2 className="mb-2 flex items-center gap-2 px-0.5 text-[13px] font-semibold tracking-tight text-[var(--text)]">
+          <h2 className="opm-section-title mb-2 flex items-center gap-2 px-0.5 text-[var(--text)]">
             Unscheduled
             <span className="opm-count">{unscheduled.length}</span>
           </h2>
           <ul className="overflow-hidden rounded-xl border border-dashed border-[var(--border)] bg-[var(--bg)] divide-y divide-[var(--border)]">
             {unscheduled.map((t) => (
-              <li key={t.id} onClick={() => setTaskRef(t.ref)} className="opm-row flex items-center gap-3 px-4 py-2.5 cursor-pointer">
-                <span
-                  aria-hidden="true"
-                  className="h-2.5 w-2.5 shrink-0 rounded-full"
-                  style={{ background: COLOR[t.status] ?? 'var(--muted)' }}
-                />
-                <span className="font-mono text-[11px] tracking-tight text-[var(--muted)]">{t.ref}</span>
-                <span className="flex-1 truncate text-sm text-[var(--text)]">{t.title}</span>
+              <li key={t.id}>
+                <button
+                  type="button"
+                  onClick={() => setTaskRef(t.ref)}
+                  aria-label={`Open ${t.ref}: ${t.title}. Status: ${STATUS_LABEL[t.status] ?? t.status}.`}
+                  className="opm-task-open opm-row flex w-full items-center gap-3 px-4 py-2.5 text-left"
+                >
+                  <span
+                    aria-hidden="true"
+                    className="h-2.5 w-2.5 shrink-0 rounded-full"
+                    style={{ background: COLOR[t.status] ?? 'var(--muted)' }}
+                  />
+                  <span className="opm-task-ref">{t.ref}</span>
+                  <span className="flex-1 truncate text-sm text-[var(--text)]">{t.title}</span>
+                  <span className="shrink-0 text-xs text-[var(--muted)]">
+                    {STATUS_LABEL[t.status] ?? t.status}
+                  </span>
+                </button>
               </li>
             ))}
           </ul>
         </div>
       )}
+      {scheduledQ.hasNextPage && (
+        <LoadMoreButton
+          label="Load more scheduled tasks"
+          pending={scheduledQ.isFetchingNextPage}
+          onClick={() => void scheduledQ.fetchNextPage()}
+        />
+      )}
+      {unscheduledQ.hasNextPage && (
+        <LoadMoreButton
+          label="Load more unscheduled tasks"
+          pending={unscheduledQ.isFetchingNextPage}
+          onClick={() => void unscheduledQ.fetchNextPage()}
+        />
+      )}
     </div>
   )
 }
 
-function GanttChart({ ordered, now, onOpen }: { ordered: Task[]; now: Date; onOpen: (ref: string) => void }) {
+function GanttChart({
+  ordered,
+  now,
+  onOpen,
+}: {
+  ordered: Task[]
+  now: Date
+  onOpen: (ref: string) => void
+}) {
   const scale = buildScale(ordered, now)
   const weekCount = scale.weeks.length
 
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-4">
+    <div className="opm-chart-panel min-w-[720px] border border-[var(--border)] bg-[var(--surface)] p-4">
       {/* Week axis */}
-      <div className="grid border-b border-[var(--border)] pb-2" style={{ gridTemplateColumns: GRID }}>
+      <div
+        className="grid border-b border-[var(--border)] pb-2"
+        style={{ gridTemplateColumns: GRID }}
+      >
         <div />
-        <div className="relative h-4 text-[11px] font-medium text-[var(--muted)]">
+        <div className="relative h-4 text-xs font-medium text-[var(--muted)]">
           {scale.weeks.map((w, i) => (
             <span
               key={i}
@@ -90,7 +160,11 @@ function GanttChart({ ordered, now, onOpen }: { ordered: Task[]; now: Date; onOp
       {/* Plot */}
       <div className="relative">
         {/* Week gridlines — chart area only */}
-        <div aria-hidden="true" className="pointer-events-none absolute inset-y-0" style={{ left: LABEL_COL, right: 0 }}>
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-y-0"
+          style={{ left: LABEL_COL, right: 0 }}
+        >
           {scale.weeks.map((_, i) => (
             <span
               key={i}
@@ -101,28 +175,40 @@ function GanttChart({ ordered, now, onOpen }: { ordered: Task[]; now: Date; onOp
         </div>
 
         {ordered.map((t) => {
-          const { leftPct, widthPct } = scale.position(parseDate(t.start_date!), parseDate(t.end_date!))
+          const { leftPct, widthPct } = scale.position(
+            parseDate(t.start_date!),
+            parseDate(t.end_date!),
+          )
           return (
-            <div key={t.id} onClick={() => onOpen(t.ref)} className="opm-row grid items-center cursor-pointer" style={{ gridTemplateColumns: GRID, height: 34 }}>
-              <div className="truncate pr-3">
-                <span className="font-mono text-[10px] tracking-tight text-[var(--muted)]">{t.ref}</span>{' '}
-                <span className="text-xs text-[var(--text)]">{t.title}</span>
-              </div>
-              <div className="relative h-full">
-                <div
-                  role="img"
-                  aria-label={`${t.title} · ${fmt(parseDate(t.start_date!))} – ${fmt(parseDate(t.end_date!))}`}
+            <button
+              type="button"
+              key={t.id}
+              onClick={() => onOpen(t.ref)}
+              aria-label={`Open ${t.ref}: ${t.title}. Status: ${STATUS_LABEL[t.status] ?? t.status}. ${fmt(parseDate(t.start_date!))} to ${fmt(parseDate(t.end_date!))}.`}
+              className="opm-task-open opm-row grid w-full items-center text-left"
+              style={{ gridTemplateColumns: GRID, height: 34 }}
+            >
+              <span className="block min-w-0 pr-3 leading-tight">
+                <span className="flex min-w-0 items-center gap-1 text-xs text-[var(--muted)]">
+                  <span className="shrink-0 font-medium tabular-nums">{t.ref}</span>
+                  <span aria-hidden="true">·</span>
+                  <span className="truncate">{STATUS_LABEL[t.status] ?? t.status}</span>
+                </span>
+                <span className="block truncate text-xs text-[var(--text)]">{t.title}</span>
+              </span>
+              <span className="relative block h-full">
+                <span
+                  aria-hidden="true"
                   className="absolute top-1/2 h-[18px] -translate-y-1/2 rounded-md"
                   style={{
                     left: `${leftPct}%`,
                     width: `${widthPct}%`,
                     minWidth: 6,
                     background: COLOR[t.status] ?? 'var(--muted)',
-                    boxShadow: BAR_SHADOW,
                   }}
                 />
-              </div>
-            </div>
+              </span>
+            </button>
           )
         })}
 
@@ -130,8 +216,9 @@ function GanttChart({ ordered, now, onOpen }: { ordered: Task[]; now: Date; onOp
         {scale.todayPct !== null && (
           <div
             data-testid="gantt-today"
-            className="pointer-events-none absolute top-0 bottom-0 z-10 w-px"
+            className="pointer-events-none absolute top-0 bottom-0 w-px"
             style={{
+              zIndex: 'var(--layer-dropdown)',
               left: `calc(${LABEL_COL}px + (100% - ${LABEL_COL}px) * ${scale.todayPct / 100})`,
               background: 'var(--primary)',
             }}
@@ -152,10 +239,13 @@ function GanttSkeleton() {
     <div
       role="status"
       aria-busy="true"
-      className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-4"
+      className="opm-chart-panel min-w-[720px] border border-[var(--border)] bg-[var(--surface)] p-4"
     >
       <span className="sr-only">Loading timeline…</span>
-      <div className="grid border-b border-[var(--border)] pb-2" style={{ gridTemplateColumns: GRID }}>
+      <div
+        className="grid border-b border-[var(--border)] pb-2"
+        style={{ gridTemplateColumns: GRID }}
+      >
         <div />
         <div className="flex gap-10">
           {[0, 1, 2, 3].map((i) => (
@@ -170,12 +260,19 @@ function GanttSkeleton() {
           { left: '50%', width: '28%' },
           { left: '12%', width: '46%' },
         ].map((b, i) => (
-          <div key={i} className="grid items-center" style={{ gridTemplateColumns: GRID, height: 34 }}>
+          <div
+            key={i}
+            className="grid items-center"
+            style={{ gridTemplateColumns: GRID, height: 34 }}
+          >
             <div className="pr-3">
               <div className="opm-skel h-3 rounded" style={{ width: `${70 - i * 8}%` }} />
             </div>
             <div className="relative h-[18px]">
-              <div className="opm-skel absolute h-[18px] rounded-md" style={{ left: b.left, width: b.width }} />
+              <div
+                className="opm-skel absolute h-[18px] rounded-md"
+                style={{ left: b.left, width: b.width }}
+              />
             </div>
           </div>
         ))}
@@ -184,28 +281,38 @@ function GanttSkeleton() {
   )
 }
 
-function GanttError() {
+function GanttError({ onRetry }: { onRetry: () => void }) {
   return (
     <div
       role="alert"
-      className="mx-auto flex max-w-4xl min-h-[280px] flex-col items-center justify-center px-6 py-12 text-center"
+      className="opm-state mx-auto flex max-w-4xl min-h-[280px] flex-col items-center justify-center px-6 py-12 text-center"
     >
       <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)]">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M12 8.5v4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
           <circle cx="12" cy="16.3" r="1.05" fill="currentColor" />
-          <path d="M12 3.5 21 19.5H3L12 3.5Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+          <path
+            d="M12 3.5 21 19.5H3L12 3.5Z"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinejoin="round"
+          />
         </svg>
       </div>
       <p className="text-base font-semibold text-[var(--text)]">Couldn't load tasks.</p>
-      <p className="mt-1 max-w-xs text-sm text-[var(--muted)]">Check your connection and try again.</p>
+      <p className="mt-1 max-w-xs text-sm text-[var(--muted)]">
+        Check your connection and try again.
+      </p>
+      <button type="button" className="opm-btn mt-4" onClick={onRetry}>
+        Retry
+      </button>
     </div>
   )
 }
 
 function GanttEmpty() {
   return (
-    <div className="mx-auto flex max-w-4xl min-h-[280px] flex-col items-center justify-center px-6 py-12 text-center">
+    <div className="opm-state mx-auto flex max-w-4xl min-h-[280px] flex-col items-center justify-center px-6 py-12 text-center">
       <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)]">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path
@@ -217,7 +324,9 @@ function GanttEmpty() {
         </svg>
       </div>
       <p className="text-base font-semibold text-[var(--text)]">No tasks yet</p>
-      <p className="mt-1 max-w-xs text-sm text-[var(--muted)]">Create a task with dates to see it on the Gantt.</p>
+      <p className="mt-1 max-w-xs text-sm text-[var(--muted)]">
+        Create a task with dates to see it on the Gantt.
+      </p>
     </div>
   )
 }

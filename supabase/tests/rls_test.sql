@@ -14,28 +14,30 @@
 --       every auth.users row, which would otherwise be a duplicate-PK error.
 --
 -- The fixture seeds two fully isolated workspaces (A and B) plus a plain
--- member (C) of WS-A, and asserts real cross-tenant isolation -- not merely
+-- member (C) and admin (G) of WS-A, and asserts real cross-tenant isolation -- not merely
 -- that queries run. Positive controls guard every denial against the test
 -- passing only because access is blanket-denied.
 
 begin;
-select plan(61);
+select plan(87);
 
 -- ---------------------------------------------------------------------------
--- Service-role setup: two workspaces, three users, a task + subtask each.
+-- Service-role setup: two workspaces, four users, a task + subtask each.
 -- ---------------------------------------------------------------------------
 set local role postgres;
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.dev'),
   ('00000000-0000-0000-0000-00000000000b', 'b@test.dev'),
-  ('00000000-0000-0000-0000-00000000000c', 'c@test.dev');
+  ('00000000-0000-0000-0000-00000000000c', 'c@test.dev'),
+  ('00000000-0000-0000-0000-000000000010', 'g-admin@test.dev');
 
 -- C2: handle_new_user already inserts these once 0002 is applied.
 insert into profiles (id, name) values
   ('00000000-0000-0000-0000-00000000000a', 'A'),
   ('00000000-0000-0000-0000-00000000000b', 'B'),
-  ('00000000-0000-0000-0000-00000000000c', 'C')
+  ('00000000-0000-0000-0000-00000000000c', 'C'),
+  ('00000000-0000-0000-0000-000000000010', 'G Admin')
 on conflict (id) do nothing;
 
 insert into workspaces (id, name, created_by) values
@@ -45,22 +47,8 @@ insert into workspaces (id, name, created_by) values
 insert into workspace_members (workspace_id, user_id, role) values
   ('00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-00000000000a', 'owner'),
   ('00000000-0000-0000-0000-0000000000b1', '00000000-0000-0000-0000-00000000000b', 'owner'),
-  ('00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-00000000000c', 'member');
-
--- handle_new_user (0002) auto-joins every new auth.users row to the seeded
--- "Northwind" demo workspace when it exists, silently giving A, B and C a
--- shared workspace -- which breaks the isolation premise below (notably
--- "A cannot read B's profile, no shared workspace"). Strip any membership
--- outside the two fixture workspaces so the fixture is deterministic whether
--- or not the demo seed is loaded.
-delete from workspace_members
-  where user_id in (
-    '00000000-0000-0000-0000-00000000000a',
-    '00000000-0000-0000-0000-00000000000b',
-    '00000000-0000-0000-0000-00000000000c')
-  and workspace_id not in (
-    '00000000-0000-0000-0000-0000000000a1',
-    '00000000-0000-0000-0000-0000000000b1');
+  ('00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-00000000000c', 'member'),
+  ('00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-000000000010', 'admin');
 
 insert into projects (id, workspace_id, name, key) values
   ('00000000-0000-0000-0000-0000000000a2', '00000000-0000-0000-0000-0000000000a1', 'PA', 'PA'),
@@ -97,8 +85,7 @@ select set_config('request.jwt.claims',
   true);
 
 -- SELECT isolation on tasks (the brief's two assertions). Scoped to WS-A's
--- workspace_id so an out-of-band seed (e.g. a demo Northwind that
--- handle_new_user would auto-join A to) cannot flake the count.
+-- workspace_id so unrelated local fixtures cannot flake the count.
 select is(
   (select count(*) from tasks
    where workspace_id = '00000000-0000-0000-0000-0000000000a1')::int, 1,
@@ -160,18 +147,19 @@ select lives_ok(
 -- Each denial is paired with a positive control so the assertion cannot pass
 -- merely because a policy is (accidentally) deny-all.
 -- ---------------------------------------------------------------------------
--- Activity actor cannot be forged (audit-log integrity).
+-- Activity is trigger-only; members cannot forge rows even with their own ID.
 select throws_ok(
   $$ insert into activity (workspace_id, actor_id, verb)
      values ('00000000-0000-0000-0000-0000000000a1',
              '00000000-0000-0000-0000-00000000000b', 'created') $$,
   '42501', null,
   'A cannot forge an activity actor_id (must equal auth.uid())');
-select lives_ok(
+select throws_ok(
   $$ insert into activity (workspace_id, actor_id, verb)
      values ('00000000-0000-0000-0000-0000000000a1',
              '00000000-0000-0000-0000-00000000000a', 'created') $$,
-  'A can log activity as itself (actor pin is not deny-all)');
+  '42501', null,
+  'A cannot insert activity directly as itself');
 
 -- Comment author cannot be spoofed (task a3 is an A-visible WS-A task).
 select throws_ok(
@@ -186,18 +174,21 @@ select lives_ok(
              '00000000-0000-0000-0000-00000000000a', 'mine') $$,
   'A can comment as itself on its own task (author pin is not deny-all)');
 
--- Task creator cannot be spoofed; workspace_id is derived by the trigger.
+-- Task creation is RPC-only. Direct table inserts are privilege-denied even
+-- when the caller supplies its own identity; create_task positive controls
+-- appear below.
 select throws_ok(
   $$ insert into tasks (project_id, ref, title, created_by)
      values ('00000000-0000-0000-0000-0000000000a2', 'PA-2', 'forged',
              '00000000-0000-0000-0000-00000000000b') $$,
   '42501', null,
-  'A cannot spoof tasks.created_by within its own workspace');
-select lives_ok(
+  'A cannot bypass create_task or spoof tasks.created_by');
+select throws_ok(
   $$ insert into tasks (project_id, ref, title, created_by)
      values ('00000000-0000-0000-0000-0000000000a2', 'PA-3', 'mine',
              '00000000-0000-0000-0000-00000000000a') $$,
-  'A can create a task as itself in its own workspace (creator pin is not deny-all)');
+  '42501', null,
+  'A cannot insert tasks directly even with its own identity');
 
 -- Cross-workspace task insert is denied (prior review noted this path was
 -- untested). The SECURITY INVOKER trigger cannot resolve WS-B's project for A,
@@ -236,6 +227,13 @@ with del as (
 select is(
   (select count(*)::int from del), 1,
   'owner A can delete a project (proj_delete is not deny-all)');
+with upd as (
+  update projects set name = 'Owner renamed PA'
+  where id = '00000000-0000-0000-0000-0000000000a2'
+  returning 1)
+select is(
+  (select count(*)::int from upd), 1,
+  'owner A can edit a project');
 
 -- ---------------------------------------------------------------------------
 -- Security fix 2: comment_update/_delete authorize via the parent task's
@@ -313,6 +311,88 @@ with del as (
 select is(
   (select count(*)::int from del), 0,
   'plain member cannot delete a project (owner/admin only)');
+select throws_ok(
+  $$ insert into projects (workspace_id, name, key)
+     values ('00000000-0000-0000-0000-0000000000a1', 'Member project', 'MEM') $$,
+  '42501', null,
+  'plain member cannot create a project');
+with upd as (
+  update projects set name = 'Member renamed PA'
+  where id = '00000000-0000-0000-0000-0000000000a2'
+  returning 1)
+select is(
+  (select count(*)::int from upd), 0,
+  'plain member cannot edit a project');
+
+-- Admins have the same project management capability as owners.
+select set_config('request.jwt.claims',
+  json_build_object('sub','00000000-0000-0000-0000-000000000010','role','authenticated')::text,
+  true);
+select lives_ok(
+  $$ insert into projects (id, workspace_id, name, key)
+     values ('00000000-0000-0000-0000-0000000000aa',
+             '00000000-0000-0000-0000-0000000000a1', 'Admin project', 'ADM') $$,
+  'admin G can create a project');
+with upd as (
+  update projects set name = 'Admin renamed project'
+  where id = '00000000-0000-0000-0000-0000000000aa'
+  returning 1)
+select is(
+  (select count(*)::int from upd), 1,
+  'admin G can edit a project');
+with del as (
+  delete from projects
+  where id = '00000000-0000-0000-0000-0000000000aa'
+  returning 1)
+select is(
+  (select count(*)::int from del), 1,
+  'admin G can delete a project');
+
+-- Membership administration is RPC-only. Even owners cannot write role,
+-- capacity, or membership rows directly from the browser role.
+select set_config('request.jwt.claims',
+  json_build_object('sub','00000000-0000-0000-0000-00000000000a','role','authenticated')::text,
+  true);
+select throws_ok(
+  $$ update workspace_members set role = 'admin'
+     where workspace_id = '00000000-0000-0000-0000-0000000000a1'
+       and user_id = '00000000-0000-0000-0000-00000000000c' $$,
+  '42501', null,
+  'owner cannot update a member role directly');
+select throws_ok(
+  $$ update workspace_members set capacity_per_week = 30
+     where workspace_id = '00000000-0000-0000-0000-0000000000a1'
+       and user_id = '00000000-0000-0000-0000-00000000000c' $$,
+  '42501', null,
+  'owner cannot update member capacity directly');
+select throws_ok(
+  $$ delete from workspace_members
+     where workspace_id = '00000000-0000-0000-0000-0000000000a1'
+       and user_id = '00000000-0000-0000-0000-00000000000c' $$,
+  '42501', null,
+  'owner cannot remove a member directly');
+select throws_ok(
+  $$ insert into workspace_members (workspace_id, user_id, role)
+     values ('00000000-0000-0000-0000-0000000000a1',
+             '00000000-0000-0000-0000-00000000000b', 'member') $$,
+  '42501', null,
+  'owner cannot add a member directly');
+
+-- The role helper is the shared contract used by project policies and future
+-- administration RPCs. It must distinguish roles and never trust a supplied
+-- workspace ID without checking the caller's membership.
+select is(
+  has_workspace_role('00000000-0000-0000-0000-0000000000a1', array['owner']::member_role[]),
+  true,
+  'has_workspace_role recognises an owner');
+select is(
+  has_workspace_role('00000000-0000-0000-0000-0000000000a1', array['admin']::member_role[]),
+  false,
+  'has_workspace_role does not grant owner A an unheld admin role');
+select is(
+  has_workspace_role('00000000-0000-0000-0000-0000000000b1', array['owner','admin']::member_role[]),
+  false,
+  'has_workspace_role rejects a forged foreign workspace ID');
 
 -- ---------------------------------------------------------------------------
 -- Task delete policy (make-it-adoptable): members delete inside their own
@@ -320,32 +400,36 @@ select is(
 -- backfill — the policy shipped in 0002 but was never asserted.
 -- ---------------------------------------------------------------------------
 select set_config('request.jwt.claims',
-  json_build_object('sub','00000000-0000-0000-0000-00000000000a','role','authenticated')::text,
+  json_build_object('sub','00000000-0000-0000-0000-00000000000c','role','authenticated')::text,
   true);
+select throws_ok(
+  $$ update tasks set assignee_id = '00000000-0000-0000-0000-00000000000b'
+     where id = '00000000-0000-0000-0000-0000000000a3' $$,
+  '23503', null,
+  'member C cannot assign a WS-A task to external profile B');
+select lives_ok(
+  $$ update tasks set assignee_id = '00000000-0000-0000-0000-00000000000c'
+     where id = '00000000-0000-0000-0000-0000000000a3' $$,
+  'member C can assign a WS-A task to a WS-A member');
 with del as (
   delete from tasks where id = '00000000-0000-0000-0000-0000000000b3' returning 1)
 select is(
   (select count(*)::int from del), 0,
-  'A cannot delete a WS-B task (RLS-filtered no-op)');
+  'member C cannot delete a WS-B task (RLS-filtered no-op)');
 with del as (
   delete from tasks where id = '00000000-0000-0000-0000-0000000000a3' returning 1)
 select is(
   (select count(*)::int from del), 1,
-  'A can delete a task in its own workspace (task_delete is not deny-all)');
+  'member C can delete a task in its own workspace');
 
 -- ---------------------------------------------------------------------------
--- handle_new_user (0004): name coalesces OAuth metadata variants; the demo
--- auto-join is pinned to the seed workspace UUID, so a workspace merely NAMED
--- 'Northwind' attracts nothing. The demo row is ensured here (idempotent
--- whether or not seed.sql ran); the decoy shares only the name.
+-- handle_new_user (0011): name coalesces OAuth metadata variants and creates
+-- no workspace membership, even if the local demo workspace exists.
 -- ---------------------------------------------------------------------------
 set local role postgres;
 insert into workspaces (id, name, created_by) values
   ('20000000-0000-0000-0000-000000000001', 'Northwind', null)
   on conflict (id) do nothing;
-insert into workspaces (id, name, created_by) values
-  ('00000000-0000-0000-0000-0000000000d1', 'Northwind', null);
-
 insert into auth.users (id, email, raw_user_meta_data) values
   ('00000000-0000-0000-0000-00000000000d', 'd@test.dev',
    '{"full_name": "Dee Fixture"}'::jsonb);
@@ -365,14 +449,12 @@ select is(
 
 select is(
   (select count(*) from workspace_members
-   where user_id = '00000000-0000-0000-0000-00000000000d'
-     and workspace_id = '20000000-0000-0000-0000-000000000001')::int, 1,
-  'new signup auto-joins the demo workspace by fixed UUID');
+   where user_id = '00000000-0000-0000-0000-00000000000d')::int, 0,
+  'an arbitrary production signup receives no workspace membership');
 select is(
   (select count(*) from workspace_members
-   where user_id = '00000000-0000-0000-0000-00000000000d'
-     and workspace_id = '00000000-0000-0000-0000-0000000000d1')::int, 0,
-  'a workspace merely named Northwind attracts no auto-joins');
+   where user_id = '00000000-0000-0000-0000-00000000000e')::int, 0,
+  'OAuth-style signup also receives no implicit workspace membership');
 
 -- ---------------------------------------------------------------------------
 -- RLS hardening (0005, docs/AUDIT.md finding 3). Membership-only UPDATE
@@ -388,8 +470,7 @@ set local role postgres;
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000f', 'f@test.dev');
--- Dual membership: F belongs to both fixture workspaces. Strip anything else
--- (handle_new_user auto-joined F to the demo workspace ensured above).
+-- Dual membership: F belongs to both fixture workspaces and nothing else.
 insert into workspace_members (workspace_id, user_id, role) values
   ('00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-00000000000f', 'member'),
   ('00000000-0000-0000-0000-0000000000b1', '00000000-0000-0000-0000-00000000000f', 'member');
@@ -437,10 +518,13 @@ select isnt(
   (select updated_at from tasks where id = '00000000-0000-0000-0000-0000000000a6'),
   '2020-01-01 00:00:00+00'::timestamptz,
   'updated_at is server-maintained on update (0003 trigger still fires)');
-select lives_ok(
-  $$ update projects set name = 'renamed', color = '#123456'
-     where id = '00000000-0000-0000-0000-0000000000a2' $$,
-  'F can update project content columns (name/color)');
+with upd as (
+  update projects set name = 'renamed', color = '#123456'
+  where id = '00000000-0000-0000-0000-0000000000a2'
+  returning 1)
+select is(
+  (select count(*)::int from upd), 0,
+  'plain member F cannot update project content columns');
 select lives_ok(
   $$ update subtasks set title = 'renamed', done = true, position = 2
      where id = '00000000-0000-0000-0000-0000000000a7' $$,
@@ -486,6 +570,11 @@ select throws_ok(
      where id = '00000000-0000-0000-0000-0000000000a6' $$,
   '42501', null,
   'F cannot write tasks.updated_at (trigger is the only writer)');
+select throws_ok(
+  $$ update tasks set assignee_id = '00000000-0000-0000-0000-00000000000b'
+     where id = '00000000-0000-0000-0000-0000000000a6' $$,
+  '23503', null,
+  'dual-member F cannot assign a WS-A task to a WS-B-only member');
 
 -- Projects: tenant key and ref-prefix key are locked.
 select throws_ok(
@@ -579,5 +668,87 @@ select is(
   'PA-105',
   'create_task works for any member of the workspace (not deny-all)');
 
-select * from finish();
+-- ---------------------------------------------------------------------------
+-- Last-owner and membership-assignment invariants are enforced below the RPC
+-- layer so future administration code cannot accidentally bypass them.
+-- ---------------------------------------------------------------------------
+set local role postgres;
+insert into auth.users (id, email) values
+  ('00000000-0000-0000-0000-000000000011', 'last-owner@test.dev'),
+  ('00000000-0000-0000-0000-000000000012', 'second-owner@test.dev');
+insert into workspaces (id, name, created_by) values
+  ('00000000-0000-0000-0000-0000000000c1', 'Owner invariant',
+   '00000000-0000-0000-0000-000000000011');
+insert into workspace_members (workspace_id, user_id, role) values
+  ('00000000-0000-0000-0000-0000000000c1', '00000000-0000-0000-0000-000000000011', 'owner'),
+  ('00000000-0000-0000-0000-0000000000c1', '00000000-0000-0000-0000-000000000012', 'member');
+insert into projects (id, workspace_id, name, key) values
+  ('00000000-0000-0000-0000-0000000000c2', '00000000-0000-0000-0000-0000000000c1',
+   'Owner project', 'OWN');
+insert into tasks (id, project_id, workspace_id, ref, title, assignee_id, created_by) values
+  ('00000000-0000-0000-0000-0000000000c3', '00000000-0000-0000-0000-0000000000c2',
+   '00000000-0000-0000-0000-0000000000c1', 'OWN-101', 'Assigned before removal',
+   '00000000-0000-0000-0000-000000000012', '00000000-0000-0000-0000-000000000011');
+
+select throws_ok(
+  $$ update workspace_members set role = 'admin'
+     where workspace_id = '00000000-0000-0000-0000-0000000000c1'
+       and user_id = '00000000-0000-0000-0000-000000000011' $$,
+  '23514', null,
+  'the final owner cannot be demoted');
+select throws_ok(
+  $$ delete from workspace_members
+     where workspace_id = '00000000-0000-0000-0000-0000000000c1'
+       and user_id = '00000000-0000-0000-0000-000000000011' $$,
+  '23514', null,
+  'the final owner cannot be removed');
+
+update workspace_members set role = 'owner'
+where workspace_id = '00000000-0000-0000-0000-0000000000c1'
+  and user_id = '00000000-0000-0000-0000-000000000012';
+select lives_ok(
+  $$ update workspace_members set role = 'admin'
+     where workspace_id = '00000000-0000-0000-0000-0000000000c1'
+       and user_id = '00000000-0000-0000-0000-000000000011' $$,
+  'an owner can be demoted when another owner remains');
+
+update workspace_members set role = 'owner'
+where workspace_id = '00000000-0000-0000-0000-0000000000c1'
+  and user_id = '00000000-0000-0000-0000-000000000011';
+select lives_ok(
+  $$ delete from workspace_members
+     where workspace_id = '00000000-0000-0000-0000-0000000000c1'
+       and user_id = '00000000-0000-0000-0000-000000000012' $$,
+  'a non-final owner can be removed');
+select is(
+  (select assignee_id from tasks where id = '00000000-0000-0000-0000-0000000000c3'),
+  null,
+  'removing a member unassigns their tasks through the membership foreign key');
+select lives_ok(
+  $$ delete from workspaces where id = '00000000-0000-0000-0000-0000000000c1' $$,
+  'deleting a workspace may cascade its final owner membership');
+
+-- Every callable SECURITY DEFINER function is denied to the anonymous API
+-- role. Trigger-only functions are not callable RPC surfaces.
+set local role anon;
+select set_config('request.jwt.claims', '{}', true);
+select throws_ok(
+  $$ select is_member('00000000-0000-0000-0000-0000000000a1') $$,
+  '42501', null,
+  'anonymous callers cannot execute is_member');
+select throws_ok(
+  $$ select shares_workspace('00000000-0000-0000-0000-00000000000a') $$,
+  '42501', null,
+  'anonymous callers cannot execute shares_workspace');
+select throws_ok(
+  $$ select has_workspace_role(
+       '00000000-0000-0000-0000-0000000000a1', array['owner']::member_role[]) $$,
+  '42501', null,
+  'anonymous callers cannot execute has_workspace_role');
+select throws_ok(
+  $$ select create_task('00000000-0000-0000-0000-0000000000a2', 'anonymous') $$,
+  '42501', null,
+  'anonymous callers cannot execute create_task');
+
+select * from finish(true);
 rollback;

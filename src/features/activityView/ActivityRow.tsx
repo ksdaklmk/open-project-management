@@ -14,7 +14,7 @@ function StatusChip({ status }: { status: Status | null }) {
   if (!s) return null
   return (
     <span
-      className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium whitespace-nowrap"
+      className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium whitespace-nowrap"
       style={{
         color: `color-mix(in oklab, ${s.color} 80%, var(--text))`,
         background: `color-mix(in oklab, ${s.color} 14%, var(--surface))`,
@@ -41,9 +41,7 @@ function TaskRef({ task }: { task: ActivityItem['task'] }) {
   if (!task) return <span className="text-[var(--muted)]">a task</span>
   return (
     <span>
-      <span className="font-mono text-[11px] tracking-tight text-[var(--muted)]">{task.ref}</span>
-      {' '}
-      {task.title}
+      <span className="opm-task-ref">{task.ref}</span> {task.title}
     </span>
   )
 }
@@ -53,11 +51,11 @@ export function ActivityRow({ item }: { item: ActivityItem }) {
   const color = item.actor?.color || 'var(--muted)'
 
   return (
-    <div className="flex items-start gap-3 px-4 py-3.5">
+    <div className="opm-activity-row flex items-start gap-3 px-3 py-2.5">
       {/* Actor avatar — decorative; name is in the text */}
       <span
         aria-hidden="true"
-        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white"
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-[var(--surface)]"
         style={{ background: color }}
       >
         {name.slice(0, 1).toUpperCase()}
@@ -65,7 +63,7 @@ export function ActivityRow({ item }: { item: ActivityItem }) {
 
       {/* Sentence line + status chip row */}
       <div className="min-w-0 flex-1">
-        <p className="text-sm leading-snug text-[var(--text)]">
+        <p className="opm-activity-copy text-sm text-[var(--text)]">
           <span className="font-semibold">{name}</span>
           {item.verb === 'moved' ? (
             <>
@@ -80,6 +78,16 @@ export function ActivityRow({ item }: { item: ActivityItem }) {
           ) : item.verb === 'created' ? (
             <>
               <span className="text-[var(--muted)]"> created </span>
+              <TaskRef task={item.task} />
+            </>
+          ) : item.verb === 'assigned' ? (
+            <>
+              <span className="text-[var(--muted)]"> changed the assignee for </span>
+              <TaskRef task={item.task} />
+            </>
+          ) : item.verb === 'deleted' ? (
+            <>
+              <span className="text-[var(--muted)]"> deleted </span>
               <TaskRef task={item.task} />
             </>
           ) : (
@@ -114,7 +122,7 @@ export function ActivityRow({ item }: { item: ActivityItem }) {
       <time
         dateTime={item.created_at}
         title={new Date(item.created_at).toLocaleString()}
-        className="mt-0.5 shrink-0 text-[11px] tabular-nums text-[var(--muted)]"
+        className="mt-0.5 shrink-0 text-xs tabular-nums text-[var(--muted)]"
       >
         {relativeTime(item.created_at)}
       </time>

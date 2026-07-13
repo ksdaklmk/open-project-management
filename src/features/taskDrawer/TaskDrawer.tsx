@@ -1,23 +1,31 @@
 import { useEffect, useRef, useState } from 'react'
 import { useViewState } from '../../app/useViewState'
 import { useActiveWorkspace } from '../../lib/workspace'
-import { useTasks } from '../../lib/hooks/useTasks'
+import { useTask } from '../../lib/hooks/useTasks'
 import { useDeleteTask } from '../../lib/hooks/useDeleteTask'
 import { DrawerFields } from './DrawerFields'
 import { TagEditor } from './TagEditor'
 import { SubtaskList } from './SubtaskList'
 import { CommentThread } from './CommentThread'
+import { AppIcon } from '../../components/AppIcon'
+import { useTaskWatch } from '../../lib/hooks/useNotifications'
+
+const FOCUSABLE =
+  'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'
 
 export function TaskDrawer() {
   const { taskRef, setTaskRef } = useViewState()
   const { activeId } = useActiveWorkspace()
-  const { data: tasks, isLoading, error } = useTasks(activeId ?? '')
+  const { data: task, isLoading, error, refetch } = useTask(activeId ?? '', taskRef ?? '')
   const dialogRef = useRef<HTMLDivElement>(null)
   const openerRef = useRef<HTMLElement | null>(null)
 
-  const close = () => setTaskRef(null)
-  const task = taskRef ? tasks?.find((t) => t.ref === taskRef) : undefined
-
+  const close = () => {
+    // Title and description save on blur. Blur before every explicit close path
+    // so backdrop, close button, Escape, and post-delete closure behave alike.
+    ;(document.activeElement as HTMLElement | null)?.blur?.()
+    setTaskRef(null)
+  }
   // Focus the panel on open; restore focus to the opener on close.
   // ponytail: minimal focus management — querySelectorAll boundaries; reach for a
   // focus-trap lib only if the panel ever grows nested dialogs.
@@ -32,32 +40,32 @@ export function TaskDrawer() {
 
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
-      // Title/description save on blur; unmounting never fires it. Blur the
-      // active field first so a dirty value is saved, not discarded.
-      ;(document.activeElement as HTMLElement | null)?.blur?.()
       return close()
     }
     if (e.key !== 'Tab') return
-    const f = dialogRef.current?.querySelectorAll<HTMLElement>(
-      'a[href],button,input,select,textarea,[tabindex]:not([tabindex="-1"])',
-    )
+    const f = dialogRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE)
     if (!f || f.length === 0) return
     const first = f[0]
     const last = f[f.length - 1]
     // On open the container itself holds focus (tabIndex -1); treat that as the
     // backward boundary so Shift+Tab wraps to last instead of escaping the panel.
     const onPanel = document.activeElement === dialogRef.current
-    if (e.shiftKey && (onPanel || document.activeElement === first)) { e.preventDefault(); last.focus() }
-    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus() }
+    if (e.shiftKey && (onPanel || document.activeElement === first)) {
+      e.preventDefault()
+      last.focus()
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault()
+      first.focus()
+    }
   }
 
   return (
-    <div className="fixed inset-0 z-30 flex justify-end">
+    <div className="fixed inset-0 flex justify-end" style={{ zIndex: 'var(--layer-backdrop)' }}>
       <button
         data-testid="drawer-backdrop"
         aria-label="Close"
         onClick={close}
-        className="absolute inset-0 bg-black/30 opm-drawer-backdrop"
+        className="absolute inset-0 bg-black/20 opm-drawer-backdrop"
       />
       <div
         ref={dialogRef}
@@ -66,40 +74,66 @@ export function TaskDrawer() {
         aria-labelledby="drawer-title"
         tabIndex={-1}
         onKeyDown={onKeyDown}
-        className="opm-drawer-panel relative h-full w-[420px] max-w-full overflow-y-auto border-l border-[var(--border)] bg-[var(--bg)] text-[var(--text)] shadow-xl"
+        className="opm-drawer-panel relative h-full w-[540px] max-w-full overflow-y-auto border-l border-[var(--border)] bg-[var(--surface)] text-[var(--text)]"
+        style={{ zIndex: 'var(--layer-modal)' }}
       >
         {task ? (
           <>
-            <header className="flex items-center gap-2 border-b border-[var(--border)] px-4 py-3">
-              <span className="text-xs font-medium tabular-nums text-[var(--muted)]">{task.ref}</span>
-              <h2 id="drawer-title" className="flex-1 truncate font-medium">{task.title}</h2>
-              <button onClick={close} aria-label="Close" className="rounded px-2 py-1 hover:bg-[var(--surface)]">✕</button>
+            <header className="opm-drawer-header flex items-center gap-2 border-b border-[var(--border)] px-5 py-3">
+              <span className="opm-task-ref">{task.ref}</span>
+              <h2 id="drawer-title" className="sr-only">
+                {task.title}
+              </h2>
+              <span className="flex-1" />
+              <TaskWatchButton taskId={task.id} />
+              <button onClick={close} aria-label="Close" className="opm-icon-btn">
+                <AppIcon name="close" size={16} />
+              </button>
             </header>
-            <div data-testid="drawer-body" className="space-y-5 px-4 py-4">
+            <div data-testid="drawer-body" className="opm-drawer-body space-y-8 px-8 py-7">
               <DrawerFields key={task.id} task={task} workspaceId={activeId ?? ''} />
               <TagEditor task={task} workspaceId={activeId ?? ''} />
               <SubtaskList taskId={task.id} />
               <CommentThread taskId={task.id} workspaceId={activeId ?? ''} />
-              <footer className="border-t border-[var(--border)] pt-4">
+              <footer className="border-t border-[var(--border)] pt-6">
                 <DeleteTaskButton taskId={task.id} workspaceId={activeId ?? ''} onDeleted={close} />
               </footer>
             </div>
           </>
         ) : isLoading ? (
-          <div role="status" aria-busy="true" className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
-            <p id="drawer-title" className="text-[var(--muted)]">Loading…</p>
+          <div
+            role="status"
+            aria-busy="true"
+            className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center"
+          >
+            <p id="drawer-title" className="text-[var(--muted)]">
+              Loading…
+            </p>
           </div>
         ) : error ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
-            <p id="drawer-title" className="font-semibold">Couldn't load this task</p>
+            <p id="drawer-title" className="font-semibold">
+              Couldn't load this task
+            </p>
             <p className="text-sm text-[var(--muted)]">Check your connection, then try again.</p>
-            <button onClick={close} className="opm-btn mt-2">Close</button>
+            <button type="button" onClick={() => refetch()} className="opm-btn mt-2">
+              Retry
+            </button>
+            <button onClick={close} className="opm-btn mt-2">
+              Close
+            </button>
           </div>
         ) : (
           <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
-            <p id="drawer-title" className="font-semibold">Task not found</p>
-            <p className="text-sm text-[var(--muted)]">It may have moved workspace or been removed.</p>
-            <button onClick={close} className="opm-btn mt-2">Close</button>
+            <p id="drawer-title" className="font-semibold">
+              Task not found
+            </p>
+            <p className="text-sm text-[var(--muted)]">
+              It may have moved workspace or been removed.
+            </p>
+            <button onClick={close} className="opm-btn mt-2">
+              Close
+            </button>
           </div>
         )}
       </div>
@@ -107,17 +141,42 @@ export function TaskDrawer() {
   )
 }
 
-function DeleteTaskButton({ taskId, workspaceId, onDeleted }: {
+function TaskWatchButton({ taskId }: { taskId: string }) {
+  const watch = useTaskWatch(taskId)
+  const watching = watch.data ?? false
+  return (
+    <button
+      type="button"
+      className="opm-btn"
+      aria-pressed={watching}
+      disabled={watch.isLoading || watch.toggle.isPending}
+      onClick={() => watch.toggle.mutate(!watching)}
+    >
+      {watch.toggle.isPending ? 'Saving…' : watching ? 'Watching' : 'Watch'}
+    </button>
+  )
+}
+
+function DeleteTaskButton({
+  taskId,
+  workspaceId,
+  onDeleted,
+}: {
   taskId: string
   workspaceId: string
   onDeleted: () => void
 }) {
-  const [confirming, setConfirming] = useState(false)
+  const [confirmingTaskId, setConfirmingTaskId] = useState<string | null>(null)
   const del = useDeleteTask(workspaceId)
+  const confirming = confirmingTaskId === taskId
 
   if (!confirming)
     return (
-      <button onClick={() => setConfirming(true)} className="opm-btn">
+      <button
+        onClick={() => setConfirmingTaskId(taskId)}
+        className="opm-btn opm-btn-danger"
+        disabled={del.isPending}
+      >
         Delete task
       </button>
     )
@@ -127,12 +186,18 @@ function DeleteTaskButton({ taskId, workspaceId, onDeleted }: {
       <span>Delete this task?</span>
       <button
         onClick={() => del.mutate(taskId, { onSuccess: onDeleted })}
-        className="opm-btn font-semibold"
+        className="opm-btn opm-btn-danger font-semibold"
+        disabled={del.isPending}
       >
-        Delete
+        {del.isPending ? 'Deleting…' : 'Delete'}
       </button>
       {/* autoFocus lands on the safe option; both stay inside the drawer's focus trap */}
-      <button autoFocus onClick={() => setConfirming(false)} className="opm-btn">
+      <button
+        autoFocus
+        onClick={() => setConfirmingTaskId(null)}
+        className="opm-btn"
+        disabled={del.isPending}
+      >
         Cancel
       </button>
     </div>

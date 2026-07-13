@@ -9,28 +9,54 @@ vi.mock('../../lib/hooks/useActivity', () => ({ useActivity }))
 vi.mock('../../lib/workspace', () => ({ useActiveWorkspace }))
 
 import { ActivityView } from './ActivityView'
+import { expectNoA11yViolations } from '../../test-a11y'
 
 const MOVED = {
-  id: 'a1', verb: 'moved', from_status: 'in_progress', to_status: 'in_review',
+  id: 'a1',
+  verb: 'moved',
+  from_status: 'in_progress',
+  to_status: 'in_review',
   created_at: '2026-06-27T10:00:00Z',
-  actor: { name: 'Dana', color: '#6d5ef0' }, task: { ref: 'NIM-101', title: 'Fix login redirect' },
+  actor: { name: 'Dana', color: '#6d5ef0' },
+  task: { ref: 'NIM-101', title: 'Fix login redirect' },
 }
 
 const COMMENTED = {
-  id: 'a3', verb: 'commented', from_status: null, to_status: null,
+  id: 'a3',
+  verb: 'commented',
+  from_status: null,
+  to_status: null,
   created_at: '2026-06-27T10:00:00Z',
-  actor: { name: 'Sam', color: '#6d5ef0' }, task: { ref: 'NIM-7', title: 'Add SSO' },
+  actor: { name: 'Sam', color: '#6d5ef0' },
+  task: { ref: 'NIM-7', title: 'Add SSO' },
 }
 
 const CREATED = {
-  id: 'a4', verb: 'created', from_status: null, to_status: null,
+  id: 'a4',
+  verb: 'created',
+  from_status: null,
+  to_status: null,
   created_at: '2026-07-07T10:00:00Z',
-  actor: { name: 'Kit', color: '#6d5ef0' }, task: { ref: 'NIM-107', title: 'Ship adoption' },
+  actor: { name: 'Kit', color: '#6d5ef0' },
+  task: { ref: 'NIM-107', title: 'Ship adoption' },
+}
+
+const DELETED = {
+  ...CREATED,
+  id: 'a5',
+  verb: 'deleted',
+  task: { ref: 'NIM-108', title: 'Retired task' },
 }
 
 beforeEach(() => vi.clearAllMocks())
 
 describe('ActivityView', () => {
+  it('has no automated accessibility violations', async () => {
+    useActivity.mockReturnValue({ data: [MOVED], isLoading: false, error: null })
+    const { container } = render(<ActivityView />)
+    await expectNoA11yViolations(container)
+  })
+
   it('renders a commented activity row referencing the task', () => {
     useActivity.mockReturnValue({ data: [COMMENTED], isLoading: false, error: null })
     render(<ActivityView />)
@@ -60,6 +86,14 @@ describe('ActivityView', () => {
     expect(screen.getByText(/Ship adoption/)).toBeInTheDocument()
   })
 
+  it('renders a deleted task from its retained snapshot', () => {
+    useActivity.mockReturnValue({ data: [DELETED], isLoading: false, error: null })
+    render(<ActivityView />)
+    expect(screen.getByText(/deleted/)).toBeInTheDocument()
+    expect(screen.getByText('NIM-108')).toBeInTheDocument()
+    expect(screen.getByText(/Retired task/)).toBeInTheDocument()
+  })
+
   it('shows the loading state', () => {
     useActivity.mockReturnValue({ data: undefined, isLoading: true, error: null })
     render(<ActivityView />)
@@ -82,8 +116,19 @@ describe('ActivityView', () => {
 
   it('falls back gracefully for an unknown verb and null actor/task', () => {
     useActivity.mockReturnValue({
-      data: [{ id: 'a2', verb: 'sneezed', from_status: null, to_status: null, created_at: '2026-06-27T10:00:00Z', actor: null, task: null }],
-      isLoading: false, error: null,
+      data: [
+        {
+          id: 'a2',
+          verb: 'sneezed',
+          from_status: null,
+          to_status: null,
+          created_at: '2026-06-27T10:00:00Z',
+          actor: null,
+          task: null,
+        },
+      ],
+      isLoading: false,
+      error: null,
     })
     render(<ActivityView />)
     expect(screen.getByText(/someone/i)).toBeInTheDocument()

@@ -5,6 +5,9 @@ import React from 'react'
 const { useWorkspaces } = vi.hoisted(() => ({ useWorkspaces: vi.fn() }))
 vi.mock('./hooks/useWorkspaces', () => ({ useWorkspaces }))
 vi.mock('./hooks/useSession', () => ({ useActorId: () => 'u1' }))
+vi.mock('./hooks/useInvitations', () => ({
+  useInvitationAcceptance: () => ({ isPending: false }),
+}))
 
 import { WorkspaceProvider, useActiveWorkspace } from './workspace'
 
@@ -15,7 +18,11 @@ beforeEach(() => {
   vi.clearAllMocks()
   localStorage.clear()
   useWorkspaces.mockReturnValue({
-    data: [{ id: 'a', name: 'Acme' }, { id: 'b', name: 'Beta' }], isLoading: false,
+    data: [
+      { id: 'a', name: 'Acme' },
+      { id: 'b', name: 'Beta' },
+    ],
+    isLoading: false,
   })
 })
 
@@ -35,12 +42,12 @@ describe('useActiveWorkspace', () => {
     const { result } = renderHook(() => useActiveWorkspace(), { wrapper })
     expect(result.current.activeId).toBe('a')
   })
-  it('restores this user\'s stored workspace', () => {
+  it("restores this user's stored workspace", () => {
     localStorage.setItem('activeWorkspace:u1', 'b')
     const { result } = renderHook(() => useActiveWorkspace(), { wrapper })
     expect(result.current.activeId).toBe('b')
   })
-  it('does not inherit another user\'s stored workspace', () => {
+  it("does not inherit another user's stored workspace", () => {
     localStorage.setItem('activeWorkspace:someone-else', 'b')
     const { result } = renderHook(() => useActiveWorkspace(), { wrapper })
     expect(result.current.activeId).toBe('a')

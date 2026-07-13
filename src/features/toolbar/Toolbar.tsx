@@ -8,50 +8,120 @@ import { useCreateTask } from '../../lib/hooks/useCreateTask'
 import type { ProjectOption } from '../../data/projectsRepo'
 import { useTaskFilters } from './useTaskFilters'
 import type { SortKey } from './sortTasks'
+import { AppIcon } from '../../components/AppIcon'
+import { SavedViewsControl } from '../savedViews/SavedViewsControl'
+import { currentSavedViewConfiguration, isSavedViewType } from './savedViewConfig'
 
 type ListKey = 'status' | 'priority' | 'assignee' | 'type' | 'tag'
 const SORTS: { id: SortKey; label: string }[] = [
-  { id: 'priority', label: 'Priority' }, { id: 'due', label: 'Due date' },
-  { id: 'title', label: 'Title' }, { id: 'status', label: 'Status' },
+  { id: 'priority', label: 'Priority' },
+  { id: 'due', label: 'Due date' },
+  { id: 'title', label: 'Title' },
+  { id: 'status', label: 'Status' },
 ]
 
 export function Toolbar({ showSort }: { showSort: boolean }) {
   const { activeId } = useActiveWorkspace()
+  const { view } = useViewState()
   const { data: members } = useMembers(activeId ?? '')
-  const { filters, sort, setList, setQ, setSort, clear } = useTaskFilters()
+  const {
+    filters,
+    sort,
+    savedViewId,
+    hasExplicitConfiguration,
+    setList,
+    setQ,
+    setSort,
+    clear,
+    applySavedView,
+    clearSavedView,
+  } = useTaskFilters()
 
   const toggle = (key: ListKey, id: string) => {
     const cur = filters[key]
     setList(key, cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id])
   }
   const active =
-    filters.status.length || filters.priority.length || filters.assignee.length ||
-    filters.type.length || filters.tag.length || filters.q.trim()
+    filters.status.length ||
+    filters.priority.length ||
+    filters.assignee.length ||
+    filters.type.length ||
+    filters.tag.length ||
+    filters.q.trim()
 
   return (
-    <div className="flex flex-wrap items-center gap-2 border-b border-[var(--border)] px-4 py-2 text-sm">
+    <section className="opm-toolbar" aria-label="Task tools">
       <NewTask workspaceId={activeId ?? ''} />
-      <input
-        aria-label="Search tasks" placeholder="Search…" value={filters.q}
-        onChange={(e) => setQ(e.target.value)}
-        className="opm-input w-48"
+      {activeId && isSavedViewType(view) && (
+        <SavedViewsControl
+          key={`${activeId}:${view}`}
+          workspaceId={activeId}
+          viewType={view}
+          configuration={currentSavedViewConfiguration(filters, sort, view)}
+          savedViewId={savedViewId}
+          hasExplicitConfiguration={hasExplicitConfiguration}
+          onApply={applySavedView}
+          onClearSavedView={clearSavedView}
+        />
+      )}
+      <label className="opm-search-field">
+        <AppIcon name="search" size={15} />
+        <span className="sr-only">Search tasks</span>
+        <input
+          aria-label="Search tasks"
+          placeholder="Search tasks…"
+          value={filters.q}
+          onChange={(e) => setQ(e.target.value)}
+          className="opm-toolbar-search"
+        />
+      </label>
+      <Group
+        label="Status"
+        selected={filters.status}
+        options={STATUSES.map((s) => ({ id: s.id, label: s.label }))}
+        onToggle={(id) => toggle('status', id)}
       />
-      <Group label="Status" selected={filters.status}
-        options={STATUSES.map((s) => ({ id: s.id, label: s.label }))} onToggle={(id) => toggle('status', id)} />
-      <Group label="Priority" selected={filters.priority}
-        options={PRIORITIES.map((p) => ({ id: p.id, label: p.label }))} onToggle={(id) => toggle('priority', id)} />
-      <Group label="Type" selected={filters.type}
-        options={Object.entries(TASK_TYPES).map(([id, t]) => ({ id, label: t.label }))} onToggle={(id) => toggle('type', id)} />
-      <Group label="Tag" selected={filters.tag}
-        options={Object.keys(TAG_COLORS).map((t) => ({ id: t, label: t }))} onToggle={(id) => toggle('tag', id)} />
-      <Group label="Assignee" selected={filters.assignee}
-        options={[{ id: '', label: 'Unassigned' }, ...(members ?? []).map((m) => ({ id: m.user_id, label: m.name || 'Someone' }))]} onToggle={(id) => toggle('assignee', id)} />
+      <Group
+        label="Priority"
+        selected={filters.priority}
+        options={PRIORITIES.map((p) => ({ id: p.id, label: p.label }))}
+        onToggle={(id) => toggle('priority', id)}
+      />
+      <Group
+        label="Type"
+        selected={filters.type}
+        options={Object.entries(TASK_TYPES).map(([id, t]) => ({ id, label: t.label }))}
+        onToggle={(id) => toggle('type', id)}
+      />
+      <Group
+        label="Tag"
+        selected={filters.tag}
+        options={Object.keys(TAG_COLORS).map((t) => ({ id: t, label: t }))}
+        onToggle={(id) => toggle('tag', id)}
+      />
+      <Group
+        label="Assignee"
+        selected={filters.assignee}
+        options={[
+          { id: '', label: 'Unassigned' },
+          ...(members ?? []).map((m) => ({ id: m.user_id, label: m.name || 'Someone' })),
+        ]}
+        onToggle={(id) => toggle('assignee', id)}
+      />
       {showSort && (
-        <label className="ml-auto flex items-center gap-1">
+        <label className="opm-sort-control">
           <span className="text-[var(--muted)]">Sort</span>
-          <select aria-label="Sort by" value={sort} onChange={(e) => setSort(e.target.value as SortKey)}
-            className="opm-input w-auto">
-            {SORTS.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+          <select
+            aria-label="Sort by"
+            value={sort}
+            onChange={(e) => setSort(e.target.value as SortKey)}
+            className="opm-select w-auto"
+          >
+            {SORTS.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.label}
+              </option>
+            ))}
           </select>
         </label>
       )}
@@ -60,26 +130,39 @@ export function Toolbar({ showSort }: { showSort: boolean }) {
           Clear filters
         </button>
       ) : null}
-    </div>
+    </section>
   )
 }
 
 // Native <details> disclosure — no popover dependency.
-function Group({ label, options, selected, onToggle }: {
+function Group({
+  label,
+  options,
+  selected,
+  onToggle,
+}: {
   label: string
   options: { id: string; label: string }[]
   selected: string[]
   onToggle: (id: string) => void
 }) {
   return (
-    <details className="relative">
+    <details className="opm-filter relative">
       <summary className="opm-btn list-none">
-        {label}{selected.length ? ` (${selected.length})` : ''}
+        {label}
+        {selected.length ? ` (${selected.length})` : ''}
+        <AppIcon name="chevronDown" size={12} />
       </summary>
-      <div className="absolute z-20 mt-1 flex flex-col gap-1 rounded border border-[var(--border)] bg-[var(--surface)] p-2 shadow-lg">
+      <div
+        className={`opm-filter-menu${label === 'Assignee' || label === 'Tag' ? ' right-0' : ''}`}
+      >
         {options.map((o) => (
-          <label key={o.id} className="flex items-center gap-2 whitespace-nowrap">
-            <input type="checkbox" checked={selected.includes(o.id)} onChange={() => onToggle(o.id)} />
+          <label key={o.id} className="opm-filter-option">
+            <input
+              type="checkbox"
+              checked={selected.includes(o.id)}
+              onChange={() => onToggle(o.id)}
+            />
             {o.label}
           </label>
         ))}
@@ -111,12 +194,14 @@ function NewTask({ workspaceId }: { workspaceId: string }) {
     return (
       <button
         ref={btnRef}
-        className="opm-btn"
+        className="opm-btn-primary"
         disabled={!projects?.length}
         title={projects?.length ? undefined : 'Create a project first (see docs/admin.md)'}
         onClick={() => setOpen(true)}
+        aria-label="+ New task"
       >
-        + New task
+        <AppIcon name="plus" size={15} />
+        New task
       </button>
     )
 
@@ -157,7 +242,9 @@ function NewTask({ workspaceId }: { workspaceId: string }) {
           className="opm-input w-auto"
         >
           {projects?.map((p) => (
-            <option key={p.id} value={p.id}>{p.key} — {p.name}</option>
+            <option key={p.id} value={p.id}>
+              {p.key} — {p.name}
+            </option>
           ))}
         </select>
       )}

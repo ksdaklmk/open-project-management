@@ -1,74 +1,213 @@
-import { useState, useEffect, lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { useViewState, VIEWS, type ViewId } from './useViewState'
-import { getTheme, setTheme, type Theme } from '../lib/theme'
 import { useActiveWorkspace } from '../lib/workspace'
 import { signOut } from '../lib/hooks/useSession'
+import { useActorId } from '../lib/hooks/useSession'
+import { useMembers } from '../lib/hooks/useMembers'
+import { settingsPermissions } from '../features/settings/settingsPermissions'
 import { WorkspaceSwitcher } from '../components/WorkspaceSwitcher'
 import { TaskDrawer } from '../features/taskDrawer/TaskDrawer'
 import { Toolbar } from '../features/toolbar/Toolbar'
+import { AppIcon, type AppIconName } from '../components/AppIcon'
+import { recordTelemetry } from '../lib/observability'
+import { FEATURES } from '../lib/features'
+import { useActivationTracking } from '../lib/hooks/useActivation'
+import { OnboardingChecklist } from '../features/onboarding/OnboardingChecklist'
+import { useUnreadNotifications } from '../lib/hooks/useNotifications'
 
 // Views are route-level code-split: the login/shell path no longer bundles all six.
-const ListView = lazy(() => import('../features/listView/ListView').then((m) => ({ default: m.ListView })))
-const BoardView = lazy(() => import('../features/boardView/BoardView').then((m) => ({ default: m.BoardView })))
-const ActivityView = lazy(() => import('../features/activityView/ActivityView').then((m) => ({ default: m.ActivityView })))
-const GanttView = lazy(() => import('../features/ganttView/GanttView').then((m) => ({ default: m.GanttView })))
-const TimelineView = lazy(() => import('../features/timelineView/TimelineView').then((m) => ({ default: m.TimelineView })))
-const WorkloadView = lazy(() => import('../features/workloadView/WorkloadView').then((m) => ({ default: m.WorkloadView })))
+const ListView = lazy(() =>
+  import('../features/listView/ListView').then((m) => ({ default: m.ListView })),
+)
+const MyWorkView = lazy(() =>
+  import('../features/myWorkView/MyWorkView').then((m) => ({ default: m.MyWorkView })),
+)
+const InboxView = lazy(() =>
+  import('../features/inboxView/InboxView').then((m) => ({ default: m.InboxView })),
+)
+const BoardView = lazy(() =>
+  import('../features/boardView/BoardView').then((m) => ({ default: m.BoardView })),
+)
+const ActivityView = lazy(() =>
+  import('../features/activityView/ActivityView').then((m) => ({ default: m.ActivityView })),
+)
+const GanttView = lazy(() =>
+  import('../features/ganttView/GanttView').then((m) => ({ default: m.GanttView })),
+)
+const TimelineView = lazy(() =>
+  import('../features/timelineView/TimelineView').then((m) => ({ default: m.TimelineView })),
+)
+const WorkloadView = lazy(() =>
+  import('../features/workloadView/WorkloadView').then((m) => ({ default: m.WorkloadView })),
+)
+const WorkspaceSettings = lazy(() =>
+  import('../features/settings/WorkspaceSettings').then((m) => ({ default: m.WorkspaceSettings })),
+)
+const CreateWorkspaceForm = lazy(() =>
+  import('../features/settings/WorkspaceSettings').then((m) => ({
+    default: m.CreateWorkspaceForm,
+  })),
+)
 
 const TASK_VIEWS: ViewId[] = ['list', 'board', 'gantt', 'timeline']
 
 const LABEL: Record<ViewId, string> = {
-  list: 'List', board: 'Board', gantt: 'Gantt',
-  timeline: 'Timeline', activity: 'Activity', workload: 'Workload',
+  'my-work': 'My Work',
+  inbox: 'Inbox',
+  list: 'List',
+  board: 'Board',
+  gantt: 'Gantt',
+  timeline: 'Timeline',
+  activity: 'Activity',
+  workload: 'Workload',
+  settings: 'Settings',
+}
+
+const VIEW_ICON: Record<ViewId, AppIconName> = {
+  'my-work': 'mywork',
+  inbox: 'inbox',
+  list: 'list',
+  board: 'board',
+  gantt: 'gantt',
+  timeline: 'timeline',
+  activity: 'activity',
+  workload: 'workload',
+  settings: 'settings',
 }
 
 export function Shell() {
   const { view, setView } = useViewState()
-  const [theme, setThemeState] = useState<Theme>(getTheme())
   const { activeId, loading: workspacesLoading } = useActiveWorkspace()
+  const actorId = useActorId()
+  const members = useMembers(activeId ?? '')
+  const actorRole = members.data?.find((member) => member.user_id === actorId)?.role
+  const canManageSettings = settingsPermissions(actorRole).canManage
+  const [signOutPending, setSignOutPending] = useState(false)
+  const [signOutError, setSignOutError] = useState('')
+  const unreadNotifications = useUnreadNotifications()
 
-  // Apply the theme to the DOM (and persist it) on mount and on every change,
-  // so the DOM always reflects state — self-healing across remounts/desyncs.
-  useEffect(() => {
-    setTheme(theme)
-  }, [theme])
+  useEffect(() => recordTelemetry('view_opened', { view }), [view])
+  useActivationTracking(activeId ?? '', view)
 
-  const toggleTheme = () => setThemeState((t) => (t === 'bloom' ? 'slate' : 'bloom'))
+  const handleSignOut = async () => {
+    if (signOutPending) return
+    setSignOutPending(true)
+    setSignOutError('')
+    try {
+      const result = await signOut()
+      if (result?.error) setSignOutError(`Couldn't sign out: ${result.error.message}`)
+    } catch (error) {
+      setSignOutError(`Couldn't sign out: ${(error as Error).message}`)
+    } finally {
+      setSignOutPending(false)
+    }
+  }
 
   if (!workspacesLoading && activeId === null)
     return (
-      <div className="min-h-full grid place-items-center bg-[var(--bg)] text-[var(--text)]">
-        <div className="w-96 max-w-full space-y-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-6 text-center">
-          <h1 className="text-lg font-semibold">No workspace yet</h1>
-          <p className="text-sm text-[var(--muted)]">Ask your workspace admin to add you.</p>
-          <button onClick={() => signOut()} className="opm-btn">Sign out</button>
+      <main className="min-h-full grid place-items-center bg-[var(--bg)] text-[var(--text)]">
+        <div className="w-full max-w-xl space-y-3 p-4 text-center">
+          <Suspense fallback={<p>Loading…</p>}>
+            <CreateWorkspaceForm />
+          </Suspense>
+          <button onClick={handleSignOut} className="opm-btn" disabled={signOutPending}>
+            {signOutPending ? 'Signing out…' : 'Sign out'}
+          </button>
+          {signOutError && (
+            <p role="alert" className="text-sm text-[var(--danger)]">
+              {signOutError}
+            </p>
+          )}
         </div>
-      </div>
+      </main>
     )
 
   return (
-    <div className="min-h-full grid grid-cols-[200px_1fr] bg-[var(--bg)] text-[var(--text)]">
-      <aside className="border-r border-[var(--border)] p-3 space-y-1">
-        <div className="mb-3"><WorkspaceSwitcher /></div>
-        {VIEWS.map(v => (
-          <button key={v} onClick={() => setView(v)}
-            className={`block w-full text-left px-3 py-2 rounded ${
-              v === view ? 'bg-[var(--primary)] text-white' : 'hover:bg-[var(--surface)]'}`}>
-            {LABEL[v]}
+    <div className="opm-shell min-h-full bg-[var(--bg)] text-[var(--text)]">
+      <a href="#main-content" className="opm-skip-link">
+        Skip to main content
+      </a>
+      <nav aria-label="Workspace views" className="opm-sidebar">
+        <div className="opm-sidebar-brand">
+          <WorkspaceSwitcher />
+        </div>
+        <div className="opm-sidebar-views">
+          {VIEWS.filter((v) => v !== 'settings').map((v) => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => setView(v)}
+              aria-label={LABEL[v]}
+              aria-current={v === view ? 'page' : undefined}
+              className="opm-nav-button"
+              data-label={LABEL[v]}
+            >
+              <AppIcon name={VIEW_ICON[v]} />
+              <span className="sr-only">{LABEL[v]}</span>
+              {v === 'inbox' && (unreadNotifications.data ?? 0) > 0 && (
+                <span className="opm-nav-badge" aria-label={`${unreadNotifications.data} unread`}>
+                  {unreadNotifications.data! > 99 ? '99+' : unreadNotifications.data}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+        <div className="opm-sidebar-actions">
+          {FEATURES.admin && canManageSettings && (
+            <button
+              type="button"
+              onClick={() => setView('settings')}
+              aria-label="Settings"
+              aria-current={view === 'settings' ? 'page' : undefined}
+              className="opm-nav-button"
+              data-label="Settings"
+            >
+              <AppIcon name="settings" />
+              <span className="sr-only">Settings</span>
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={handleSignOut}
+            disabled={signOutPending}
+            aria-label="Sign out"
+            className="opm-nav-button"
+            data-label="Sign out"
+          >
+            <AppIcon name="logout" />
+            <span className="sr-only">Sign out</span>
           </button>
-        ))}
-      </aside>
-      <section className="flex flex-col">
-        <header className="flex items-center justify-between px-4 h-12 border-b border-[var(--border)]">
-          <span className="font-medium">{LABEL[view]}</span>
-          <button onClick={toggleTheme} aria-label="Toggle theme"
-            className="px-3 py-1 rounded border border-[var(--border)]">Theme</button>
-        </header>
+        </div>
+      </nav>
+      <section className="opm-view-frame">
+        <section aria-label="View controls" className="opm-view-header">
+          <p className="opm-breadcrumb" aria-hidden="true">
+            Projects <span>/</span>
+          </p>
+          <h1>{LABEL[view]}</h1>
+        </section>
+        {activeId && (
+          <OnboardingChecklist
+            workspaceId={activeId}
+            isOwner={actorRole === 'owner'}
+            setView={setView}
+          />
+        )}
         {TASK_VIEWS.includes(view) && <Toolbar showSort={view === 'list'} />}
-        <main data-testid="view-region" className="flex-1 p-4 text-[var(--muted)]">
+        <main
+          id="main-content"
+          data-testid="view-region"
+          aria-label={`${LABEL[view]} view`}
+          className="opm-main"
+          data-view={view}
+        >
           <Suspense fallback={<p className="text-[var(--muted)]">Loading…</p>}>
             {view === 'list' ? (
               <ListView />
+            ) : view === 'my-work' ? (
+              <MyWorkView />
+            ) : view === 'inbox' ? (
+              <InboxView />
             ) : view === 'board' ? (
               <BoardView />
             ) : view === 'gantt' ? (
@@ -79,6 +218,8 @@ export function Shell() {
               <ActivityView />
             ) : view === 'workload' ? (
               <WorkloadView />
+            ) : view === 'settings' ? (
+              <WorkspaceSettings />
             ) : (
               `${view} view — coming next.`
             )}
@@ -86,6 +227,15 @@ export function Shell() {
         </main>
       </section>
       <TaskDrawer />
+      {signOutError && (
+        <p
+          role="alert"
+          className="fixed right-4 top-4 rounded-md border border-[var(--danger)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--danger)]"
+          style={{ zIndex: 'var(--layer-toast)' }}
+        >
+          {signOutError}
+        </p>
+      )}
     </div>
   )
 }

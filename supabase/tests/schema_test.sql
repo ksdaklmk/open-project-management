@@ -8,15 +8,17 @@
 -- no RLS impersonation fixture is needed.
 
 begin;
-select plan(12);
+select plan(15);
 set local role postgres;
 
 insert into auth.users (id, email) values
-  ('00000000-0000-0000-0000-000000000091', 'schema@test.dev');
+  ('00000000-0000-0000-0000-000000000091', 'schema@test.dev'),
+  ('00000000-0000-0000-0000-000000000096', 'replacement-owner@test.dev');
 insert into workspaces (id, name, created_by) values
   ('00000000-0000-0000-0000-000000000092', 'SX', '00000000-0000-0000-0000-000000000091');
 insert into workspace_members (workspace_id, user_id, role) values
-  ('00000000-0000-0000-0000-000000000092', '00000000-0000-0000-0000-000000000091', 'owner');
+  ('00000000-0000-0000-0000-000000000092', '00000000-0000-0000-0000-000000000091', 'owner'),
+  ('00000000-0000-0000-0000-000000000092', '00000000-0000-0000-0000-000000000096', 'owner');
 insert into projects (id, workspace_id, name, key) values
   ('00000000-0000-0000-0000-000000000093', '00000000-0000-0000-0000-000000000092', 'SX', 'SX');
 insert into tasks (id, project_id, workspace_id, ref, title, created_by) values
@@ -26,8 +28,9 @@ insert into tasks (id, project_id, workspace_id, ref, title, created_by) values
 insert into comments (id, task_id, author_id, body) values
   ('00000000-0000-0000-0000-000000000095', '00000000-0000-0000-0000-000000000094',
    '00000000-0000-0000-0000-000000000091', 'hello');
-insert into activity (workspace_id, actor_id, verb, task_id) values
-  ('00000000-0000-0000-0000-000000000092', '00000000-0000-0000-0000-000000000091',
+insert into activity (id, workspace_id, actor_id, verb, task_id) values
+  ('00000000-0000-0000-0000-000000000097', '00000000-0000-0000-0000-000000000092',
+   '00000000-0000-0000-0000-000000000091',
    'created', '00000000-0000-0000-0000-000000000094');
 
 -- ---------------------------------------------------------------------------
@@ -45,6 +48,11 @@ select throws_ok(
      where id = '00000000-0000-0000-0000-000000000094' $$,
   '23514', null,
   'negative task points are rejected');
+select throws_ok(
+  $$ update tasks set points = 1000
+     where id = '00000000-0000-0000-0000-000000000094' $$,
+  '23514', null,
+  'task points above 999 are rejected');
 select throws_ok(
   $$ update tasks set start_date = '2026-07-10', end_date = '2026-07-01'
      where id = '00000000-0000-0000-0000-000000000094' $$,
@@ -75,10 +83,26 @@ select throws_ok(
      where user_id = '00000000-0000-0000-0000-000000000091' $$,
   '23514', null,
   'a negative member capacity is rejected');
+select throws_ok(
+  $$ update projects set key = '1 invalid'
+     where id = '00000000-0000-0000-0000-000000000093' $$,
+  '23514', null,
+  'an invalid project key is rejected');
+select is(
+  (select count(*) from pg_constraint
+   where conname in (
+     'tasks_title_not_blank', 'tasks_points_range', 'tasks_dates_ordered',
+     'tasks_dates_sane', 'subtasks_title_not_blank', 'comments_body_not_blank',
+     'projects_name_not_blank', 'projects_key_not_blank', 'projects_key_format',
+     'workspaces_name_not_blank', 'members_capacity_range'
+   ) and convalidated),
+  11::bigint,
+  'all domain constraints are validated');
 
 -- ---------------------------------------------------------------------------
 -- Attribution FKs: deleting an auth user (cascades to the profile) must not
--- be blocked by historical rows; history survives with null attribution.
+-- be blocked by historical rows once another workspace owner remains; history
+-- survives with null attribution.
 -- ---------------------------------------------------------------------------
 select lives_ok(
   $$ delete from auth.users where id = '00000000-0000-0000-0000-000000000091' $$,
@@ -92,10 +116,9 @@ select is(
   null,
   'comments.author_id nulls out when the profile is deleted');
 select is(
-  (select count(*) from activity
-   where workspace_id = '00000000-0000-0000-0000-000000000092' and actor_id is null)::int,
-  1,
+  (select actor_id from activity where id = '00000000-0000-0000-0000-000000000097'),
+  null,
   'activity.actor_id nulls out when the profile is deleted');
 
-select * from finish();
+select * from finish(true);
 rollback;

@@ -2,8 +2,15 @@ import { describe, it, expect } from 'vitest'
 import { filterTasks, type TaskFilters } from './filterTasks'
 
 const t = (o: Partial<any> = {}) => ({
-  id: 'x', status: 'todo', priority: 'low', assignee_id: null, type: 'feature',
-  tags: [] as string[], title: '', description: '', ...o,
+  id: 'x',
+  status: 'todo',
+  priority: 'low',
+  assignee_id: null,
+  type: 'feature',
+  tags: [] as string[],
+  title: '',
+  description: '',
+  ...o,
 })
 const none: TaskFilters = { status: [], priority: [], assignee: [], type: [], tag: [], q: '' }
 
@@ -30,7 +37,11 @@ describe('filterTasks', () => {
     expect(filterTasks(tasks as any, { ...none, assignee: [''] }).map((x) => x.id)).toEqual(['a'])
   })
   it('text search matches title or description, case-insensitively', () => {
-    const tasks = [t({ id: 'a', title: 'Build LOGIN' }), t({ id: 'b', description: 'fix the Login bug' }), t({ id: 'c', title: 'unrelated' })]
+    const tasks = [
+      t({ id: 'a', title: 'Build LOGIN' }),
+      t({ id: 'b', description: 'fix the Login bug' }),
+      t({ id: 'c', title: 'unrelated' }),
+    ]
     expect(filterTasks(tasks as any, { ...none, q: 'login' }).map((x) => x.id)).toEqual(['a', 'b'])
   })
 })

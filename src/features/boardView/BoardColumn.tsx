@@ -11,13 +11,24 @@ function DropIndicator() {
   return <div aria-hidden="true" className="opm-drop-line" />
 }
 
-export function BoardColumn({ status, tasks, members, onCardDragStart, onDrop, onOpen }: {
+export function BoardColumn({
+  status,
+  tasks,
+  members,
+  onCardDragStart,
+  onDrop,
+  onMove,
+  onOpen,
+  selectedRef,
+}: {
   status: Status
   tasks: Task[]
   members: Member[]
   onCardDragStart: (taskId: string) => void
   onDrop: (status: Status, insertIndex: number) => void
+  onMove: (taskId: string, status: Status, insertIndex?: number) => void
   onOpen: (ref: string) => void
+  selectedRef?: string | null
 }) {
   const meta = STATUSES.find((s) => s.id === status)
   const [hoverIndex, setHoverIndex] = useState<number | null>(null)
@@ -25,7 +36,7 @@ export function BoardColumn({ status, tasks, members, onCardDragStart, onDrop, o
 
   return (
     <section
-      className={`opm-board-col flex w-64 shrink-0 flex-col rounded-xl border border-[var(--border)] bg-[var(--bg)]${isDragOver ? ' is-drag-over' : ''}`}
+      className={`opm-board-col flex w-64 shrink-0 flex-col rounded-md border border-[var(--border)] bg-[var(--canvas)]${isDragOver ? ' is-drag-over' : ''}`}
       onDragOver={(e) => {
         e.preventDefault()
         // For empty columns there are no card wrappers to track position,
@@ -46,11 +57,11 @@ export function BoardColumn({ status, tasks, members, onCardDragStart, onDrop, o
       }}
     >
       {/* Column header: status dot · label · count */}
-      <h3 className="flex items-center gap-2 px-3 py-2.5 text-[13px] font-semibold tracking-tight text-[var(--text)]">
+      <h2 className="opm-section-title flex items-center gap-2 px-3 py-2.5 text-[var(--text)]">
         <span className="opm-group-dot" style={cssVars(meta?.color)} aria-hidden="true" />
         <span>{meta?.label}</span>
         <span className="opm-count">{tasks.length}</span>
-      </h3>
+      </h2>
 
       {/* Divider */}
       <div className="mx-3 h-px bg-[var(--border)]" aria-hidden="true" />
@@ -63,7 +74,7 @@ export function BoardColumn({ status, tasks, members, onCardDragStart, onDrop, o
             className={`flex min-h-[80px] items-center justify-center rounded-lg text-xs transition-colors duration-100 ${
               isDragOver
                 ? 'border border-dashed border-[var(--primary)] text-[var(--primary)]'
-                : 'border border-dashed border-[var(--border)] text-[var(--faint)]'
+                : 'border border-dashed border-[var(--border)] text-[var(--muted)]'
             }`}
           >
             {isDragOver ? 'Drop here' : 'No tasks'}
@@ -76,12 +87,24 @@ export function BoardColumn({ status, tasks, members, onCardDragStart, onDrop, o
             {tasks.map((t, i) => (
               <div
                 key={t.id}
+                className="opm-virtual-item"
                 onDragOver={(e) => {
                   const r = e.currentTarget.getBoundingClientRect()
                   setHoverIndex(e.clientY < r.top + r.height / 2 ? i : i + 1)
                 }}
               >
-                <TaskCard task={t} members={members} onDragStart={onCardDragStart} onOpen={onOpen} />
+                <TaskCard
+                  task={t}
+                  members={members}
+                  onDragStart={onCardDragStart}
+                  onOpen={onOpen}
+                  selected={t.ref === selectedRef}
+                  canMoveUp={i > 0}
+                  canMoveDown={i < tasks.length - 1}
+                  onMoveUp={() => onMove(t.id, status, i - 1)}
+                  onMoveDown={() => onMove(t.id, status, i + 2)}
+                  onMoveToStatus={(nextStatus) => onMove(t.id, nextStatus)}
+                />
                 {/* Indicator after this card */}
                 {hoverIndex === i + 1 && <DropIndicator />}
               </div>

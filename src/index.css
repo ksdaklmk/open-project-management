@@ -2,309 +2,1362 @@
 @tailwind components;
 @tailwind utilities;
 
-:root, [data-theme='bloom'] {
-  --primary: #6d5ef0; --bg: #f7f7fb; --surface: #ffffff; --border: #e6e6ef;
-  --text: #1c1d22; --muted: #6b7280; --faint: #9aa0ad;
-  --load-boost: 1; /* Workload heatmap tint strength; bumped on dark so tints don't wash out */
-  /* Solid CTA fill: kept dark enough that white label hits AA in BOTH themes
-     (lighter --primary is for tints/rings, where it must read on a dark bg). */
-  --accent: #6d5ef0; --on-accent: #ffffff;
+:root {
+  /* Quiet Canvas: restrained light-only product palette. */
+  --canvas: oklch(95.5% 0.015 82);
+  --canvas-deep: oklch(92.8% 0.022 82);
+  --surface: oklch(98.5% 0.006 82);
+  --surface-raised: oklch(99.3% 0.003 82);
+  --surface-hover: oklch(93.8% 0.018 82);
+  --border: oklch(86.5% 0.018 82);
+  --border-strong: oklch(76.5% 0.022 82);
+  --text: oklch(20.5% 0.006 82);
+  --muted: oklch(44% 0.012 82);
+  --faint: oklch(62% 0.014 82);
+  --accent: oklch(70.5% 0.185 27);
+  --accent-hover: oklch(67% 0.195 27);
+  --accent-ink: oklch(47% 0.18 27);
+  --accent-soft: oklch(93.5% 0.035 27);
+  --accent-border: oklch(82% 0.09 27);
+  --danger: oklch(47% 0.18 27);
+  --success: oklch(51% 0.13 151);
+
+  /* Backward-compatible semantic aliases used by feature code. */
+  --primary: var(--accent-ink);
+  --bg: var(--canvas);
+  --on-accent: var(--text);
+  --load-boost: 1;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+  --radius-sm: 0.1875rem;
+  --radius-md: 0.3125rem;
+  --text-meta: 0.75rem;
+  --text-compact: 0.8125rem;
+  --text-body: 0.875rem;
+  --text-section: 1rem;
+  --text-title: 1.125rem;
+  --layer-dropdown: 20;
+  --layer-sticky: 30;
+  --layer-backdrop: 40;
+  --layer-modal: 50;
+  --layer-toast: 60;
+  --layer-tooltip: 70;
+
   color-scheme: light;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-kerning: normal;
+  font-synthesis: none;
 }
-[data-theme='slate'] {
-  --primary: #8b7ff5; --bg: #0f1115; --surface: #171a21; --border: #262a33;
-  --text: #e8eaed; --muted: #9aa0ad; --faint: #5b616e;
-  --load-boost: 1.4;
-  color-scheme: dark; /* native date pickers / scrollbars render dark */
+
+html,
+body,
+#root {
+  min-height: 100%;
+  height: 100%;
 }
-html, body, #root { height: 100%; }
-body { background: var(--bg); color: var(--text); }
+
+html {
+  background: var(--canvas);
+}
+
+body {
+  margin: 0;
+  background: var(--canvas);
+  color: var(--text);
+  font-size: 1rem;
+  line-height: 1.5;
+  text-rendering: optimizeLegibility;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button,
+summary,
+select,
+input[type='checkbox'] {
+  accent-color: var(--accent-ink);
+}
+
+::selection {
+  color: var(--text);
+  background: var(--accent-border);
+}
 
 @layer components {
-  /* ---- Inline editor fields (status / priority / assignee / workspace) ----
-     A native <select> wrapped so we can overlay a colored leading dot and a
-     currentColor caret. Stays a real combobox: keyboard + AT operable. */
+  .opm-login {
+    display: grid;
+    min-height: 100dvh;
+    grid-template-columns: minmax(18rem, 0.8fr) minmax(24rem, 1.2fr);
+    color: var(--text);
+    background: var(--surface);
+  }
+
+  .opm-login-intro {
+    display: flex;
+    align-items: flex-end;
+    gap: var(--space-3);
+    border-right: 1px solid var(--border);
+    padding: var(--space-8);
+    background: var(--canvas);
+  }
+
+  .opm-login-mark {
+    display: grid;
+    width: 2.5rem;
+    height: 2.5rem;
+    flex: none;
+    place-items: center;
+    border: 1px solid var(--accent-border);
+    border-radius: var(--radius-md);
+    color: var(--text);
+    background: var(--accent);
+    font-size: var(--text-section);
+    font-weight: 700;
+  }
+
+  .opm-login-intro p {
+    margin: 0;
+  }
+
+  .opm-login-intro p:first-child {
+    font-size: var(--text-section);
+    font-weight: 600;
+  }
+
+  .opm-login-intro p:last-child {
+    max-width: 34ch;
+    margin-top: var(--space-1);
+    color: var(--muted);
+    font-size: var(--text-body);
+  }
+
+  .opm-login-panel {
+    display: grid;
+    place-items: center;
+    padding: var(--space-8);
+  }
+
+  .opm-login-form {
+    display: grid;
+    width: min(100%, 22rem);
+    gap: var(--space-4);
+  }
+
+  .opm-login-form header {
+    margin-bottom: var(--space-2);
+  }
+
+  .opm-login-form h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    line-height: 1.25;
+    letter-spacing: -0.025em;
+  }
+
+  .opm-login-form header p {
+    margin: var(--space-1) 0 0;
+    color: var(--muted);
+    font-size: var(--text-body);
+  }
+
+  .opm-login-form label > span {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: var(--space-1);
+    font-size: var(--text-compact);
+    font-weight: 500;
+  }
+
+  .opm-login-form label small {
+    color: var(--muted);
+    font-size: var(--text-meta);
+    font-weight: 400;
+  }
+
+  .opm-login-form .opm-input,
+  .opm-login-form .opm-btn,
+  .opm-login-form .opm-btn-primary {
+    min-height: 2.5rem;
+  }
+
+  .opm-login-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-2);
+  }
+
+  .opm-login-error {
+    margin: 0;
+    border: 1px solid var(--accent-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-2) var(--space-3);
+    color: var(--danger);
+    background: var(--accent-soft);
+    font-size: var(--text-compact);
+  }
+
+  .opm-login-divider {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    color: var(--muted);
+    font-size: var(--text-meta);
+  }
+
+  .opm-login-divider::before,
+  .opm-login-divider::after {
+    height: 1px;
+    flex: 1;
+    background: var(--border);
+    content: '';
+  }
+
+  .opm-shell {
+    display: grid;
+    grid-template-columns: 3.75rem minmax(0, 1fr);
+    min-height: 100dvh;
+    font-size: var(--text-compact);
+    line-height: 1.4;
+    background: var(--canvas);
+  }
+
+  .opm-sidebar {
+    position: sticky;
+    top: 0;
+    /* Navigation must stay above in-page sticky controls while remaining
+       beneath modal backdrops and drawers. */
+    z-index: calc(var(--layer-sticky) + 1);
+    display: flex;
+    height: 100dvh;
+    min-height: 32rem;
+    flex-direction: column;
+    align-items: center;
+    border-right: 1px solid var(--border);
+    background: var(--canvas-deep);
+  }
+
+  .opm-sidebar-brand {
+    display: grid;
+    width: 100%;
+    min-height: 3.75rem;
+    place-items: center;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .opm-sidebar-views,
+  .opm-sidebar-actions {
+    display: flex;
+    width: 100%;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-1);
+    padding: var(--space-2) 0;
+  }
+
+  .opm-sidebar-actions {
+    margin-top: auto;
+    border-top: 1px solid var(--border);
+  }
+
+  .opm-nav-button {
+    position: relative;
+    display: inline-flex;
+    width: 2.625rem;
+    height: 2.625rem;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    color: var(--muted);
+    background: transparent;
+    cursor: pointer;
+    transition:
+      color 150ms ease,
+      background-color 150ms ease,
+      border-color 150ms ease;
+  }
+
+  .opm-nav-button:hover {
+    color: var(--text);
+    background: var(--surface-hover);
+  }
+
+  .opm-nav-button[aria-current='page'] {
+    color: var(--accent-ink);
+    border-color: var(--accent-border);
+    background: var(--accent-soft);
+  }
+
+  .opm-nav-badge {
+    position: absolute;
+    top: -0.2rem;
+    right: -0.35rem;
+    min-width: 1.1rem;
+    height: 1.1rem;
+    padding-inline: 0.22rem;
+    border: 2px solid var(--canvas-deep);
+    border-radius: 999px;
+    color: var(--surface);
+    background: var(--danger);
+    font-size: 0.58rem;
+    font-weight: 700;
+    line-height: 0.9rem;
+    text-align: center;
+  }
+
+  .opm-nav-button:focus-visible,
+  .opm-workspace-switcher:focus-within {
+    outline: 2px solid var(--accent-ink);
+    outline-offset: 2px;
+  }
+
+  .opm-nav-button::after,
+  .opm-workspace-switcher::after {
+    position: absolute;
+    left: calc(100% + 0.625rem);
+    z-index: var(--layer-tooltip);
+    display: none;
+    width: max-content;
+    max-width: 12rem;
+    border-radius: var(--radius-sm);
+    padding: 0.3125rem 0.5rem;
+    color: var(--surface);
+    background: var(--text);
+    box-shadow: 0 0.25rem 0.75rem oklch(20.5% 0.006 82 / 0.16);
+    content: attr(data-label);
+    font-size: var(--text-meta);
+    font-weight: 500;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+
+  .opm-workspace-switcher::after {
+    content: attr(data-workspace);
+  }
+
+  .opm-nav-button:hover::after,
+  .opm-nav-button:focus-visible::after,
+  .opm-workspace-switcher:hover::after,
+  .opm-workspace-switcher:focus-within::after {
+    display: block;
+  }
+
+  .opm-workspace-switcher {
+    position: relative;
+    width: 2.625rem;
+    height: 2.625rem;
+    border-radius: var(--radius-md);
+    color: var(--text);
+    background: var(--surface-raised);
+    box-shadow: inset 0 0 0 1px var(--border-strong);
+  }
+
+  .opm-workspace-mark {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    color: var(--accent-ink);
+    pointer-events: none;
+  }
+
+  .opm-workspace-select {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    cursor: pointer;
+    opacity: 0;
+  }
+
+  .opm-view-frame {
+    display: flex;
+    min-width: 0;
+    min-height: 100dvh;
+    flex-direction: column;
+    background: var(--surface);
+  }
+
+  .opm-view-header {
+    display: flex;
+    min-height: 4rem;
+    align-items: center;
+    gap: var(--space-2);
+    border-bottom: 1px solid var(--border);
+    padding: 0 var(--space-6);
+    background: var(--surface);
+  }
+
+  .opm-view-header h1 {
+    margin: 0;
+    color: var(--text);
+    font-size: var(--text-title);
+    font-weight: 600;
+    line-height: 1.35;
+    letter-spacing: -0.012em;
+  }
+
+  .opm-breadcrumb {
+    margin: 0;
+    color: var(--muted);
+    font-size: var(--text-compact);
+  }
+
+  .opm-breadcrumb span {
+    margin-left: var(--space-2);
+    color: var(--faint);
+  }
+
+  .opm-main {
+    min-width: 0;
+    flex: 1;
+    overflow: auto;
+    padding: var(--space-4) var(--space-6) var(--space-8);
+    color: var(--muted);
+    background: var(--surface);
+  }
+
+  .opm-section-title {
+    color: var(--text);
+    font-size: var(--text-compact);
+    font-weight: 600;
+    line-height: 1.25;
+  }
+
+  .opm-task-ref {
+    color: var(--muted);
+    font-size: var(--text-meta);
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0;
+  }
+
+  .opm-task-title {
+    font-size: var(--text-compact);
+    font-weight: 500;
+    line-height: 1.35;
+  }
+
+  .opm-data-table {
+    color: var(--muted);
+    font-size: var(--text-compact);
+  }
+
+  .opm-table-head {
+    color: var(--muted);
+    background: var(--surface);
+    font-size: var(--text-meta);
+    font-weight: 500;
+  }
+
+  .opm-table-head th {
+    border-bottom: 1px solid var(--border);
+    padding: 0.375rem 0.5rem;
+    text-align: left;
+    font-weight: 500;
+  }
+
+  .opm-table-head th:first-child {
+    padding-left: var(--space-3);
+  }
+
+  .opm-table-head th:last-child {
+    padding-right: var(--space-3);
+    text-align: right;
+  }
+
+  .opm-state {
+    color: var(--muted);
+  }
+
+  .opm-state > div:first-child {
+    border-radius: var(--radius-md) !important;
+    color: var(--accent-ink) !important;
+    background: var(--accent-soft) !important;
+  }
+
+  .opm-chart-scroll {
+    overflow-x: auto;
+  }
+
+  .opm-chart-panel,
+  .opm-workload {
+    border-radius: var(--radius-md);
+  }
+
+  .opm-database-list,
+  .opm-activity-feed {
+    border-radius: 0;
+  }
+
+  .opm-activity-copy {
+    max-width: 75ch;
+    line-height: 1.5;
+  }
+
+  .opm-toolbar {
+    position: sticky;
+    top: var(--space-2);
+    z-index: var(--layer-sticky);
+    display: flex;
+    width: fit-content;
+    max-width: calc(100% - 3rem);
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1);
+    margin: var(--space-3) var(--space-6) 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: var(--space-1);
+    color: var(--text);
+    background: var(--surface-raised);
+    box-shadow: 0 0.25rem 0.875rem oklch(20.5% 0.006 82 / 0.08);
+  }
+
+  .opm-toolbar-search {
+    width: 11rem;
+    min-height: 1.75rem;
+    border: 0;
+    padding: 0 0.25rem;
+    color: var(--text);
+    background: transparent;
+    font-size: var(--text-compact);
+    outline: none;
+  }
+
+  .opm-toolbar-search::placeholder {
+    color: var(--muted);
+    opacity: 1;
+  }
+
+  .opm-search-field {
+    display: inline-flex;
+    min-height: 1.875rem;
+    align-items: center;
+    gap: var(--space-1);
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    padding: 0 0.375rem;
+    color: var(--muted);
+  }
+
+  .opm-search-field:focus-within {
+    border-color: var(--accent-ink);
+    box-shadow: 0 0 0 2px var(--accent-border);
+  }
+
+  .opm-sort-control {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    margin-left: auto;
+    color: var(--muted);
+    font-size: var(--text-meta);
+  }
+
+  .opm-filter-menu {
+    position: absolute;
+    z-index: var(--layer-dropdown);
+    display: flex;
+    max-height: min(20rem, 60vh);
+    min-width: 10rem;
+    max-width: calc(100vw - 1.5rem);
+    flex-direction: column;
+    gap: var(--space-1);
+    overflow-y: auto;
+    margin-top: var(--space-1);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-md);
+    padding: var(--space-2);
+    color: var(--text);
+    background: var(--surface-raised);
+    box-shadow: 0 0.5rem 1.5rem oklch(20.5% 0.006 82 / 0.13);
+  }
+
+  .opm-filter-option {
+    display: flex;
+    min-height: 1.75rem;
+    align-items: center;
+    gap: var(--space-2);
+    border-radius: var(--radius-sm);
+    padding: 0 var(--space-1);
+    white-space: nowrap;
+  }
+
+  .opm-filter-option:hover {
+    background: var(--surface-hover);
+  }
+
   .opm-field {
     position: relative;
     display: inline-flex;
-    align-items: center;
     max-width: 100%;
-    color: var(--muted); /* drives the caret on neutral fields */
+    align-items: center;
+    color: var(--muted);
   }
+
   .opm-field.is-chip {
-    --chip-text: color-mix(in oklab, var(--chip) 72%, var(--text));
+    /* Taxonomy colour stays in the dot/tint; control text keeps body-text
+       contrast across every status and priority hue. */
+    --chip-text: var(--text);
     color: var(--chip-text);
+  }
+
+  .opm-select,
+  .opm-input {
+    width: 100%;
+    min-width: 0;
+    min-height: 1.875rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 0.3125rem 0.5rem;
+    color: var(--text);
+    background: var(--surface-raised);
+    font-size: var(--text-compact);
+    line-height: 1.35;
+    transition:
+      border-color 150ms ease,
+      background-color 150ms ease,
+      box-shadow 150ms ease;
   }
 
   .opm-select {
     appearance: none;
-    -webkit-appearance: none;
-    width: 100%;
-    min-width: 0;
-    font: inherit;
-    line-height: 1.25;
-    color: var(--text);
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 3px 26px 3px 8px;
+    padding-right: 1.625rem;
     cursor: pointer;
     text-overflow: ellipsis;
-    transition: background-color .15s ease, border-color .15s ease, box-shadow .15s ease;
-  }
-  .opm-select:hover {
-    border-color: color-mix(in oklab, var(--text) 24%, var(--border));
-  }
-  .opm-select:focus-visible {
-    outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 2px color-mix(in oklab, var(--primary) 40%, transparent);
   }
 
-  /* Chip variant: a rounded, hue-tinted pill that is still a <select>. */
-  .opm-chip {
-    border-radius: 999px;
-    padding-left: 24px;
-    font-weight: 500;
-    color: var(--chip-text);
-    background: color-mix(in oklab, var(--chip) 16%, var(--surface));
-    border-color: color-mix(in oklab, var(--chip) 30%, var(--surface));
+  .opm-input::placeholder {
+    color: var(--muted);
+    opacity: 1;
   }
+
+  .opm-select:hover,
+  .opm-input:hover {
+    border-color: var(--border-strong);
+  }
+
+  .opm-select:focus-visible,
+  .opm-input:focus-visible {
+    outline: none;
+    border-color: var(--accent-ink);
+    box-shadow: 0 0 0 2px var(--accent-border);
+  }
+
+  textarea.opm-input {
+    resize: vertical;
+  }
+
+  .opm-chip {
+    border-color: color-mix(in oklab, var(--chip) 26%, var(--border));
+    border-radius: var(--radius-sm);
+    padding-left: 1.375rem;
+    color: var(--chip-text);
+    background: color-mix(in oklab, var(--chip) 11%, var(--surface));
+    font-weight: 500;
+  }
+
   .opm-chip:hover {
-    background: color-mix(in oklab, var(--chip) 24%, var(--surface));
-    border-color: color-mix(in oklab, var(--chip) 42%, var(--surface));
+    border-color: color-mix(in oklab, var(--chip) 40%, var(--border));
+    background: color-mix(in oklab, var(--chip) 16%, var(--surface));
   }
 
   .opm-field-dot {
     position: absolute;
-    left: 9px;
-    width: 7px;
-    height: 7px;
+    left: 0.5rem;
+    width: 0.375rem;
+    height: 0.375rem;
     border-radius: 50%;
     background: var(--chip);
     pointer-events: none;
   }
+
   .opm-caret {
     position: absolute;
-    right: 8px;
-    width: 12px;
-    height: 12px;
-    color: inherit;
-    opacity: .8;
+    right: 0.4375rem;
+    width: 0.75rem;
+    height: 0.75rem;
+    color: currentColor;
+    opacity: 0.75;
     pointer-events: none;
   }
 
-  /* ---- Text / number / date inputs, textareas, plain selects ----
-     Shares the border + focus vocabulary of .opm-select, but keeps native
-     appearance so date pickers and number spinners stay intact. */
-  .opm-input {
-    width: 100%;
-    font: inherit;
-    line-height: 1.4;
-    color: var(--text);
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 5px 8px;
-    transition: border-color .15s ease, box-shadow .15s ease;
-  }
-  .opm-input::placeholder { color: var(--muted); } /* AA, not the faint default */
-  .opm-input:hover {
-    border-color: color-mix(in oklab, var(--text) 24%, var(--border));
-  }
-  .opm-input:focus-visible {
-    outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 2px color-mix(in oklab, var(--primary) 40%, transparent);
-  }
-
-  /* ---- Buttons ---- */
-  .opm-btn {
+  .opm-btn,
+  .opm-btn-primary,
+  .opm-icon-btn {
     display: inline-flex;
+    min-height: 1.875rem;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    font: inherit;
-    font-weight: 500;
-    color: var(--text);
-    background: var(--surface);
+    gap: 0.375rem;
     border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 4px 10px;
+    border-radius: var(--radius-md);
+    padding: 0.3125rem 0.625rem;
+    color: var(--text);
+    background: var(--surface-raised);
+    font-size: var(--text-compact);
+    font-weight: 500;
+    line-height: 1.2;
     cursor: pointer;
-    transition: background-color .15s ease, border-color .15s ease, box-shadow .15s ease;
+    transition:
+      color 150ms ease,
+      background-color 150ms ease,
+      border-color 150ms ease,
+      box-shadow 150ms ease;
   }
-  .opm-btn:hover {
-    border-color: color-mix(in oklab, var(--text) 24%, var(--border));
-    background: color-mix(in oklab, var(--text) 4%, var(--surface));
+
+  .opm-icon-btn {
+    width: 1.875rem;
+    padding: 0;
   }
-  .opm-btn:focus-visible {
-    outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 2px color-mix(in oklab, var(--primary) 40%, transparent);
+
+  .opm-btn:hover,
+  .opm-icon-btn:hover {
+    border-color: var(--border-strong);
+    background: var(--surface-hover);
   }
 
   .opm-btn-primary {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    font: inherit;
-    font-weight: 500;
+    border-color: var(--accent);
     color: var(--on-accent);
     background: var(--accent);
-    border: 1px solid transparent;
-    border-radius: 6px;
-    padding: 5px 12px;
+  }
+
+  .opm-btn-primary:hover {
+    border-color: var(--accent-hover);
+    background: var(--accent-hover);
+  }
+
+  .opm-btn:active,
+  .opm-btn-primary:active,
+  .opm-icon-btn:active {
+    transform: translateY(1px);
+  }
+
+  .opm-btn:focus-visible,
+  .opm-btn-primary:focus-visible,
+  .opm-icon-btn:focus-visible {
+    outline: 2px solid var(--accent-ink);
+    outline-offset: 2px;
+  }
+
+  .opm-btn:disabled,
+  .opm-btn-primary:disabled,
+  .opm-icon-btn:disabled,
+  .opm-select:disabled,
+  .opm-input:disabled {
+    cursor: default;
+    opacity: 0.5;
+  }
+
+  .opm-task-open {
+    border: 0;
+    padding: 0;
+    color: inherit;
+    background: transparent;
+    font: inherit;
     cursor: pointer;
-    transition: background-color .15s ease, box-shadow .15s ease;
   }
-  .opm-btn-primary:hover { background: color-mix(in oklab, var(--accent) 88%, #000); }
-  .opm-btn-primary:focus-visible {
+
+  .opm-task-open:focus-visible {
+    outline: 2px solid var(--accent-ink);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+
+  .opm-skip-link {
+    position: fixed;
+    top: var(--space-2);
+    left: var(--space-2);
+    z-index: var(--layer-tooltip);
+    transform: translateY(calc(-100% - 1rem));
+    border-radius: var(--radius-md);
+    padding: 0.5rem 0.75rem;
+    color: var(--text);
+    background: var(--accent);
+    font-size: var(--text-compact);
+    font-weight: 600;
+    transition: transform 150ms ease;
+  }
+
+  .opm-skip-link:focus {
+    transform: translateY(0);
+    outline: 2px solid var(--accent-ink);
+    outline-offset: 2px;
+  }
+
+  .opm-settings-card {
+    border: 0;
+    border-top: 1px solid var(--border);
+    border-radius: 0;
+    padding: var(--space-8) 0 0;
+    color: var(--muted);
+    background: transparent;
+  }
+
+  .opm-settings-card:first-child {
+    border-top: 0;
+    padding-top: 0;
+  }
+
+  .opm-settings > * + * {
+    margin-top: var(--space-8);
+  }
+
+  .opm-settings h1 {
+    color: var(--text);
+    font-size: var(--text-title);
+    font-weight: 600;
+    line-height: 1.35;
+    letter-spacing: -0.012em;
+  }
+
+  .opm-settings h2 {
+    color: var(--text);
+    font-size: var(--text-section);
+    font-weight: 600;
+    line-height: 1.4;
+  }
+
+  .opm-settings h3 {
+    font-size: var(--text-body);
+    font-weight: 600;
+  }
+
+  .opm-settings table {
+    font-size: var(--text-compact);
+  }
+
+  .opm-settings thead {
+    color: var(--muted);
+    font-size: var(--text-meta);
+    font-weight: 500;
+  }
+
+  .opm-settings-form {
+    border-top: 0;
+    padding: var(--space-6);
+    background: var(--canvas);
+    box-shadow: inset 0 0 0 1px var(--border);
+  }
+
+  .opm-drawer-backdrop {
+    animation: opm-fade-in 150ms ease-out;
+  }
+
+  .opm-drawer-panel {
+    animation: opm-slide-in 220ms cubic-bezier(0.22, 1, 0.36, 1);
+    box-shadow: -0.5rem 0 2rem oklch(20.5% 0.006 82 / 0.1);
+  }
+
+  .opm-drawer-header {
+    position: sticky;
+    top: 0;
+    z-index: var(--layer-sticky);
+    min-height: 3.25rem;
+    background: color-mix(in oklab, var(--surface) 94%, transparent);
+    backdrop-filter: blur(0.75rem);
+  }
+
+  .opm-drawer-body {
+    max-width: 48rem;
+    margin-inline: auto;
+  }
+
+  .opm-document-title {
+    width: 100%;
+    border: 0;
+    padding: 0;
+    color: var(--text);
+    background: transparent;
+    font-size: 1.5rem;
+    font-weight: 600;
+    line-height: 1.25;
+    letter-spacing: -0.025em;
     outline: none;
-    box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px color-mix(in oklab, var(--accent) 55%, transparent);
   }
-  .opm-btn-primary:disabled { opacity: .55; cursor: default; }
 
-  /* ---- Task drawer entrance (state-conveying, not decoration) ---- */
-  .opm-drawer-backdrop { animation: opm-fade-in .15s ease-out; }
-  .opm-drawer-panel { animation: opm-slide-in .22s cubic-bezier(0.22, 1, 0.36, 1); }
+  .opm-document-title:focus-visible {
+    box-shadow: 0 2px 0 var(--accent-ink);
+  }
 
-  /* ---- Read-only tag chip ---- */
+  .opm-field-label,
+  .opm-document-heading {
+    color: var(--muted);
+    font-size: var(--text-meta);
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  .opm-document-heading {
+    color: var(--text);
+    font-size: var(--text-compact);
+  }
+
+  .opm-property-grid label {
+    display: grid;
+    grid-template-columns: minmax(4.5rem, 0.45fr) minmax(0, 1fr);
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .opm-property-grid .opm-field-label {
+    margin: 0;
+  }
+
+  .opm-description {
+    min-height: 7rem;
+    border-color: transparent;
+    padding: var(--space-2);
+    line-height: 1.6;
+  }
+
+  .opm-description:hover,
+  .opm-description:focus-visible {
+    border-color: var(--border);
+  }
+
+  .opm-document-section {
+    border-top: 1px solid var(--border);
+    padding-top: var(--space-6);
+  }
+
+  .opm-subtask-remove {
+    display: inline-grid;
+    width: 1.75rem;
+    height: 1.75rem;
+    place-items: center;
+    border-radius: var(--radius-sm);
+  }
+
+  .opm-subtask-remove:hover {
+    color: var(--danger);
+    background: var(--accent-soft);
+  }
+
+  .opm-btn-danger {
+    color: var(--danger);
+  }
+
   .opm-tag {
     display: inline-flex;
+    min-height: 1.375rem;
     align-items: center;
-    gap: 5px;
-    border-radius: 999px;
-    padding: 1px 8px;
-    font-size: 11px;
+    gap: 0.3125rem;
+    border: 1px solid color-mix(in oklab, var(--chip) 22%, var(--border));
+    border-radius: var(--radius-sm);
+    padding: 0.125rem 0.4375rem;
+    color: color-mix(in oklab, var(--chip) 66%, var(--text));
+    background: color-mix(in oklab, var(--chip) 10%, var(--surface));
+    font-size: var(--text-meta);
     font-weight: 500;
-    line-height: 1.5;
+    line-height: 1.25;
     white-space: nowrap;
-    color: color-mix(in oklab, var(--chip) 70%, var(--text));
-    background: color-mix(in oklab, var(--chip) 14%, var(--surface));
-    border: 1px solid color-mix(in oklab, var(--chip) 22%, var(--surface));
   }
+
   .opm-tag::before {
-    content: "";
-    width: 6px;
-    height: 6px;
+    width: 0.3125rem;
+    height: 0.3125rem;
     border-radius: 50%;
     background: var(--chip);
+    content: '';
   }
 
-  /* ---- Story-points badge ---- */
-  .opm-points {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 22px;
-    height: 20px;
-    padding: 0 6px;
-    border-radius: 6px;
-    font-size: 12px;
-    font-variant-numeric: tabular-nums;
-    color: var(--muted);
-    background: color-mix(in oklab, var(--text) 6%, var(--surface));
-  }
-
-  /* ---- Group header bits ---- */
-  .opm-group-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--chip);
-    flex: none;
-  }
+  .opm-points,
   .opm-count {
     display: inline-flex;
+    min-width: 1.25rem;
+    height: 1.25rem;
     align-items: center;
     justify-content: center;
-    min-width: 20px;
-    height: 18px;
-    padding: 0 6px;
-    border-radius: 999px;
-    font-size: 11px;
-    font-weight: 500;
-    font-variant-numeric: tabular-nums;
+    border-radius: var(--radius-sm);
+    padding: 0 0.375rem;
     color: var(--muted);
-    background: color-mix(in oklab, var(--text) 7%, var(--surface));
+    background: var(--canvas-deep);
+    font-size: var(--text-meta);
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
   }
 
-  /* ---- Task rows ---- */
+  .opm-group-dot {
+    width: 0.4375rem;
+    height: 0.4375rem;
+    flex: none;
+    border-radius: 50%;
+    background: var(--chip);
+  }
+
   .opm-row {
-    transition: background-color .12s ease;
+    transition: background-color 120ms ease;
   }
+
   .opm-row:hover {
-    background: var(--surface);
+    background: var(--canvas);
   }
-  .opm-row[aria-selected='true'] {
-    background: color-mix(in oklab, var(--primary) 12%, var(--surface));
+
+  .opm-row[data-selected='true'] {
+    background: var(--accent-soft);
+    box-shadow: inset 0 0 0 1px var(--accent-border);
   }
+
   .opm-row:focus-visible {
-    outline: 2px solid color-mix(in oklab, var(--primary) 60%, transparent);
+    outline: 2px solid var(--accent-ink);
     outline-offset: -2px;
   }
 
-  /* ---- Loading skeleton ---- */
   .opm-skel {
     position: relative;
     overflow: hidden;
-    border-radius: 6px;
-    background: color-mix(in oklab, var(--text) 9%, var(--surface));
+    border-radius: var(--radius-sm);
+    background: var(--canvas-deep);
   }
+
   .opm-skel::after {
-    content: "";
     position: absolute;
     inset: 0;
     transform: translateX(-100%);
     background: linear-gradient(
       90deg,
       transparent,
-      color-mix(in oklab, var(--text) 7%, transparent),
+      color-mix(in oklab, var(--surface) 55%, transparent),
       transparent
     );
     animation: opm-shimmer 1.4s ease-in-out infinite;
+    content: '';
   }
 
-  /* ---- Board view ---- */
   .opm-board-card {
-    transition: border-color .15s ease, box-shadow .15s ease;
+    transition:
+      border-color 150ms ease,
+      background-color 150ms ease;
   }
+
   .opm-board-card:hover {
-    border-color: color-mix(in oklab, var(--text) 24%, var(--border));
-    box-shadow: 0 2px 6px color-mix(in oklab, var(--text) 12%, transparent);
+    border-color: var(--border-strong);
+    background: var(--surface-raised);
   }
+
+  .opm-board-card:focus-within {
+    border-color: var(--accent-ink);
+    box-shadow: 0 0 0 2px var(--accent-border);
+  }
+
+  .opm-board-card[data-selected='true'] {
+    border-color: var(--accent-border);
+    background: var(--accent-soft);
+    box-shadow: inset 0 0 0 1px var(--accent-border);
+  }
+
   .opm-board-card.is-dragging {
-    opacity: 0.35;
     cursor: grabbing;
+    opacity: 0.4;
   }
 
   .opm-board-col {
-    transition: border-color .12s ease;
+    transition: border-color 120ms ease;
   }
+
   .opm-board-col.is-drag-over {
-    border-color: color-mix(in oklab, var(--primary) 45%, var(--border));
+    border-color: var(--accent-border);
   }
 
   .opm-drop-line {
     height: 2px;
-    border-radius: 999px;
     margin: 2px 0;
-    background: var(--primary);
-    box-shadow: 0 0 8px color-mix(in oklab, var(--primary) 60%, transparent);
+    border-radius: 2px;
+    background: var(--accent-ink);
+  }
+}
+
+.opm-card-move-summary {
+  width: 100%;
+  display: flex;
+  min-height: 32px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.35rem 0.75rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.opm-card-move-summary:hover,
+.opm-card-move-summary:focus-visible {
+  background: var(--canvas);
+  color: var(--text);
+}
+
+.opm-card-move-menu {
+  border-top: 1px solid var(--border);
+  padding: 0.5rem;
+  background: var(--canvas);
+}
+
+@media (pointer: coarse) {
+  .opm-card-move-summary,
+  .opm-card-move-menu .opm-btn {
+    min-height: 44px;
+  }
+}
+
+/* Existing feature markup uses Tailwind radius utilities. These scoped overrides
+   flatten database surfaces without affecting true controls or floating UI. */
+.opm-main .rounded-xl {
+  border-radius: var(--radius-md);
+}
+
+.opm-main .rounded-lg,
+.opm-main .rounded-md,
+.opm-main .rounded {
+  border-radius: var(--radius-sm);
+}
+
+.opm-main [class*='shadow-'] {
+  box-shadow: none;
+}
+
+@media (max-width: 64rem) {
+  .opm-view-header {
+    padding-inline: var(--space-4);
+  }
+
+  .opm-toolbar {
+    max-width: calc(100% - 2rem);
+    margin-inline: var(--space-4);
+  }
+
+  .opm-main {
+    padding-inline: var(--space-4);
+  }
+}
+
+@media (max-width: 47.5rem) {
+  .opm-login {
+    grid-template-columns: 1fr;
+  }
+
+  .opm-login-intro {
+    align-items: center;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+    padding: var(--space-4);
+  }
+
+  .opm-login-intro p:last-child {
+    display: none;
+  }
+
+  .opm-login-panel {
+    align-items: start;
+    padding: var(--space-8) var(--space-6);
+  }
+
+  .opm-shell {
+    grid-template-columns: minmax(0, 1fr);
+    padding-bottom: calc(3.75rem + env(safe-area-inset-bottom));
+  }
+
+  .opm-sidebar {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: calc(var(--layer-sticky) + 1);
+    display: flex;
+    width: 100%;
+    height: calc(3.75rem + env(safe-area-inset-bottom));
+    min-height: 0;
+    flex-direction: row;
+    align-items: flex-start;
+    border-top: 1px solid var(--border);
+    border-right: 0;
+    padding-bottom: env(safe-area-inset-bottom);
+    background: var(--canvas-deep);
+  }
+
+  .opm-sidebar-brand {
+    width: 3.75rem;
+    min-width: 3.75rem;
+    min-height: 3.75rem;
+    border-right: 1px solid var(--border);
+    border-bottom: 0;
+  }
+
+  .opm-sidebar-views,
+  .opm-sidebar-actions {
+    width: auto;
+    height: 3.75rem;
+    flex-direction: row;
+    flex: 0 0 auto;
+    padding: 0 var(--space-1);
+  }
+
+  .opm-sidebar-views {
+    min-width: 0;
+    flex: 1 1 auto;
+    overflow-x: auto;
+  }
+
+  .opm-sidebar-actions {
+    margin-top: 0;
+    border-top: 0;
+    border-left: 1px solid var(--border);
+  }
+
+  .opm-nav-button::after,
+  .opm-workspace-switcher::after {
+    display: none !important;
+  }
+
+  .opm-view-frame {
+    min-height: calc(100dvh - 3.75rem);
+  }
+
+  .opm-view-header {
+    min-height: 3.5rem;
+    padding-inline: var(--space-4);
+  }
+
+  .opm-breadcrumb {
+    display: none;
+  }
+
+  .opm-toolbar {
+    width: auto;
+    max-width: none;
+    flex-wrap: wrap;
+    overflow: visible;
+    margin: var(--space-2) var(--space-3) 0;
+  }
+
+  .opm-toolbar-search {
+    width: 9rem;
+  }
+
+  .opm-main {
+    padding: var(--space-3) var(--space-3) var(--space-6);
+  }
+
+  .opm-main[data-view='board'] > div {
+    scroll-snap-type: x proximity;
+  }
+
+  .opm-main[data-view='board'] .opm-board-col {
+    width: min(19rem, 82vw);
+    scroll-snap-align: start;
+  }
+
+  .opm-timeline-row {
+    flex-wrap: wrap;
+  }
+
+  .opm-timeline-row > span:nth-child(3) {
+    min-width: calc(100% - 7rem);
+  }
+
+  .opm-timeline-row > span:nth-child(n + 4) {
+    margin-left: 2.25rem;
+  }
+
+  .opm-activity-row {
+    flex-wrap: wrap;
+  }
+
+  .opm-activity-row > time {
+    margin-left: 2.75rem;
+  }
+
+  .opm-drawer-panel {
+    width: 100% !important;
+    border-left: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .opm-drawer-body {
+    padding-inline: var(--space-6) !important;
+  }
+
+  .opm-property-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+@media (pointer: coarse) {
+  .opm-btn,
+  .opm-btn-primary,
+  .opm-icon-btn,
+  .opm-select,
+  .opm-input,
+  .opm-filter-option {
+    min-height: 2.75rem;
+  }
+
+  .opm-icon-btn {
+    width: 2.75rem;
+  }
+
+  .opm-task-open {
+    min-height: 2.75rem;
   }
 }
 
 @keyframes opm-shimmer {
-  100% { transform: translateX(100%); }
+  100% {
+    transform: translateX(100%);
+  }
 }
-@keyframes opm-fade-in { from { opacity: 0; } }
-@keyframes opm-slide-in { from { transform: translateX(100%); } }
+
+@keyframes opm-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes opm-slide-in {
+  from {
+    transform: translateX(100%);
+  }
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .opm-skel::after { animation: none; }
-  .opm-row, .opm-select, .opm-input, .opm-btn, .opm-btn-primary { transition: none; }
-  .opm-board-card, .opm-board-col { transition: none; }
-  .opm-drawer-backdrop, .opm-drawer-panel { animation: none; }
+  .opm-skel::after,
+  .opm-drawer-backdrop,
+  .opm-drawer-panel {
+    animation: none;
+  }
+
+  .opm-row,
+  .opm-select,
+  .opm-input,
+  .opm-btn,
+  .opm-btn-primary,
+  .opm-icon-btn,
+  .opm-board-card,
+  .opm-board-col,
+  .opm-nav-button,
+  .opm-skip-link {
+    transition: none;
+  }
+}
+
+/* Browser-native rendering virtualization complements cursor paging. The DOM
+   keeps semantic relationships while off-screen feed/cards skip layout and
+   paint until they approach the viewport. */
+.opm-virtual-item,
+.opm-activity-feed > li,
+.opm-timeline li {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 4rem;
 }

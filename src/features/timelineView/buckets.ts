@@ -11,14 +11,26 @@ const ORDER: { id: BucketId; label: string }[] = [
   { id: 'unscheduled', label: 'Unscheduled' },
 ]
 
-export function bucketTasks(tasks: Task[], now: Date): { id: BucketId; label: string; tasks: Task[] }[] {
+export function bucketTasks(
+  tasks: Task[],
+  now: Date,
+): { id: BucketId; label: string; tasks: Task[] }[] {
   const monThis = startOfWeek(now)
   const monNext = addDays(monThis, 7)
   const monAfter = addDays(monThis, 14)
-  const groups: Record<BucketId, Task[]> = { earlier: [], this_week: [], next_week: [], later: [], unscheduled: [] }
+  const groups: Record<BucketId, Task[]> = {
+    earlier: [],
+    this_week: [],
+    next_week: [],
+    later: [],
+    unscheduled: [],
+  }
 
   for (const t of tasks) {
-    if (!t.start_date) { groups.unscheduled.push(t); continue }
+    if (!t.start_date) {
+      groups.unscheduled.push(t)
+      continue
+    }
     const s = parseDate(t.start_date)
     if (s < monThis) groups.earlier.push(t)
     else if (s < monNext) groups.this_week.push(t)

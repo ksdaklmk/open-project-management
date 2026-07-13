@@ -9,7 +9,10 @@ export function useDeleteTask(workspaceId: string) {
     onError: (e) => toast.error(`Couldn't delete task: ${(e as Error).message}`),
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ['tasks', workspaceId] })
+      qc.invalidateQueries({ queryKey: ['task', workspaceId] })
+      qc.invalidateQueries({ queryKey: ['workload', workspaceId] })
       qc.invalidateQueries({ queryKey: ['activity', workspaceId] })
+      qc.invalidateQueries({ queryKey: ['my-work'] })
     },
   })
 }

@@ -1,4 +1,12 @@
-import { createContext, createElement, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
+import {
+  createContext,
+  createElement,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../supabase'

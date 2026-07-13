@@ -34,7 +34,8 @@ export function buildScale(scheduled: Task[], now: Date): GanttScale {
   // 0..rangeDays-1; rangeDays itself is the day after the last range day.
   const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   const todayOffset = daysBetween(rangeStart, todayMidnight)
-  const todayPct = todayOffset >= 0 && todayOffset < rangeDays ? (todayOffset / rangeDays) * 100 : null
+  const todayPct =
+    todayOffset >= 0 && todayOffset < rangeDays ? (todayOffset / rangeDays) * 100 : null
 
   return {
     weeks,

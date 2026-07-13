@@ -3,21 +3,34 @@ import { render, screen, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { Shell } from './Shell'
+import { expectNoA11yViolations } from '../test-a11y'
 
-const { ws, mockSignOut } = vi.hoisted(() => ({
+const { ws, mockSignOut, members } = vi.hoisted(() => ({
   ws: { activeId: 'w1' as string | null, loading: false },
   mockSignOut: vi.fn(),
+  members: { data: [{ user_id: 'u1', role: 'owner' }] as { user_id: string; role: string }[] },
 }))
 vi.mock('../lib/workspace', () => ({
   useActiveWorkspace: () => ({ ...ws, setActiveId: vi.fn() }),
 }))
-vi.mock('../lib/hooks/useSession', () => ({ signOut: mockSignOut }))
+vi.mock('../lib/hooks/useSession', () => ({ signOut: mockSignOut, useActorId: () => 'u1' }))
+vi.mock('../lib/hooks/useMembers', () => ({ useMembers: () => members }))
+vi.mock('../lib/hooks/useActivation', () => ({ useActivationTracking: vi.fn() }))
+vi.mock('../lib/hooks/useNotifications', () => ({
+  useUnreadNotifications: () => ({ data: 3 }),
+}))
 
 vi.mock('../components/WorkspaceSwitcher', () => ({
   WorkspaceSwitcher: () => null,
 }))
 vi.mock('../features/listView/ListView', () => ({
   ListView: () => null,
+}))
+vi.mock('../features/myWorkView/MyWorkView', () => ({
+  MyWorkView: () => <div>my work mounted</div>,
+}))
+vi.mock('../features/inboxView/InboxView', () => ({
+  InboxView: () => <div>inbox mounted</div>,
 }))
 vi.mock('../features/boardView/BoardView', () => ({
   BoardView: () => <div>board view</div>,
@@ -34,12 +47,22 @@ vi.mock('../features/timelineView/TimelineView', () => ({
 vi.mock('../features/workloadView/WorkloadView', () => ({
   WorkloadView: () => <div>workload mounted</div>,
 }))
+vi.mock('../features/settings/WorkspaceSettings', () => ({
+  WorkspaceSettings: () => <div>settings mounted</div>,
+  CreateWorkspaceForm: () => <div>Create your workspace</div>,
+}))
 vi.mock('../features/taskDrawer/TaskDrawer', () => ({ TaskDrawer: () => null }))
 vi.mock('../features/toolbar/Toolbar', () => ({ Toolbar: () => null }))
+vi.mock('../features/onboarding/OnboardingChecklist', () => ({
+  OnboardingChecklist: () => null,
+}))
 
 const renderShell = () =>
   render(
-    <MemoryRouter initialEntries={['/']} future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+    <MemoryRouter
+      initialEntries={['/']}
+      future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+    >
       <Shell />
     </MemoryRouter>,
   )
@@ -47,19 +70,61 @@ const renderShell = () =>
 describe('Shell', () => {
   beforeEach(() => {
     localStorage.clear()
-    document.documentElement.removeAttribute('data-theme')
     ws.activeId = 'w1'
     ws.loading = false
     mockSignOut.mockClear()
+    mockSignOut.mockResolvedValue({ error: null })
+    members.data = [{ user_id: 'u1', role: 'owner' }]
   })
 
-  it('shows all six view tabs', async () => {
+  it('has no automated accessibility violations', async () => {
+    const { container } = renderShell()
+    await act(async () => {})
+    await expectNoA11yViolations(container)
+  })
+
+  it('exposes labelled navigation, current view, main content, and a skip link', async () => {
     renderShell()
-    for (const t of ['List', 'Board', 'Gantt', 'Timeline', 'Activity', 'Workload'])
+    expect(screen.getByRole('navigation', { name: 'Workspace views' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'List' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('main', { name: 'List view' })).toHaveAttribute('id', 'main-content')
+    expect(screen.getByRole('link', { name: 'Skip to main content' })).toHaveAttribute(
+      'href',
+      '#main-content',
+    )
+    await act(async () => {})
+  })
+
+  it('shows all six work views and settings to an owner', async () => {
+    renderShell()
+    for (const t of [
+      'My Work',
+      'Inbox',
+      'List',
+      'Board',
+      'Gantt',
+      'Timeline',
+      'Activity',
+      'Workload',
+    ])
       expect(screen.getByRole('button', { name: t })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Settings' })).toBeInTheDocument()
     // Flush the lazy view's resolution inside act so it doesn't land after
     // the test and warn.
     await act(async () => {})
+  })
+
+  it('hides settings navigation from ordinary members', async () => {
+    members.data = [{ user_id: 'u1', role: 'member' }]
+    renderShell()
+    expect(screen.queryByRole('button', { name: 'Settings' })).toBeNull()
+    await act(async () => {})
+  })
+
+  it('mounts settings for an owner', async () => {
+    renderShell()
+    await userEvent.click(screen.getByRole('button', { name: 'Settings' }))
+    expect(await screen.findByText('settings mounted')).toBeInTheDocument()
   })
 
   it('switches the active view when a tab is clicked', async () => {
@@ -68,16 +133,24 @@ describe('Shell', () => {
     expect(await screen.findByText('board view')).toBeInTheDocument()
   })
 
-  it('toggles the theme', async () => {
+  it('mounts the personal My Work view', async () => {
     renderShell()
-    await userEvent.click(screen.getByRole('button', { name: /theme/i }))
-    expect(document.documentElement.getAttribute('data-theme')).toBe('slate')
+    await userEvent.click(screen.getByRole('button', { name: 'My Work' }))
+    expect(await screen.findByText('my work mounted')).toBeInTheDocument()
   })
 
-  it('applies the stored theme to the DOM on mount (render-synced, self-healing)', () => {
-    localStorage.setItem('theme', 'slate')
+  it('shows unread count and mounts the personal Inbox view', async () => {
     renderShell()
-    expect(document.documentElement.getAttribute('data-theme')).toBe('slate')
+    expect(screen.getByLabelText('3 unread')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Inbox' }))
+    expect(await screen.findByText('inbox mounted')).toBeInTheDocument()
+  })
+
+  it('uses one light theme without a theme toggle', async () => {
+    renderShell()
+    expect(screen.queryByRole('button', { name: /theme/i })).toBeNull()
+    expect(document.documentElement.getAttribute('data-theme')).toBeNull()
+    await act(async () => {})
   })
 
   it('mounts the Activity view on the Activity tab', async () => {
@@ -104,11 +177,10 @@ describe('Shell', () => {
     expect(await screen.findByText('workload mounted')).toBeInTheDocument()
   })
 
-  it('shows the no-workspace state when the member list is loaded but empty', () => {
+  it('shows the no-workspace state when the member list is loaded but empty', async () => {
     ws.activeId = null
     renderShell()
-    expect(screen.getByText('No workspace yet')).toBeInTheDocument()
-    expect(screen.getByText('Ask your workspace admin to add you.')).toBeInTheDocument()
+    expect(await screen.findByText('Create your workspace')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Board' })).toBeNull() // no app chrome
   })
 
@@ -117,6 +189,15 @@ describe('Shell', () => {
     renderShell()
     await userEvent.click(screen.getByRole('button', { name: 'Sign out' }))
     expect(mockSignOut).toHaveBeenCalledTimes(1)
+  })
+
+  it('surfaces sign-out failures', async () => {
+    mockSignOut.mockResolvedValueOnce({ error: new Error('network unavailable') })
+    renderShell()
+    await userEvent.click(screen.getByRole('button', { name: 'Sign out' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      "Couldn't sign out: network unavailable",
+    )
   })
 
   it('does not flash the no-workspace state while workspaces load', () => {

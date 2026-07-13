@@ -1,9 +1,10 @@
 -- Northwind demo seed
 -- Insert order matters:
---   1. auth.users first (no Northwind workspace yet, so handle_new_user creates
---      a bare profile but skips workspace_members auto-join).
+--   1. auth.users first; the production handle_new_user trigger creates only
+--      a bare profile and never grants workspace access.
 --   2. Upsert profiles to set name/color on the trigger-created row.
---   3. Workspaces, then members with the desired owner role.
+--   3. Workspaces, then explicit local-only demo memberships. Hosted
+--      environments must never apply this file.
 --   4. Projects, tasks (workspace_id auto-filled by set_task_workspace trigger).
 --   5. Tags and activity.
 

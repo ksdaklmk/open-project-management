@@ -1,30 +1,48 @@
 import { useActivity } from '../../lib/hooks/useActivity'
 import { useActiveWorkspace } from '../../lib/workspace'
 import { ActivityRow } from './ActivityRow'
+import { LoadMoreButton } from '../../components/LoadMoreButton'
 
 const SKEL_WIDTHS = ['68%', '55%', '72%', '60%']
 
 export function ActivityView() {
   const { activeId, loading: wsLoading } = useActiveWorkspace()
-  const { data: items, isLoading, error } = useActivity(activeId ?? '')
+  const {
+    data: items,
+    isLoading,
+    error,
+    refetch,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = useActivity(activeId ?? '')
 
   if (wsLoading || isLoading) return <ActivitySkeleton />
-  if (error) return <ActivityError />
+  if (error) return <ActivityError onRetry={() => refetch()} />
 
   const feed = items ?? []
   if (feed.length === 0) return <ActivityEmpty />
 
   return (
-    <ol
-      aria-label="Activity feed"
-      className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg)] divide-y divide-[var(--border)]"
-    >
-      {feed.map((item) => (
-        <li key={item.id} className="opm-row">
-          <ActivityRow item={item} />
-        </li>
-      ))}
-    </ol>
+    <>
+      <ol
+        aria-label="Activity feed"
+        className="opm-activity-feed overflow-hidden border-y border-[var(--border)] bg-[var(--surface)] divide-y divide-[var(--border)]"
+      >
+        {feed.map((item) => (
+          <li key={item.id} className="opm-row">
+            <ActivityRow item={item} />
+          </li>
+        ))}
+      </ol>
+      {hasNextPage && (
+        <LoadMoreButton
+          label="Load older activity"
+          pending={isFetchingNextPage}
+          onClick={() => void fetchNextPage()}
+        />
+      )}
+    </>
   )
 }
 
@@ -33,7 +51,7 @@ function ActivitySkeleton() {
     <div
       role="status"
       aria-busy="true"
-      className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg)] divide-y divide-[var(--border)]"
+      className="opm-activity-feed overflow-hidden border-y border-[var(--border)] bg-[var(--surface)] divide-y divide-[var(--border)]"
     >
       <span className="sr-only">Loading activity…</span>
       {SKEL_WIDTHS.map((w, i) => (
@@ -50,32 +68,48 @@ function ActivitySkeleton() {
   )
 }
 
-function ActivityError() {
+function ActivityError({ onRetry }: { onRetry: () => void }) {
   return (
     <div
       role="alert"
-      className="mx-auto flex max-w-2xl min-h-[280px] flex-col items-center justify-center px-6 py-12 text-center"
+      className="opm-state mx-auto flex max-w-2xl min-h-[280px] flex-col items-center justify-center px-6 py-12 text-center"
     >
       <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)]">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M12 8.5v4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
           <circle cx="12" cy="16.3" r="1.05" fill="currentColor" />
-          <path d="M12 3.5 21 19.5H3L12 3.5Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+          <path
+            d="M12 3.5 21 19.5H3L12 3.5Z"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinejoin="round"
+          />
         </svg>
       </div>
       <p className="text-base font-semibold text-[var(--text)]">Couldn't load activity.</p>
-      <p className="mt-1 max-w-xs text-sm text-[var(--muted)]">Check your connection and try again.</p>
+      <p className="mt-1 max-w-xs text-sm text-[var(--muted)]">
+        Check your connection and try again.
+      </p>
+      <button type="button" className="opm-btn mt-4" onClick={onRetry}>
+        Retry
+      </button>
     </div>
   )
 }
 
 function ActivityEmpty() {
   return (
-    <div className="mx-auto flex max-w-2xl min-h-[280px] flex-col items-center justify-center px-6 py-12 text-center">
+    <div className="opm-state mx-auto flex max-w-2xl min-h-[280px] flex-col items-center justify-center px-6 py-12 text-center">
       <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)]">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.6" />
-          <path d="M12 7v5l3 3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+          <path
+            d="M12 7v5l3 3"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         </svg>
       </div>
       <p className="text-base font-semibold text-[var(--text)]">No activity yet</p>

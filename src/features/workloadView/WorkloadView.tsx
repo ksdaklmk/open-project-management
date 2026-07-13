@@ -1,16 +1,20 @@
 import { useActiveWorkspace } from '../../lib/workspace'
-import { useTasks } from '../../lib/hooks/useTasks'
+import { useWorkload } from '../../lib/hooks/useTasks'
 import { useMembers } from '../../lib/hooks/useMembers'
-import { buildWorkload, type Level } from './workload'
+import { buildWorkloadFromPoints, type Level } from './workload'
+import { isoLocal, startOfWeek } from '../../lib/weeks'
 
 // Saturated load palette — used ONLY as the color-mix base for cell tints and as
 // the saturated legend dots. Never a surface or text color. (none → neutral.)
-const LEVEL_HEX: Record<Level, string> = { none: '', under: '#2bb673', near: '#f5a623', over: '#e5484d' }
+const LEVEL_HEX: Record<Level, string> = {
+  none: '',
+  under: '#2bb673',
+  near: '#f5a623',
+  over: '#e5484d',
+}
 
 // Per-level tint strength. Graduated so the alarm (over) reads loudest and a
-// healthy load (under) stays calm. Scaled per theme via --load-boost so the
-// tints survive the dark Slate surface without washing out (and stay quiet on
-// the light Bloom surface).
+// healthy load (under) stays calm on the light canvas.
 const LEVEL_PCT: Record<Level, number> = { none: 0, under: 16, near: 22, over: 26 }
 
 function tint(level: Level): string {
@@ -31,22 +35,38 @@ const GRID_COLS = '10rem repeat(6, minmax(0, 1fr))'
 
 export function WorkloadView({ now = new Date() }: { now?: Date } = {}) {
   const { activeId, loading: wsLoading } = useActiveWorkspace()
-  const tasksQ = useTasks(activeId ?? '')
+  const workloadQ = useWorkload(activeId ?? '', isoLocal(startOfWeek(now)))
   const membersQ = useMembers(activeId ?? '')
 
-  if (wsLoading || tasksQ.isLoading || membersQ.isLoading) return <WorkloadSkeleton />
-  if (tasksQ.error || membersQ.error) return <WorkloadError />
+  if (wsLoading || workloadQ.isLoading || membersQ.isLoading) return <WorkloadSkeleton />
+  if (workloadQ.error || membersQ.error)
+    return (
+      <WorkloadError
+        onRetry={() => {
+          workloadQ.refetch()
+          membersQ.refetch()
+        }}
+      />
+    )
 
-  const tasks = tasksQ.data ?? []
+  const points = workloadQ.data ?? []
   const members = membersQ.data ?? []
-  if (members.length === 0 || tasks.length === 0) return <WorkloadEmpty />
+  if (members.length === 0 || points.every((point) => point.points === 0)) return <WorkloadEmpty />
 
-  const wl = buildWorkload(tasks, members, now)
+  const wl = buildWorkloadFromPoints(points, members, now)
   const notShown = wl.unscheduledPoints + wl.outOfRangePoints
 
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-4">
-      <table className="w-full border-separate" style={{ tableLayout: 'fixed', borderSpacing: 5 }}>
+    <div
+      role="region"
+      aria-label="Workload table, horizontally scrollable"
+      tabIndex={0}
+      className="opm-workload overflow-x-auto border border-[var(--border)] bg-[var(--surface)] p-4"
+    >
+      <table
+        className="w-full min-w-[720px] border-separate"
+        style={{ tableLayout: 'fixed', borderSpacing: 4 }}
+      >
         <caption className="sr-only">Workload by week</caption>
         <thead>
           <tr>
@@ -57,7 +77,7 @@ export function WorkloadView({ now = new Date() }: { now?: Date } = {}) {
               <th
                 key={w.key}
                 scope="col"
-                className="pb-1 text-center text-[11px] font-medium tabular-nums text-[var(--muted)]"
+                className="pb-1 text-center text-xs font-medium tabular-nums text-[var(--muted)]"
               >
                 {w.label}
               </th>
@@ -68,15 +88,17 @@ export function WorkloadView({ now = new Date() }: { now?: Date } = {}) {
           {wl.rows.map((row) => (
             <tr key={row.id}>
               <th scope="row" className="pr-3 text-left align-middle">
-                <span className="block truncate text-[13px] font-medium text-[var(--text)]">{row.name}</span>
-                <span className="block text-[11px] tabular-nums text-[var(--muted)]">
+                <span className="block truncate text-sm font-medium text-[var(--text)]">
+                  {row.name}
+                </span>
+                <span className="block text-xs tabular-nums text-[var(--muted)]">
                   {row.capacity === null ? 'no capacity' : `cap ${row.capacity}/wk`}
                 </span>
               </th>
               {row.cells.map((cell, i) => (
                 <td key={wl.weeks[i].key} className="align-middle">
                   <div
-                    className="flex h-9 items-center justify-center gap-0.5 rounded-md text-[13px] font-semibold tabular-nums text-[var(--text)]"
+                    className="flex h-9 items-center justify-center gap-0.5 rounded-md text-sm font-semibold tabular-nums text-[var(--text)]"
                     style={{ background: tint(cell.level) }}
                   >
                     {cell.points === 0 ? (
@@ -103,7 +125,10 @@ export function WorkloadView({ now = new Date() }: { now?: Date } = {}) {
       <div className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-[var(--border)] pt-3">
         <ul className="flex flex-wrap items-center gap-x-3.5 gap-y-1">
           {LEGEND.map(({ level, label }) => (
-            <li key={level} className="inline-flex items-center gap-1.5 text-[11px] text-[var(--muted)]">
+            <li
+              key={level}
+              className="inline-flex items-center gap-1.5 text-xs text-[var(--muted)]"
+            >
               <span
                 aria-hidden="true"
                 className="h-2.5 w-2.5 rounded-full"
@@ -115,7 +140,7 @@ export function WorkloadView({ now = new Date() }: { now?: Date } = {}) {
         </ul>
         {notShown > 0 && (
           <p
-            className="text-[11px] tabular-nums text-[var(--muted)]"
+            className="text-xs tabular-nums text-[var(--muted)]"
             title={`${wl.unscheduledPoints} unscheduled · ${wl.outOfRangePoints} outside window`}
           >
             {notShown} {notShown === 1 ? 'point' : 'points'} not shown
@@ -142,7 +167,11 @@ function WorkloadSkeleton() {
       </div>
       <div className="mt-2.5 space-y-[5px]">
         {[0, 1, 2, 3].map((r) => (
-          <div key={r} className="grid items-center" style={{ gridTemplateColumns: GRID_COLS, gap: 5 }}>
+          <div
+            key={r}
+            className="grid items-center"
+            style={{ gridTemplateColumns: GRID_COLS, gap: 5 }}
+          >
             <div className="space-y-1.5 pr-3">
               <div className="opm-skel h-3 rounded" style={{ width: `${66 - r * 7}%` }} />
               <div className="opm-skel h-2 w-14 rounded" />
@@ -157,28 +186,38 @@ function WorkloadSkeleton() {
   )
 }
 
-function WorkloadError() {
+function WorkloadError({ onRetry }: { onRetry: () => void }) {
   return (
     <div
       role="alert"
-      className="mx-auto flex max-w-4xl min-h-[280px] flex-col items-center justify-center px-6 py-12 text-center"
+      className="opm-state mx-auto flex max-w-4xl min-h-[280px] flex-col items-center justify-center px-6 py-12 text-center"
     >
       <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)]">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M12 8.5v4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
           <circle cx="12" cy="16.3" r="1.05" fill="currentColor" />
-          <path d="M12 3.5 21 19.5H3L12 3.5Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+          <path
+            d="M12 3.5 21 19.5H3L12 3.5Z"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinejoin="round"
+          />
         </svg>
       </div>
       <p className="text-base font-semibold text-[var(--text)]">Couldn't load workload.</p>
-      <p className="mt-1 max-w-xs text-sm text-[var(--muted)]">Check your connection and try again.</p>
+      <p className="mt-1 max-w-xs text-sm text-[var(--muted)]">
+        Check your connection and try again.
+      </p>
+      <button type="button" className="opm-btn mt-4" onClick={onRetry}>
+        Retry
+      </button>
     </div>
   )
 }
 
 function WorkloadEmpty() {
   return (
-    <div className="mx-auto flex max-w-4xl min-h-[280px] flex-col items-center justify-center px-6 py-12 text-center">
+    <div className="opm-state mx-auto flex max-w-4xl min-h-[280px] flex-col items-center justify-center px-6 py-12 text-center">
       <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)]">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M4 19.5h16" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />

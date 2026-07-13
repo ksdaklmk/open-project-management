@@ -5,7 +5,10 @@ export type Subtask = Database['public']['Tables']['subtasks']['Row']
 
 export async function listSubtasks(taskId: string): Promise<Subtask[]> {
   const { data, error } = await supabase
-    .from('subtasks').select('*').eq('task_id', taskId).order('position', { ascending: true })
+    .from('subtasks')
+    .select('*')
+    .eq('task_id', taskId)
+    .order('position', { ascending: true })
   if (error) throw new Error(error.message)
   return data ?? []
 }

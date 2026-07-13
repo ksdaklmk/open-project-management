@@ -1,52 +1,60 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { limit, order, eq, select, insert, from } = vi.hoisted(() => {
-  const limit = vi.fn()
-  const order = vi.fn(() => ({ limit }))
-  const eq = vi.fn(() => ({ order }))
+const { response, select, eq, or, order1, order2, limit, from, rpc } = vi.hoisted(() => {
+  const response = {
+    current: { data: [] as Record<string, unknown>[], error: null as null | { message: string } },
+  }
+  const abortSignal = vi.fn(() => Promise.resolve(response.current))
+  const limit = vi.fn(() => ({ abortSignal }))
+  const order2 = vi.fn(() => ({ limit }))
+  const order1 = vi.fn(() => ({ order: order2 }))
+  const or = vi.fn(() => ({ order: order1 }))
+  const eq = vi.fn(() => ({ order: order1, or }))
   const select = vi.fn(() => ({ eq }))
-  const insert = vi.fn(() => Promise.resolve({ error: null }))
-  const from = vi.fn(() => ({ select, insert }))
-  return { limit, order, eq, select, insert, from }
+  const from = vi.fn(() => ({ select }))
+  const rpc = vi.fn(() => Promise.resolve({ error: null }))
+  return { response, select, eq, or, order1, order2, limit, abortSignal, from, rpc }
 })
-vi.mock('../lib/supabase', () => ({ supabase: { from } }))
 
-import { listComments, addComment } from './commentsRepo'
+vi.mock('../lib/supabase', () => ({ supabase: { from, rpc } }))
 
-beforeEach(() => vi.clearAllMocks())
+import { addComment, listCommentsPage } from './commentsRepo'
+
+beforeEach(() => {
+  vi.clearAllMocks()
+  response.current = { data: [], error: null }
+})
 
 describe('commentsRepo', () => {
-  it('lists comments with the author name embedded', async () => {
-    limit.mockResolvedValueOnce({
-      data: [{ id: 'c1', body: 'hi', created_at: '2026-06-28T00:00:00Z', author: { name: 'Dana Lee' } }],
-      error: null,
-    })
-    const rows = await listComments('t1')
-    expect(from).toHaveBeenCalledWith('comments')
-    expect(select).toHaveBeenCalledWith('id, body, created_at, author:profiles!author_id(name)')
-    expect(eq).toHaveBeenCalledWith('task_id', 't1')
-    expect(rows[0]).toEqual({ id: 'c1', body: 'hi', created_at: '2026-06-28T00:00:00Z', author: { name: 'Dana Lee' } })
-  })
-  it('keeps the NEWEST 100 (fetches descending) and returns them oldest-first', async () => {
-    limit.mockResolvedValueOnce({
+  it('returns a bounded newest-first page with author names', async () => {
+    response.current = {
       data: [
         { id: 'c2', body: 'newer', created_at: '2026-06-29T00:00:00Z', author: null },
-        { id: 'c1', body: 'older', created_at: '2026-06-28T00:00:00Z', author: null },
+        { id: 'c1', body: 'older', created_at: '2026-06-28T00:00:00Z', author: { name: 'Dana' } },
       ],
       error: null,
+    }
+    const page = await listCommentsPage('t1')
+    expect(select).toHaveBeenCalledWith('id, body, created_at, author:profiles!author_id(name)')
+    expect(eq).toHaveBeenCalledWith('task_id', 't1')
+    expect(order1).toHaveBeenCalledWith('created_at', { ascending: false })
+    expect(order2).toHaveBeenCalledWith('id', { ascending: false })
+    expect(limit).toHaveBeenCalledWith(51)
+    expect(page.items.map((row) => row.id)).toEqual(['c2', 'c1'])
+    expect(page.items[1].author).toEqual({ name: 'Dana' })
+  })
+
+  it('uses a stable compound cursor', async () => {
+    await listCommentsPage('t1', { createdAt: '2026-07-01T00:00:00Z', id: 'c9' })
+    expect(or).toHaveBeenCalledWith(expect.stringContaining('id.lt.c9'))
+  })
+
+  it('adds a comment and normalized mentions through the identity-pinned RPC', async () => {
+    await addComment('t1', 'nice', ['u2'])
+    expect(rpc).toHaveBeenCalledWith('create_comment', {
+      p_task_id: 't1',
+      p_body: 'nice',
+      p_mentioned_user_ids: ['u2'],
     })
-    const rows = await listComments('t1')
-    expect(order).toHaveBeenCalledWith('created_at', { ascending: false })
-    expect(limit).toHaveBeenCalledWith(100)
-    expect(rows.map((r) => r.id)).toEqual(['c1', 'c2'])
-  })
-  it('coalesces a missing author to null', async () => {
-    limit.mockResolvedValueOnce({ data: [{ id: 'c2', body: 'x', created_at: 'z', author: null }], error: null })
-    const rows = await listComments('t1')
-    expect(rows[0].author).toBeNull()
-  })
-  it('adds a comment with a pinned author_id', async () => {
-    await addComment('t1', 'nice', 'user-9')
-    expect(insert).toHaveBeenCalledWith({ task_id: 't1', body: 'nice', author_id: 'user-9' })
   })
 })

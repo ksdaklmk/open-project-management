@@ -4,10 +4,25 @@ import { parseDate } from '../../lib/weeks'
 import type { Task } from '../../data/tasksRepo'
 
 const t = (over: Partial<Task>): Task => ({
-  id: 'x', project_id: 'p', workspace_id: 'w', ref: 'NIM-1', type: 'feature',
-  title: 't', description: '', status: 'todo', priority: 'low', assignee_id: null,
-  start_date: null, end_date: null, points: null, position: 0,
-  created_by: null, created_at: '', updated_at: '', tags: [], ...over,
+  id: 'x',
+  project_id: 'p',
+  workspace_id: 'w',
+  ref: 'NIM-1',
+  type: 'feature',
+  title: 't',
+  description: '',
+  status: 'todo',
+  priority: 'low',
+  assignee_id: null,
+  start_date: null,
+  end_date: null,
+  points: null,
+  position: 0,
+  created_by: null,
+  created_at: '',
+  updated_at: '',
+  tags: [],
+  ...over,
 })
 
 const at = (id: string) => (r: ReturnType<typeof bucketTasks>) =>
@@ -27,7 +42,13 @@ describe('bucketTasks', () => {
   )
 
   it('keeps all five buckets in fixed order', () => {
-    expect(result.map((b) => b.id)).toEqual(['earlier', 'this_week', 'next_week', 'later', 'unscheduled'])
+    expect(result.map((b) => b.id)).toEqual([
+      'earlier',
+      'this_week',
+      'next_week',
+      'later',
+      'unscheduled',
+    ])
   })
   it('routes each task to its bucket relative to now', () => {
     expect(at('earlier')(result)).toEqual(['EARLY'])
