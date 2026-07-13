@@ -1,10 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const {
-  range,
-  order2,
-  order1,
-  eq,
   select: _select,
   update,
   updateEq,
@@ -58,7 +54,7 @@ const {
 vi.mock('../lib/supabase', () => ({ supabase: { from, rpc } }))
 
 import {
-  listTasks,
+  queryTasks,
   updateTask,
   addTaskTag,
   removeTaskTag,
@@ -71,48 +67,30 @@ import {
 beforeEach(() => vi.clearAllMocks())
 
 describe('tasksRepo', () => {
-  it('lists tasks with embedded tags, ordered by position with an id tiebreak', async () => {
-    range.mockResolvedValueOnce({
-      data: [{ id: 't1', ref: 'NIM-101', task_tags: [{ tag: 'Backend' }, { tag: 'API' }] }],
+  it('queries a bounded cursor page and strips the server sort value', async () => {
+    const abortSignal = vi.fn().mockResolvedValue({
+      data: [
+        { id: 't1', title: 'One', tags: ['Backend'], sort_value: '0001' },
+        { id: 't2', title: 'Two', tags: null, sort_value: '0002' },
+      ],
       error: null,
     })
-    const tasks = await listTasks('ws-1')
-    expect(from).toHaveBeenCalledWith('tasks')
-    expect(_select).toHaveBeenCalledWith('*, task_tags(tag)')
-    expect(eq).toHaveBeenCalledWith('workspace_id', 'ws-1')
-    expect(order1).toHaveBeenCalledWith('position', { ascending: true })
-    expect(order2).toHaveBeenCalledWith('id', { ascending: true })
-    expect(tasks[0].tags).toEqual(['Backend', 'API'])
-    expect((tasks[0] as { task_tags?: unknown }).task_tags).toBeUndefined()
-  })
+    rpc.mockReturnValueOnce({ abortSignal } as never)
 
-  it('defaults tags to [] when none are embedded', async () => {
-    range.mockResolvedValueOnce({ data: [{ id: 't2', ref: 'NIM-102' }], error: null })
-    const tasks = await listTasks('ws-1')
-    expect(tasks[0].tags).toEqual([])
-  })
+    const page = await queryTasks({ workspaceId: 'ws-1', assignee: [''], limit: 1 })
 
-  it('throws on a Supabase error', async () => {
-    range.mockResolvedValueOnce({ data: null, error: { message: 'boom' } })
-    await expect(listTasks('ws-1')).rejects.toThrow('boom')
-  })
-
-  it('stops after one page when the page is not full', async () => {
-    range.mockResolvedValueOnce({ data: [{ id: 't1' }], error: null })
-    await listTasks('ws-1')
-    expect(range).toHaveBeenCalledTimes(1)
-    expect(range).toHaveBeenCalledWith(0, 999)
-  })
-
-  it('keeps fetching pages while they come back full (the 1,000-row API cap)', async () => {
-    const fullPage = Array.from({ length: 1000 }, (_, i) => ({ id: `t${i}` }))
-    range
-      .mockResolvedValueOnce({ data: fullPage, error: null })
-      .mockResolvedValueOnce({ data: [{ id: 't-last' }], error: null })
-    const tasks = await listTasks('ws-1')
-    expect(range).toHaveBeenNthCalledWith(1, 0, 999)
-    expect(range).toHaveBeenNthCalledWith(2, 1000, 1999)
-    expect(tasks).toHaveLength(1001)
+    expect(rpc).toHaveBeenCalledWith(
+      'query_tasks',
+      expect.objectContaining({
+        p_workspace_id: 'ws-1',
+        p_assignee: [],
+        p_include_unassigned: true,
+        p_limit: 1,
+        p_sort: 'position',
+      }),
+    )
+    expect(page.items).toEqual([{ id: 't1', title: 'One', tags: ['Backend'] }])
+    expect(page.nextCursor).toEqual({ sort: '0001', id: 't1' })
   })
 
   it('updates a task with widened fields, scoped by id', async () => {

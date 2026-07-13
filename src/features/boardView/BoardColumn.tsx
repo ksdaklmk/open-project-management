@@ -87,6 +87,7 @@ export function BoardColumn({
             {tasks.map((t, i) => (
               <div
                 key={t.id}
+                className="opm-virtual-item"
                 onDragOver={(e) => {
                   const r = e.currentTarget.getBoundingClientRect()
                   setHoverIndex(e.clientY < r.top + r.height / 2 ? i : i + 1)

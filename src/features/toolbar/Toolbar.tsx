@@ -9,6 +9,8 @@ import type { ProjectOption } from '../../data/projectsRepo'
 import { useTaskFilters } from './useTaskFilters'
 import type { SortKey } from './sortTasks'
 import { AppIcon } from '../../components/AppIcon'
+import { SavedViewsControl } from '../savedViews/SavedViewsControl'
+import { currentSavedViewConfiguration, isSavedViewType } from './savedViewConfig'
 
 type ListKey = 'status' | 'priority' | 'assignee' | 'type' | 'tag'
 const SORTS: { id: SortKey; label: string }[] = [
@@ -20,8 +22,20 @@ const SORTS: { id: SortKey; label: string }[] = [
 
 export function Toolbar({ showSort }: { showSort: boolean }) {
   const { activeId } = useActiveWorkspace()
+  const { view } = useViewState()
   const { data: members } = useMembers(activeId ?? '')
-  const { filters, sort, setList, setQ, setSort, clear } = useTaskFilters()
+  const {
+    filters,
+    sort,
+    savedViewId,
+    hasExplicitConfiguration,
+    setList,
+    setQ,
+    setSort,
+    clear,
+    applySavedView,
+    clearSavedView,
+  } = useTaskFilters()
 
   const toggle = (key: ListKey, id: string) => {
     const cur = filters[key]
@@ -36,8 +50,20 @@ export function Toolbar({ showSort }: { showSort: boolean }) {
     filters.q.trim()
 
   return (
-    <div className="opm-toolbar" aria-label="Task tools">
+    <section className="opm-toolbar" aria-label="Task tools">
       <NewTask workspaceId={activeId ?? ''} />
+      {activeId && isSavedViewType(view) && (
+        <SavedViewsControl
+          key={`${activeId}:${view}`}
+          workspaceId={activeId}
+          viewType={view}
+          configuration={currentSavedViewConfiguration(filters, sort, view)}
+          savedViewId={savedViewId}
+          hasExplicitConfiguration={hasExplicitConfiguration}
+          onApply={applySavedView}
+          onClearSavedView={clearSavedView}
+        />
+      )}
       <label className="opm-search-field">
         <AppIcon name="search" size={15} />
         <span className="sr-only">Search tasks</span>
@@ -104,7 +130,7 @@ export function Toolbar({ showSort }: { showSort: boolean }) {
           Clear filters
         </button>
       ) : null}
-    </div>
+    </section>
   )
 }
 

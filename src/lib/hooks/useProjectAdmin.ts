@@ -11,7 +11,10 @@ export function useProjectAdmin(workspaceId: string) {
     mutationFn: ({ name, key }: { name: string; key: string }) =>
       createProject(workspaceId, name, key),
     onError: fail,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: projectsKey }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: projectsKey })
+      queryClient.invalidateQueries({ queryKey: ['activation', workspaceId] })
+    },
   })
   const update = useMutation({
     mutationFn: ({ projectId, name }: { projectId: string; name: string }) =>

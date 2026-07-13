@@ -15,12 +15,22 @@ vi.mock('../lib/workspace', () => ({
 }))
 vi.mock('../lib/hooks/useSession', () => ({ signOut: mockSignOut, useActorId: () => 'u1' }))
 vi.mock('../lib/hooks/useMembers', () => ({ useMembers: () => members }))
+vi.mock('../lib/hooks/useActivation', () => ({ useActivationTracking: vi.fn() }))
+vi.mock('../lib/hooks/useNotifications', () => ({
+  useUnreadNotifications: () => ({ data: 3 }),
+}))
 
 vi.mock('../components/WorkspaceSwitcher', () => ({
   WorkspaceSwitcher: () => null,
 }))
 vi.mock('../features/listView/ListView', () => ({
   ListView: () => null,
+}))
+vi.mock('../features/myWorkView/MyWorkView', () => ({
+  MyWorkView: () => <div>my work mounted</div>,
+}))
+vi.mock('../features/inboxView/InboxView', () => ({
+  InboxView: () => <div>inbox mounted</div>,
 }))
 vi.mock('../features/boardView/BoardView', () => ({
   BoardView: () => <div>board view</div>,
@@ -43,6 +53,9 @@ vi.mock('../features/settings/WorkspaceSettings', () => ({
 }))
 vi.mock('../features/taskDrawer/TaskDrawer', () => ({ TaskDrawer: () => null }))
 vi.mock('../features/toolbar/Toolbar', () => ({ Toolbar: () => null }))
+vi.mock('../features/onboarding/OnboardingChecklist', () => ({
+  OnboardingChecklist: () => null,
+}))
 
 const renderShell = () =>
   render(
@@ -84,7 +97,16 @@ describe('Shell', () => {
 
   it('shows all six work views and settings to an owner', async () => {
     renderShell()
-    for (const t of ['List', 'Board', 'Gantt', 'Timeline', 'Activity', 'Workload'])
+    for (const t of [
+      'My Work',
+      'Inbox',
+      'List',
+      'Board',
+      'Gantt',
+      'Timeline',
+      'Activity',
+      'Workload',
+    ])
       expect(screen.getByRole('button', { name: t })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Settings' })).toBeInTheDocument()
     // Flush the lazy view's resolution inside act so it doesn't land after
@@ -109,6 +131,19 @@ describe('Shell', () => {
     renderShell()
     await userEvent.click(screen.getByRole('button', { name: 'Board' }))
     expect(await screen.findByText('board view')).toBeInTheDocument()
+  })
+
+  it('mounts the personal My Work view', async () => {
+    renderShell()
+    await userEvent.click(screen.getByRole('button', { name: 'My Work' }))
+    expect(await screen.findByText('my work mounted')).toBeInTheDocument()
+  })
+
+  it('shows unread count and mounts the personal Inbox view', async () => {
+    renderShell()
+    expect(screen.getByLabelText('3 unread')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Inbox' }))
+    expect(await screen.findByText('inbox mounted')).toBeInTheDocument()
   })
 
   it('uses one light theme without a theme toggle', async () => {

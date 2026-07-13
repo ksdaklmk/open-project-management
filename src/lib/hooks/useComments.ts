@@ -1,32 +1,68 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQueryClient,
+  type InfiniteData,
+} from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { listComments, addComment, type CommentItem } from '../../data/commentsRepo'
-import { useActorId } from './useSession'
+import {
+  listCommentsPage,
+  addComment,
+  type CommentCursor,
+  type CommentItem,
+  type CommentPage,
+} from '../../data/commentsRepo'
+
+export interface NewCommentInput {
+  body: string
+  mentionedUserIds?: string[]
+}
+
+const normalizeInput = (input: string | NewCommentInput): NewCommentInput =>
+  typeof input === 'string' ? { body: input, mentionedUserIds: [] } : input
 
 export function useComments(taskId: string) {
-  return useQuery({
+  const query = useInfiniteQuery({
     queryKey: ['comments', taskId],
-    queryFn: () => listComments(taskId),
+    queryFn: ({ pageParam, signal }) => listCommentsPage(taskId, pageParam, signal),
+    initialPageParam: null as CommentCursor | null,
+    getNextPageParam: (page) => page.nextCursor ?? undefined,
     enabled: !!taskId,
   })
+  const newestFirst = query.data?.pages.flatMap((page) => page.items) ?? []
+  return { ...query, data: [...newestFirst].reverse() }
 }
 
 export function useAddComment(taskId: string, workspaceId: string) {
   const qc = useQueryClient()
-  const actorId = useActorId()
   const key = ['comments', taskId]
   return useMutation({
-    mutationFn: (body: string) => addComment(taskId, body, actorId),
-    onMutate: async (body) => {
+    mutationFn: (input: string | NewCommentInput) => {
+      const comment = normalizeInput(input)
+      return addComment(taskId, comment.body, comment.mentionedUserIds ?? [])
+    },
+    onMutate: async (input) => {
+      const { body } = normalizeInput(input)
       await qc.cancelQueries({ queryKey: key })
-      const prev = qc.getQueryData<CommentItem[]>(key)
+      const prev = qc.getQueryData<InfiniteData<CommentPage, CommentCursor | null>>(key)
       const optimistic: CommentItem = {
         id: `tmp-${Date.now()}`,
         body,
         created_at: new Date().toISOString(),
         author: null,
       }
-      qc.setQueryData<CommentItem[]>(key, (old) => [...(old ?? []), optimistic])
+      qc.setQueryData<InfiniteData<CommentPage, CommentCursor | null>>(key, (old) => {
+        if (!old?.pages.length) {
+          return { pages: [{ items: [optimistic], nextCursor: null }], pageParams: [null] }
+        }
+        return {
+          ...old,
+          pages: [
+            { ...old.pages[0], items: [optimistic, ...old.pages[0].items] },
+            ...old.pages.slice(1),
+          ],
+        }
+      })
       return { prev }
     },
     onError: (e, _v, ctx) => {
@@ -36,6 +72,8 @@ export function useAddComment(taskId: string, workspaceId: string) {
     onSettled: () => {
       qc.invalidateQueries({ queryKey: key })
       qc.invalidateQueries({ queryKey: ['activity', workspaceId] })
+      qc.invalidateQueries({ queryKey: ['notifications'] })
+      qc.invalidateQueries({ queryKey: ['notification-unread'] })
     },
   })
 }

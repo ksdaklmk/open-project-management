@@ -9,14 +9,16 @@ export function useCreateTask(workspaceId: string) {
     mutationFn: ({ title, project }: { title: string; project: ProjectOption }) =>
       createTask({ projectId: project.id, title }),
     onError: (e) => toast.error(`Couldn't create task: ${(e as Error).message}`),
-    // Seed the cache so navigating straight to the new ref (drawer open on
-    // create) never races the refetch into a "Task not found".
     onSuccess: (task) => {
-      qc.setQueryData<Task[]>(['tasks', workspaceId], (old) => (old ? [...old, task] : [task]))
+      // The drawer has its own stable-ID query, so seed that bounded cache.
+      qc.setQueryData<Task>(['task', workspaceId, task.ref], task)
     },
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ['tasks', workspaceId] })
+      qc.invalidateQueries({ queryKey: ['workload', workspaceId] })
       qc.invalidateQueries({ queryKey: ['activity', workspaceId] })
+      qc.invalidateQueries({ queryKey: ['activation', workspaceId] })
+      qc.invalidateQueries({ queryKey: ['my-work'] })
     },
   })
 }

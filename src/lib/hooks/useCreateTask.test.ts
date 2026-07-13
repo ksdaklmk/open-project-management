@@ -32,17 +32,18 @@ describe('useCreateTask', () => {
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['activity', ws] })
   })
 
-  it('seeds the tasks cache with the created task so the drawer can open it immediately', async () => {
+  it('seeds the bounded drawer cache with the created task', async () => {
     const qc = new QueryClient()
     qc.setQueryData(['tasks', ws], [{ id: 't1', ref: 'NIM-101', tags: [] }])
     createTask.mockResolvedValueOnce({ id: 't9', ref: 'NIM-107', tags: [] })
     const { result } = renderHook(() => useCreateTask(ws), { wrapper: wrap(qc) })
     result.current.mutate({ title: 'New thing', project })
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
-    expect(qc.getQueryData(['tasks', ws])).toEqual([
-      { id: 't1', ref: 'NIM-101', tags: [] },
-      { id: 't9', ref: 'NIM-107', tags: [] },
-    ])
+    expect(qc.getQueryData(['task', ws, 'NIM-107'])).toEqual({
+      id: 't9',
+      ref: 'NIM-107',
+      tags: [],
+    })
   })
 
   it('toasts on create failure', async () => {

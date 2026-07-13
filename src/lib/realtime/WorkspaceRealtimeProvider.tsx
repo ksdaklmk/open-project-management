@@ -8,6 +8,7 @@ import {
 import { useSessionContext } from '../hooks/useSession'
 import { useActiveWorkspace } from '../workspace'
 import { allWorkspaceQueryKeys, eventFingerprint, eventQueryKeys } from './eventMapping'
+import { recordTelemetry } from '../observability'
 
 export type RealtimeConnectionState = 'idle' | 'connecting' | 'connected' | 'reconnecting'
 const RealtimeContext = createContext<RealtimeConnectionState>('idle')
@@ -67,10 +68,14 @@ export function WorkspaceRealtimeProvider({ children }: { children: ReactNode })
     const statusChanged = (status: WorkspaceRealtimeStatus) => {
       if (stopped) return
       if (status === 'SUBSCRIBED') {
-        if (connectedOnce.current) invalidateAfterReconnect()
+        if (connectedOnce.current) {
+          invalidateAfterReconnect()
+          recordTelemetry('realtime_connection', { status: 'connected', reconnect: true })
+        }
         connectedOnce.current = true
         setConnection({ scope, state: 'connected' })
       } else {
+        recordTelemetry('realtime_connection', { status: 'reconnecting', reconnect: true })
         setConnection({ scope, state: 'reconnecting' })
       }
     }

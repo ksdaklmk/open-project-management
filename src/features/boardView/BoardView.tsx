@@ -9,10 +9,19 @@ import { boardColumns } from './boardColumns'
 import { BoardColumn } from './BoardColumn'
 import { dropTarget } from './computeDropPosition'
 import type { Status } from '../../types/constants'
+import { LoadMoreButton } from '../../components/LoadMoreButton'
 
 export function BoardView() {
   const { activeId, loading: wsLoading } = useActiveWorkspace()
-  const { data: tasks, isLoading, error, refetch } = useFilteredTasks(activeId ?? '')
+  const {
+    data: tasks,
+    isLoading,
+    error,
+    refetch,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = useFilteredTasks(activeId ?? '', { sort: 'position' })
   const { data: members } = useMembers(activeId ?? '')
   const move = useMoveTask(activeId ?? '')
   const { setTaskRef, taskRef } = useViewState()
@@ -78,6 +87,9 @@ export function BoardView() {
           />
         ))}
       </div>
+      {hasNextPage && (
+        <LoadMoreButton pending={isFetchingNextPage} onClick={() => void fetchNextPage()} />
+      )}
     </>
   )
 }

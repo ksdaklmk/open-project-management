@@ -7,6 +7,21 @@ exceptions, page-load failures, mutation failures, p95 task-list latency, Supaba
 health, Realtime reconnects, Edge Function errors, email delivery, backup status, and dependency
 advisories. Customer task content, comments, emails, tokens, and credentials must be redacted.
 
+The frontend emits release-tagged `opm:telemetry` browser events and calls
+`window.__OPM_TELEMETRY__.capture` when a monitoring adapter is installed before the app starts.
+The built-in allowlist accepts only view/operation/status/duration/metric/reconnect/error-name
+metadata; it drops all other fields. Configure the hosted provider adapter and release ID without
+adding task titles, descriptions, comment bodies, email addresses, workspace names, or tokens.
+The invitation Edge Function logs one structured JSON record containing only request ID, status,
+outcome, and duration. The notification worker logs only claimed and delivered counts; recipient
+addresses and task/comment content are excluded.
+
+Alert when `notification_outbox` has `dead` rows or old `pending` rows beyond the delivery SLO.
+The service-role worker is the only delivery process: task/comment transactions enqueue identifiers
+and commit without waiting for the email provider. Before replaying a failed batch, verify provider
+health and sender configuration; idempotent notification keys prevent a repeated product event from
+creating another outbox row.
+
 ## Routine checks
 
 - Every release: run all CI gates, post-deploy smoke, migration status, and error-rate comparison.
@@ -36,6 +51,12 @@ restored environment to production email, OAuth callbacks, webhooks, or analytic
 Record the achieved recovery point and recovery time after each rehearsal. Delete the disposable
 project after evidence and follow-up actions are retained.
 
+Run `npm run test:restore` for the repository's local logical-dump rehearsal. It recreates
+database-level Realtime publication membership (schema-filtered dumps do not carry it), compares
+source and restored application row counts, verifies the current migration version, and runs restore-specific
+pgTAP checks in a disposable database. A passing local run supplements but does not replace the
+hosted backup/PITR rehearsal above.
+
 ## Rollback and forward-fix
 
 - Frontend: redeploy the previous immutable artefact, confirm its expected schema compatibility,
@@ -51,6 +72,8 @@ Authenticate requesters and verify workspace ownership before exports or destruc
 Export only the requester's authorised tenant data. Account/workspace deletion requires a preview,
 explicit confirmation, backup/retention decision, audit record, and verification that Auth,
 database, storage, integrations, and derived analytics are removed according to policy.
+
+Use the detailed [data-request runbook](data-requests.md) and [key-rotation runbook](key-rotation.md).
 
 ## Local database troubleshooting
 

@@ -34,6 +34,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      activation_events: {
+        Row: {
+          actor_id: string | null
+          event_name: string
+          id: number
+          occurred_at: string
+          subject_id: string | null
+          workspace_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          event_name: string
+          id?: never
+          occurred_at?: string
+          subject_id?: string | null
+          workspace_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          event_name?: string
+          id?: never
+          occurred_at?: string
+          subject_id?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activation_events_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activation_events_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       activity: {
         Row: {
           actor_id: string | null
@@ -105,6 +147,39 @@ export type Database = {
           },
         ]
       }
+      comment_mentions: {
+        Row: {
+          comment_id: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_mentions_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comment_mentions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       comments: {
         Row: {
           author_id: string | null
@@ -140,6 +215,255 @@ export type Database = {
             columns: ["task_id"]
             isOneToOne: false
             referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_outbox: {
+        Row: {
+          attempts: number
+          claimed_at: string | null
+          created_at: string
+          id: string
+          last_error_code: string | null
+          next_attempt_at: string
+          notification_id: string
+          processed_at: string | null
+          status: Database["public"]["Enums"]["notification_delivery_status"]
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          claimed_at?: string | null
+          created_at?: string
+          id?: string
+          last_error_code?: string | null
+          next_attempt_at?: string
+          notification_id: string
+          processed_at?: string | null
+          status?: Database["public"]["Enums"]["notification_delivery_status"]
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          claimed_at?: string | null
+          created_at?: string
+          id?: string
+          last_error_code?: string | null
+          next_attempt_at?: string
+          notification_id?: string
+          processed_at?: string | null
+          status?: Database["public"]["Enums"]["notification_delivery_status"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_outbox_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: true
+            referencedRelation: "notifications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_outbox_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_preferences: {
+        Row: {
+          assignments: boolean
+          due_soon: boolean
+          email_enabled: boolean
+          invitations: boolean
+          mentions: boolean
+          status_changes: boolean
+          updated_at: string
+          user_id: string
+          watched_comments: boolean
+        }
+        Insert: {
+          assignments?: boolean
+          due_soon?: boolean
+          email_enabled?: boolean
+          invitations?: boolean
+          mentions?: boolean
+          status_changes?: boolean
+          updated_at?: string
+          user_id: string
+          watched_comments?: boolean
+        }
+        Update: {
+          assignments?: boolean
+          due_soon?: boolean
+          email_enabled?: boolean
+          invitations?: boolean
+          mentions?: boolean
+          status_changes?: boolean
+          updated_at?: string
+          user_id?: string
+          watched_comments?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_reads: {
+        Row: {
+          notification_id: string
+          read_at: string
+          user_id: string
+        }
+        Insert: {
+          notification_id: string
+          read_at?: string
+          user_id: string
+        }
+        Update: {
+          notification_id?: string
+          read_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_reads_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "notifications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_reads_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          actor_id: string | null
+          comment_id: string | null
+          created_at: string
+          dedupe_key: string
+          id: string
+          invitation_id: string | null
+          kind: Database["public"]["Enums"]["notification_kind"]
+          task_id: string | null
+          task_ref_snapshot: string | null
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          comment_id?: string | null
+          created_at?: string
+          dedupe_key: string
+          id?: string
+          invitation_id?: string | null
+          kind: Database["public"]["Enums"]["notification_kind"]
+          task_id?: string | null
+          task_ref_snapshot?: string | null
+          user_id: string
+          workspace_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          comment_id?: string | null
+          created_at?: string
+          dedupe_key?: string
+          id?: string
+          invitation_id?: string | null
+          kind?: Database["public"]["Enums"]["notification_kind"]
+          task_id?: string | null
+          task_ref_snapshot?: string | null
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_invitation_id_fkey"
+            columns: ["invitation_id"]
+            isOneToOne: false
+            referencedRelation: "workspace_invitations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      onboarding_dismissals: {
+        Row: {
+          dismissed_at: string
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          dismissed_at?: string
+          user_id: string
+          workspace_id: string
+        }
+        Update: {
+          dismissed_at?: string
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_dismissals_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboarding_dismissals_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
         ]
@@ -206,6 +530,106 @@ export type Database = {
           },
         ]
       }
+      saved_view_defaults: {
+        Row: {
+          created_at: string
+          saved_view_id: string
+          updated_at: string
+          user_id: string
+          view_type: Database["public"]["Enums"]["saved_view_type"]
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          saved_view_id: string
+          updated_at?: string
+          user_id: string
+          view_type: Database["public"]["Enums"]["saved_view_type"]
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          saved_view_id?: string
+          updated_at?: string
+          user_id?: string
+          view_type?: Database["public"]["Enums"]["saved_view_type"]
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_view_defaults_saved_view_id_fkey"
+            columns: ["saved_view_id"]
+            isOneToOne: false
+            referencedRelation: "saved_views"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saved_view_defaults_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saved_view_defaults_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      saved_views: {
+        Row: {
+          configuration: Json
+          created_at: string
+          id: string
+          name: string
+          owner_id: string
+          updated_at: string
+          view_type: Database["public"]["Enums"]["saved_view_type"]
+          visibility: Database["public"]["Enums"]["saved_view_visibility"]
+          workspace_id: string
+        }
+        Insert: {
+          configuration: Json
+          created_at?: string
+          id?: string
+          name: string
+          owner_id: string
+          updated_at?: string
+          view_type: Database["public"]["Enums"]["saved_view_type"]
+          visibility?: Database["public"]["Enums"]["saved_view_visibility"]
+          workspace_id: string
+        }
+        Update: {
+          configuration?: Json
+          created_at?: string
+          id?: string
+          name?: string
+          owner_id?: string
+          updated_at?: string
+          view_type?: Database["public"]["Enums"]["saved_view_type"]
+          visibility?: Database["public"]["Enums"]["saved_view_visibility"]
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_views_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saved_views_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subtasks: {
         Row: {
           done: boolean
@@ -257,6 +681,39 @@ export type Database = {
             columns: ["task_id"]
             isOneToOne: false
             referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_watchers: {
+        Row: {
+          created_at: string
+          task_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          task_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          task_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_watchers_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_watchers_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -508,6 +965,56 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      capture_activation_event: {
+        Args: {
+          p_actor_id: string
+          p_event_name: string
+          p_occurred_at: string
+          p_subject_id: string
+          p_workspace_id: string
+        }
+        Returns: undefined
+      }
+      claim_notification_outbox: {
+        Args: { p_limit?: number }
+        Returns: {
+          attempts: number
+          notification_id: string
+          notification_kind: Database["public"]["Enums"]["notification_kind"]
+          outbox_id: string
+          recipient_email: string
+          task_ref: string
+          workspace_id: string
+        }[]
+      }
+      complete_notification_delivery: {
+        Args: {
+          p_error_code?: string
+          p_outbox_id: string
+          p_succeeded: boolean
+        }
+        Returns: undefined
+      }
+      create_comment: {
+        Args: {
+          p_body: string
+          p_mentioned_user_ids?: string[]
+          p_task_id: string
+        }
+        Returns: {
+          author_id: string | null
+          body: string
+          created_at: string
+          id: string
+          task_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "comments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       create_project: {
         Args: { p_key: string; p_name: string; p_workspace_id: string }
         Returns: {
@@ -523,6 +1030,32 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "projects"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      create_saved_view: {
+        Args: {
+          p_configuration: Json
+          p_name: string
+          p_view_type: Database["public"]["Enums"]["saved_view_type"]
+          p_visibility?: Database["public"]["Enums"]["saved_view_visibility"]
+          p_workspace_id: string
+        }
+        Returns: {
+          configuration: Json
+          created_at: string
+          id: string
+          name: string
+          owner_id: string
+          updated_at: string
+          view_type: Database["public"]["Enums"]["saved_view_type"]
+          visibility: Database["public"]["Enums"]["saved_view_visibility"]
+          workspace_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "saved_views"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -566,6 +1099,79 @@ export type Database = {
           workspace_id: string
         }[]
       }
+      delete_saved_view: { Args: { p_saved_view_id: string }; Returns: boolean }
+      duplicate_saved_view: {
+        Args: { p_name?: string; p_saved_view_id: string }
+        Returns: {
+          configuration: Json
+          created_at: string
+          id: string
+          name: string
+          owner_id: string
+          updated_at: string
+          view_type: Database["public"]["Enums"]["saved_view_type"]
+          visibility: Database["public"]["Enums"]["saved_view_visibility"]
+          workspace_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "saved_views"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      enqueue_due_notifications: { Args: { p_days?: number }; Returns: number }
+      enqueue_notification: {
+        Args: {
+          p_actor_id: string
+          p_comment_id: string
+          p_dedupe_key: string
+          p_invitation_id: string
+          p_kind: Database["public"]["Enums"]["notification_kind"]
+          p_task_id: string
+          p_user_id: string
+          p_workspace_id: string
+        }
+        Returns: string
+      }
+      get_activation_status: {
+        Args: { p_workspace_id: string }
+        Returns: {
+          activated_within_7_days: boolean
+          checklist_complete: boolean
+          core_view_opened: boolean
+          dismissed: boolean
+          invitation_sent: boolean
+          project_created: boolean
+          second_member_active: boolean
+          task_count: number
+          workspace_created: boolean
+        }[]
+      }
+      get_default_saved_view: {
+        Args: {
+          p_view_type: Database["public"]["Enums"]["saved_view_type"]
+          p_workspace_id: string
+        }
+        Returns: {
+          configuration: Json
+          created_at: string
+          id: string
+          name: string
+          owner_id: string
+          updated_at: string
+          view_type: Database["public"]["Enums"]["saved_view_type"]
+          visibility: Database["public"]["Enums"]["saved_view_visibility"]
+          workspace_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "saved_views"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      get_unread_notification_count: { Args: never; Returns: number }
       has_workspace_role: {
         Args: {
           allowed: Database["public"]["Enums"]["member_role"][]
@@ -574,6 +1180,8 @@ export type Database = {
         Returns: boolean
       }
       is_member: { Args: { ws: string }; Returns: boolean }
+      is_task_watched: { Args: { p_task_id: string }; Returns: boolean }
+      mark_all_notifications_read: { Args: never; Returns: number }
       move_task: {
         Args: {
           p_after_task_id?: string
@@ -607,6 +1215,119 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      normalize_saved_view_array: {
+        Args: {
+          p_allow_empty?: boolean
+          p_allowed?: string[]
+          p_max_length?: number
+          p_name: string
+          p_value: Json
+        }
+        Returns: Json
+      }
+      query_inbox: {
+        Args: {
+          p_cursor_created_at?: string
+          p_cursor_id?: string
+          p_limit?: number
+        }
+        Returns: {
+          actor_id: string
+          comment_id: string
+          created_at: string
+          id: string
+          invitation_id: string
+          kind: Database["public"]["Enums"]["notification_kind"]
+          read_at: string
+          task_id: string
+          task_ref: string
+          workspace_id: string
+        }[]
+      }
+      query_my_work: {
+        Args: {
+          p_cursor_id?: string
+          p_cursor_sort?: string
+          p_limit?: number
+          p_scope?: string
+        }
+        Returns: {
+          end_date: string
+          id: string
+          points: number
+          priority: Database["public"]["Enums"]["task_priority"]
+          project_id: string
+          project_key: string
+          project_name: string
+          ref: string
+          sort_value: string
+          start_date: string
+          status: Database["public"]["Enums"]["task_status"]
+          tags: string[]
+          title: string
+          type: Database["public"]["Enums"]["task_type"]
+          updated_at: string
+          workspace_id: string
+          workspace_name: string
+        }[]
+      }
+      query_tasks: {
+        Args: {
+          p_assignee?: string[]
+          p_cursor_id?: string
+          p_cursor_sort?: string
+          p_include_unassigned?: boolean
+          p_limit?: number
+          p_priority?: Database["public"]["Enums"]["task_priority"][]
+          p_schedule?: string
+          p_search?: string
+          p_sort?: string
+          p_status?: Database["public"]["Enums"]["task_status"][]
+          p_tags?: string[]
+          p_type?: Database["public"]["Enums"]["task_type"][]
+          p_window_end?: string
+          p_window_start?: string
+          p_workspace_id: string
+        }
+        Returns: {
+          assignee_id: string
+          created_at: string
+          created_by: string
+          description: string
+          end_date: string
+          id: string
+          points: number
+          position: number
+          priority: Database["public"]["Enums"]["task_priority"]
+          project_id: string
+          ref: string
+          sort_value: string
+          start_date: string
+          status: Database["public"]["Enums"]["task_status"]
+          tags: string[]
+          title: string
+          type: Database["public"]["Enums"]["task_type"]
+          updated_at: string
+          workspace_id: string
+        }[]
+      }
+      query_workload: {
+        Args: {
+          p_week_count?: number
+          p_window_start: string
+          p_workspace_id: string
+        }
+        Returns: {
+          assignee_id: string
+          bucket: string
+          points: number
+          week_start: string
+        }[]
+      }
+      record_activation_signal: {
+        Args: { p_event_name: string; p_workspace_id: string }
+        Returns: undefined
+      }
       remove_workspace_member: {
         Args: { p_user_id: string; p_workspace_id: string }
         Returns: {
@@ -634,6 +1355,14 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      set_default_saved_view: {
+        Args: {
+          p_saved_view_id?: string
+          p_view_type: Database["public"]["Enums"]["saved_view_type"]
+          p_workspace_id: string
+        }
+        Returns: boolean
       }
       set_member_capacity: {
         Args: { p_capacity: number; p_user_id: string; p_workspace_id: string }
@@ -671,6 +1400,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      set_task_watched: {
+        Args: { p_task_id: string; p_watching: boolean }
+        Returns: boolean
+      }
       shares_workspace: { Args: { target: string }; Returns: boolean }
       transfer_workspace_ownership: {
         Args: { p_new_owner_id: string; p_workspace_id: string }
@@ -694,6 +1427,31 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "projects"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      update_saved_view: {
+        Args: {
+          p_configuration: Json
+          p_name: string
+          p_saved_view_id: string
+          p_visibility: Database["public"]["Enums"]["saved_view_visibility"]
+        }
+        Returns: {
+          configuration: Json
+          created_at: string
+          id: string
+          name: string
+          owner_id: string
+          updated_at: string
+          view_type: Database["public"]["Enums"]["saved_view_type"]
+          visibility: Database["public"]["Enums"]["saved_view_visibility"]
+          workspace_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "saved_views"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -738,9 +1496,30 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      validate_saved_view_assignees: {
+        Args: { p_configuration: Json; p_workspace_id: string }
+        Returns: undefined
+      }
+      validate_saved_view_configuration: {
+        Args: {
+          p_configuration: Json
+          p_view_type: Database["public"]["Enums"]["saved_view_type"]
+        }
+        Returns: Json
+      }
     }
     Enums: {
       member_role: "owner" | "admin" | "member"
+      notification_delivery_status: "pending" | "processing" | "sent" | "dead"
+      notification_kind:
+        | "assignment"
+        | "mention"
+        | "watched_comment"
+        | "status_change"
+        | "invitation"
+        | "due_soon"
+      saved_view_type: "list" | "board" | "gantt" | "timeline"
+      saved_view_visibility: "private" | "workspace"
       task_priority: "urgent" | "high" | "medium" | "low"
       task_status: "backlog" | "todo" | "in_progress" | "in_review" | "done"
       task_type: "feature" | "bug" | "chore" | "improvement"
@@ -875,6 +1654,17 @@ export const Constants = {
   public: {
     Enums: {
       member_role: ["owner", "admin", "member"],
+      notification_delivery_status: ["pending", "processing", "sent", "dead"],
+      notification_kind: [
+        "assignment",
+        "mention",
+        "watched_comment",
+        "status_change",
+        "invitation",
+        "due_soon",
+      ],
+      saved_view_type: ["list", "board", "gantt", "timeline"],
+      saved_view_visibility: ["private", "workspace"],
       task_priority: ["urgent", "high", "medium", "low"],
       task_status: ["backlog", "todo", "in_progress", "in_review", "done"],
       task_type: ["feature", "bug", "chore", "improvement"],

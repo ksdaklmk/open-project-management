@@ -1,7 +1,18 @@
 import { useSearchParams } from 'react-router-dom'
 
-export type ViewId = 'list' | 'board' | 'gantt' | 'timeline' | 'activity' | 'workload' | 'settings'
+export type ViewId =
+  | 'my-work'
+  | 'inbox'
+  | 'list'
+  | 'board'
+  | 'gantt'
+  | 'timeline'
+  | 'activity'
+  | 'workload'
+  | 'settings'
 export const VIEWS: ViewId[] = [
+  'my-work',
+  'inbox',
   'list',
   'board',
   'gantt',

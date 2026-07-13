@@ -15,6 +15,7 @@ vi.mock('../../lib/hooks/useProjects', () => ({ useProjects: () => projects }))
 vi.mock('../../lib/hooks/useCreateTask', () => ({
   useCreateTask: () => ({ mutate: createMutate }),
 }))
+vi.mock('../savedViews/SavedViewsControl', () => ({ SavedViewsControl: () => null }))
 import { Toolbar } from './Toolbar'
 import { expectNoA11yViolations } from '../../test-a11y'
 

@@ -3,8 +3,9 @@ import { useActiveWorkspace } from '../../lib/workspace'
 import { useViewState } from '../../app/useViewState'
 import { STATUSES } from '../../types/constants'
 import { splitGantt, buildScale } from './timeScale'
-import { parseDate } from '../../lib/weeks'
+import { addDays, isoLocal, parseDate, startOfWeek } from '../../lib/weeks'
 import type { Task } from '../../data/tasksRepo'
+import { LoadMoreButton } from '../../components/LoadMoreButton'
 
 const COLOR: Record<string, string> = Object.fromEntries(STATUSES.map((s) => [s.id, s.color]))
 const STATUS_LABEL: Record<string, string> = Object.fromEntries(
@@ -17,13 +18,34 @@ const GRIDLINE = 'color-mix(in oklab, var(--border) 75%, transparent)'
 
 export function GanttView({ now = new Date() }: { now?: Date } = {}) {
   const { activeId, loading: wsLoading } = useActiveWorkspace()
-  const { data: tasks, isLoading, error, refetch } = useFilteredTasks(activeId ?? '')
+  const windowStart = isoLocal(addDays(startOfWeek(now), -84))
+  const windowEnd = isoLocal(addDays(startOfWeek(now), 364))
+  const scheduledQ = useFilteredTasks(activeId ?? '', {
+    sort: 'due',
+    schedule: 'gantt',
+    windowStart,
+    windowEnd,
+    limit: 500,
+  })
+  const unscheduledQ = useFilteredTasks(activeId ?? '', {
+    sort: 'position',
+    schedule: 'unscheduled',
+    limit: 100,
+  })
   const { setTaskRef } = useViewState()
 
-  if (wsLoading || isLoading) return <GanttSkeleton />
-  if (error) return <GanttError onRetry={() => refetch()} />
+  if (wsLoading || scheduledQ.isLoading || unscheduledQ.isLoading) return <GanttSkeleton />
+  if (scheduledQ.error || unscheduledQ.error)
+    return (
+      <GanttError
+        onRetry={() => {
+          void scheduledQ.refetch()
+          void unscheduledQ.refetch()
+        }}
+      />
+    )
 
-  const all = tasks ?? []
+  const all = [...(scheduledQ.data ?? []), ...(unscheduledQ.data ?? [])]
   if (all.length === 0) return <GanttEmpty />
 
   const { scheduled, unscheduled } = splitGantt(all)
@@ -83,6 +105,20 @@ export function GanttView({ now = new Date() }: { now?: Date } = {}) {
             ))}
           </ul>
         </div>
+      )}
+      {scheduledQ.hasNextPage && (
+        <LoadMoreButton
+          label="Load more scheduled tasks"
+          pending={scheduledQ.isFetchingNextPage}
+          onClick={() => void scheduledQ.fetchNextPage()}
+        />
+      )}
+      {unscheduledQ.hasNextPage && (
+        <LoadMoreButton
+          label="Load more unscheduled tasks"
+          pending={unscheduledQ.isFetchingNextPage}
+          onClick={() => void unscheduledQ.fetchNextPage()}
+        />
       )}
     </div>
   )

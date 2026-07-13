@@ -9,6 +9,8 @@ export type RealtimeTable =
   | 'workspace_members'
   | 'projects'
   | 'workspace_invitations'
+  | 'notifications'
+  | 'notification_reads'
 
 export interface WorkspaceRealtimeEvent {
   table: RealtimeTable
@@ -28,6 +30,7 @@ const WORKSPACE_TABLES: RealtimeTable[] = [
   'workspace_invitations',
 ]
 const CHILD_TABLES: RealtimeTable[] = ['task_tags', 'subtasks', 'comments']
+const PERSONAL_TABLES: RealtimeTable[] = ['notifications', 'notification_reads']
 
 export function subscribeToWorkspace(
   workspaceId: string,
@@ -53,6 +56,19 @@ export function subscribeToWorkspace(
   // column. The provider accepts them only when their task is in the active
   // workspace cache, then invalidates that one parent query.
   for (const table of CHILD_TABLES) {
+    channel.on('postgres_changes', { event: '*', schema: 'public', table }, (payload) =>
+      onEvent({
+        table,
+        eventType: payload.eventType,
+        new: payload.new,
+        old: payload.old,
+        commitTimestamp: payload.commit_timestamp,
+      }),
+    )
+  }
+  // Personal notification tables are unfiltered here because their RLS
+  // policies expose only the signed-in recipient's rows across workspaces.
+  for (const table of PERSONAL_TABLES) {
     channel.on('postgres_changes', { event: '*', schema: 'public', table }, (payload) =>
       onEvent({
         table,

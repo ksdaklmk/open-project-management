@@ -237,7 +237,9 @@ input[type='checkbox'] {
   .opm-sidebar {
     position: sticky;
     top: 0;
-    z-index: var(--layer-sticky);
+    /* Navigation must stay above in-page sticky controls while remaining
+       beneath modal backdrops and drawers. */
+    z-index: calc(var(--layer-sticky) + 1);
     display: flex;
     height: 100dvh;
     min-height: 32rem;
@@ -297,6 +299,23 @@ input[type='checkbox'] {
     color: var(--accent-ink);
     border-color: var(--accent-border);
     background: var(--accent-soft);
+  }
+
+  .opm-nav-badge {
+    position: absolute;
+    top: -0.2rem;
+    right: -0.35rem;
+    min-width: 1.1rem;
+    height: 1.1rem;
+    padding-inline: 0.22rem;
+    border: 2px solid var(--canvas-deep);
+    border-radius: 999px;
+    color: var(--surface);
+    background: var(--danger);
+    font-size: 0.58rem;
+    font-weight: 700;
+    line-height: 0.9rem;
+    text-align: center;
   }
 
   .opm-nav-button:focus-visible,
@@ -590,7 +609,9 @@ input[type='checkbox'] {
   }
 
   .opm-field.is-chip {
-    --chip-text: color-mix(in oklab, var(--chip) 68%, var(--text));
+    /* Taxonomy colour stays in the dot/tint; control text keeps body-text
+       contrast across every status and priority hue. */
+    --chip-text: var(--text);
     color: var(--chip-text);
   }
 
@@ -1153,7 +1174,7 @@ input[type='checkbox'] {
   .opm-sidebar {
     position: fixed;
     inset: auto 0 0;
-    z-index: var(--layer-sticky);
+    z-index: calc(var(--layer-sticky) + 1);
     display: flex;
     width: 100%;
     height: calc(3.75rem + env(safe-area-inset-bottom));
@@ -1329,4 +1350,14 @@ input[type='checkbox'] {
   .opm-skip-link {
     transition: none;
   }
+}
+
+/* Browser-native rendering virtualization complements cursor paging. The DOM
+   keeps semantic relationships while off-screen feed/cards skip layout and
+   paint until they approach the viewport. */
+.opm-virtual-item,
+.opm-activity-feed > li,
+.opm-timeline li {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 4rem;
 }

@@ -16,6 +16,15 @@ vi.mock('../../lib/hooks/useComments', () => ({
   useComments: () => ({ ...comments, refetch }),
   useAddComment: () => ({ mutate: post, ...addState }),
 }))
+vi.mock('../../lib/hooks/useMembers', () => ({
+  useMembers: () => ({
+    data: [
+      { user_id: 'u1', name: 'Dana Lee' },
+      { user_id: 'u2', name: 'Morgan Chen' },
+    ],
+  }),
+}))
+vi.mock('../../lib/hooks/useSession', () => ({ useActorId: () => 'u1' }))
 import { CommentThread } from './CommentThread'
 
 const draftBox = () => screen.getByLabelText('Add a comment') as HTMLTextAreaElement
@@ -37,7 +46,7 @@ describe('CommentThread', () => {
     fireEvent.change(draftBox(), { target: { value: 'Nice work' } })
     fireEvent.click(screen.getByRole('button', { name: /post/i }))
     expect(post).toHaveBeenCalledWith(
-      'Nice work',
+      { body: 'Nice work', mentionedUserIds: [] },
       expect.objectContaining({ onSuccess: expect.any(Function) }),
     )
   })
@@ -50,7 +59,7 @@ describe('CommentThread', () => {
   })
 
   it('clears the draft once the post succeeds', () => {
-    post.mockImplementation((_body: string, opts?: { onSuccess?: () => void }) =>
+    post.mockImplementation((_body: unknown, opts?: { onSuccess?: () => void }) =>
       opts?.onSuccess?.(),
     )
     render(<CommentThread taskId="t1" workspaceId="w1" />)
@@ -80,5 +89,18 @@ describe('CommentThread', () => {
     render(<CommentThread taskId="t1" workspaceId="w1" />)
     expect(screen.getByRole('button', { name: 'Posting…' })).toBeDisabled()
     expect(draftBox()).toBeDisabled()
+  })
+
+  it('selects a workspace member with the keyboard and posts their normalized id', () => {
+    render(<CommentThread taskId="t1" workspaceId="w1" />)
+    fireEvent.change(draftBox(), { target: { value: 'Thanks @Mor' } })
+    expect(screen.getByRole('option', { name: 'Morgan Chen' })).toBeInTheDocument()
+    fireEvent.keyDown(draftBox(), { key: 'Enter' })
+    expect(draftBox().value).toBe('Thanks @Morgan Chen ')
+    fireEvent.click(screen.getByRole('button', { name: /post/i }))
+    expect(post).toHaveBeenCalledWith(
+      { body: 'Thanks @Morgan Chen', mentionedUserIds: ['u2'] },
+      expect.objectContaining({ onSuccess: expect.any(Function) }),
+    )
   })
 })

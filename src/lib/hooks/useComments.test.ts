@@ -3,13 +3,12 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 
-const { listComments, addComment } = vi.hoisted(() => ({
-  listComments: vi.fn(),
+const { listCommentsPage, addComment } = vi.hoisted(() => ({
+  listCommentsPage: vi.fn(),
   addComment: vi.fn(),
 }))
-vi.mock('../../data/commentsRepo', () => ({ listComments, addComment }))
+vi.mock('../../data/commentsRepo', () => ({ listCommentsPage, addComment }))
 vi.mock('sonner', () => ({ toast: { error: vi.fn() } }))
-vi.mock('./useSession', () => ({ useActorId: () => 'me' }))
 
 import { useAddComment } from './useComments'
 
@@ -23,15 +22,20 @@ beforeEach(() => vi.clearAllMocks())
 describe('useAddComment', () => {
   it('optimistically appends then calls the repo with the session uid', async () => {
     const qc = new QueryClient()
-    qc.setQueryData(['comments', 't1'], [{ id: 'c1', body: 'old', created_at: 'a', author: null }])
+    qc.setQueryData(['comments', 't1'], {
+      pages: [
+        { items: [{ id: 'c1', body: 'old', created_at: 'a', author: null }], nextCursor: null },
+      ],
+      pageParams: [null],
+    })
     addComment.mockResolvedValueOnce(undefined)
     const { result } = renderHook(() => useAddComment('t1', 'w1'), { wrapper: wrap(qc) })
     result.current.mutate('hello')
     await waitFor(() => {
-      const rows = qc.getQueryData(['comments', 't1']) as any[]
-      expect(rows[rows.length - 1].body).toBe('hello')
+      const cache = qc.getQueryData(['comments', 't1']) as any
+      expect(cache.pages[0].items[0].body).toBe('hello')
     })
-    expect(addComment).toHaveBeenCalledWith('t1', 'hello', 'me')
+    expect(addComment).toHaveBeenCalledWith('t1', 'hello', [])
   })
 
   it('invalidates server-authored activity after the comment saves', async () => {

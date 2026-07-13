@@ -1,7 +1,8 @@
 import { useActiveWorkspace } from '../../lib/workspace'
-import { useTasks } from '../../lib/hooks/useTasks'
+import { useWorkload } from '../../lib/hooks/useTasks'
 import { useMembers } from '../../lib/hooks/useMembers'
-import { buildWorkload, type Level } from './workload'
+import { buildWorkloadFromPoints, type Level } from './workload'
+import { isoLocal, startOfWeek } from '../../lib/weeks'
 
 // Saturated load palette — used ONLY as the color-mix base for cell tints and as
 // the saturated legend dots. Never a surface or text color. (none → neutral.)
@@ -34,25 +35,25 @@ const GRID_COLS = '10rem repeat(6, minmax(0, 1fr))'
 
 export function WorkloadView({ now = new Date() }: { now?: Date } = {}) {
   const { activeId, loading: wsLoading } = useActiveWorkspace()
-  const tasksQ = useTasks(activeId ?? '')
+  const workloadQ = useWorkload(activeId ?? '', isoLocal(startOfWeek(now)))
   const membersQ = useMembers(activeId ?? '')
 
-  if (wsLoading || tasksQ.isLoading || membersQ.isLoading) return <WorkloadSkeleton />
-  if (tasksQ.error || membersQ.error)
+  if (wsLoading || workloadQ.isLoading || membersQ.isLoading) return <WorkloadSkeleton />
+  if (workloadQ.error || membersQ.error)
     return (
       <WorkloadError
         onRetry={() => {
-          tasksQ.refetch()
+          workloadQ.refetch()
           membersQ.refetch()
         }}
       />
     )
 
-  const tasks = tasksQ.data ?? []
+  const points = workloadQ.data ?? []
   const members = membersQ.data ?? []
-  if (members.length === 0 || tasks.length === 0) return <WorkloadEmpty />
+  if (members.length === 0 || points.every((point) => point.points === 0)) return <WorkloadEmpty />
 
-  const wl = buildWorkload(tasks, members, now)
+  const wl = buildWorkloadFromPoints(points, members, now)
   const notShown = wl.unscheduledPoints + wl.outOfRangePoints
 
   return (

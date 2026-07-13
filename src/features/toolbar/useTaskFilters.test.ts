@@ -67,4 +67,58 @@ describe('useTaskFilters', () => {
     const { result } = renderHook(() => useTaskFilters(), { wrapper: wrap('/?sort=bogus') })
     expect(result.current.sort).toBe('priority')
   })
+
+  it('applies a complete saved configuration while preserving unrelated URL state', () => {
+    const { result } = renderHook(() => useTaskFilters(), {
+      wrapper: wrap('/?view=list&task=NIM-5&status=done'),
+    })
+    act(() =>
+      result.current.applySavedView(
+        {
+          filters: {
+            status: ['todo'],
+            priority: ['high'],
+            assignee: [''],
+            type: [],
+            tag: ['API'],
+            q: 'launch',
+          },
+          sort: 'due',
+          group: 'status',
+        },
+        'v1',
+      ),
+    )
+    expect(result.current.filters).toEqual({
+      status: ['todo'],
+      priority: ['high'],
+      assignee: [''],
+      type: [],
+      tag: ['API'],
+      q: 'launch',
+    })
+    expect(result.current.sort).toBe('due')
+    expect(result.current.savedViewId).toBe('v1')
+    expect(result.current.hasExplicitConfiguration).toBe(true)
+  })
+
+  it('detaches the saved-view identity when filters or sorting change', () => {
+    const { result } = renderHook(() => useTaskFilters(), {
+      wrapper: wrap('/?savedView=v1&status=todo&sort=due'),
+    })
+    act(() => result.current.setQ('changed'))
+    expect(result.current.savedViewId).toBeNull()
+    act(() =>
+      result.current.applySavedView(
+        {
+          filters: { status: [], priority: [], assignee: [], type: [], tag: [], q: '' },
+          sort: 'priority',
+          group: 'status',
+        },
+        'v1',
+      ),
+    )
+    act(() => result.current.setSort('title'))
+    expect(result.current.savedViewId).toBeNull()
+  })
 })

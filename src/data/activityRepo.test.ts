@@ -1,18 +1,23 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { limit, order, eq, select, from } = vi.hoisted(() => {
-  const limit = vi.fn()
-  const order = vi.fn(() => ({ limit }))
-  const eq = vi.fn(() => ({ order }))
+const { response, select, eq, or, order1, order2, limit, from } = vi.hoisted(() => {
+  const response = {
+    current: { data: [] as Record<string, unknown>[], error: null as null | { message: string } },
+  }
+  const abortSignal = vi.fn(() => Promise.resolve(response.current))
+  const limit = vi.fn(() => ({ abortSignal }))
+  const order2 = vi.fn(() => ({ limit }))
+  const order1 = vi.fn(() => ({ order: order2 }))
+  const or = vi.fn(() => ({ order: order1 }))
+  const eq = vi.fn(() => ({ order: order1, or }))
   const select = vi.fn(() => ({ eq }))
   const from = vi.fn(() => ({ select }))
-  return { limit, order, eq, select, from }
+  return { response, select, eq, or, order1, order2, limit, abortSignal, from }
 })
+
 vi.mock('../lib/supabase', () => ({ supabase: { from } }))
 
-import { listActivity } from './activityRepo'
-
-beforeEach(() => vi.clearAllMocks())
+import { listActivityPage } from './activityRepo'
 
 const ROW = {
   id: 'a1',
@@ -24,58 +29,37 @@ const ROW = {
   task: { ref: 'NIM-101', title: 'Fix login' },
 }
 
-describe('activityRepo.listActivity', () => {
-  it('reads workspace activity newest-first, capped at 100, with actor + task joined', async () => {
-    limit.mockResolvedValueOnce({ data: [ROW], error: null })
-    const items = await listActivity('w1')
+beforeEach(() => {
+  vi.clearAllMocks()
+  response.current = { data: [], error: null }
+})
+
+describe('activityRepo.listActivityPage', () => {
+  it('reads a bounded newest-first page with stable id ordering', async () => {
+    response.current = { data: [ROW], error: null }
+    const page = await listActivityPage('w1')
     expect(from).toHaveBeenCalledWith('activity')
     expect(select).toHaveBeenCalledWith(expect.stringContaining('actor:profiles!actor_id'))
-    expect(select).toHaveBeenCalledWith(expect.stringContaining('task:tasks!task_id'))
     expect(eq).toHaveBeenCalledWith('workspace_id', 'w1')
-    expect(order).toHaveBeenCalledWith('created_at', { ascending: false })
-    expect(limit).toHaveBeenCalledWith(100)
-    expect(items[0]).toEqual(ROW)
+    expect(order1).toHaveBeenCalledWith('created_at', { ascending: false })
+    expect(order2).toHaveBeenCalledWith('id', { ascending: false })
+    expect(limit).toHaveBeenCalledWith(51)
+    expect(page.items[0]).toEqual(ROW)
+    expect(page.nextCursor).toBeNull()
   })
 
-  it('maps null actor/task without throwing', async () => {
-    limit.mockResolvedValueOnce({
-      data: [
-        {
-          id: 'a2',
-          verb: 'moved',
-          from_status: null,
-          to_status: null,
-          created_at: 'x',
-          actor: null,
-          task: null,
-        },
-      ],
+  it('applies the compound cursor and uses immutable task snapshots', async () => {
+    response.current = {
+      data: [{ ...ROW, task: null, task_ref_snapshot: 'NIM-101', task_title_snapshot: 'Gone' }],
       error: null,
-    })
-    const [item] = await listActivity('w1')
-    expect(item.actor).toBeNull()
-    expect(item.task).toBeNull()
-  })
-
-  it('uses the immutable task snapshot after task deletion', async () => {
-    limit.mockResolvedValueOnce({
-      data: [
-        {
-          ...ROW,
-          verb: 'deleted',
-          task: null,
-          task_ref_snapshot: 'NIM-101',
-          task_title_snapshot: 'Deleted task',
-        },
-      ],
-      error: null,
-    })
-    const [item] = await listActivity('w1')
-    expect(item.task).toEqual({ ref: 'NIM-101', title: 'Deleted task' })
+    }
+    const page = await listActivityPage('w1', { createdAt: '2026-07-01T00:00:00Z', id: 'a9' })
+    expect(or).toHaveBeenCalledWith(expect.stringContaining('id.lt.a9'))
+    expect(page.items[0].task).toEqual({ ref: 'NIM-101', title: 'Gone' })
   })
 
   it('throws on a Supabase error', async () => {
-    limit.mockResolvedValueOnce({ data: null, error: { message: 'boom' } })
-    await expect(listActivity('w1')).rejects.toThrow('boom')
+    response.current = { data: [], error: { message: 'boom' } }
+    await expect(listActivityPage('w1')).rejects.toThrow('boom')
   })
 })

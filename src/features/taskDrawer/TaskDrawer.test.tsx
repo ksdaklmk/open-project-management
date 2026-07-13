@@ -7,8 +7,8 @@ vi.mock('../../app/useViewState', () => ({ useViewState: () => ({ ...state, setT
 vi.mock('../../lib/workspace', () => ({
   useActiveWorkspace: () => ({ activeId: 'w1', loading: false }),
 }))
-const { useTasks } = vi.hoisted(() => ({ useTasks: vi.fn() }))
-vi.mock('../../lib/hooks/useTasks', () => ({ useTasks }))
+const { useTask } = vi.hoisted(() => ({ useTask: vi.fn() }))
+vi.mock('../../lib/hooks/useTasks', () => ({ useTask }))
 const TASKS = [
   {
     id: 't1',
@@ -51,6 +51,14 @@ vi.mock('../../lib/hooks/useComments', () => ({
   useComments: () => ({ data: [], refetch: vi.fn() }),
   useAddComment: () => ({ mutate: vi.fn(), isPending: false }),
 }))
+const watchMutate = vi.hoisted(() => vi.fn())
+vi.mock('../../lib/hooks/useNotifications', () => ({
+  useTaskWatch: () => ({
+    data: false,
+    isLoading: false,
+    toggle: { mutate: watchMutate, isPending: false },
+  }),
+}))
 
 import { TaskDrawer } from './TaskDrawer'
 import { expectNoA11yViolations } from '../../test-a11y'
@@ -62,7 +70,13 @@ beforeEach(() => {
   moveMutate.mockClear()
   delMutate.mockClear()
   deleteState.isPending = false
-  useTasks.mockReturnValue({ data: TASKS, isLoading: false, error: null, refetch: vi.fn() })
+  watchMutate.mockClear()
+  useTask.mockImplementation((_workspaceId, ref) => ({
+    data: TASKS.find((task) => task.ref === ref) ?? null,
+    isLoading: false,
+    error: null,
+    refetch: vi.fn(),
+  }))
 })
 
 describe('TaskDrawer', () => {
@@ -76,6 +90,12 @@ describe('TaskDrawer', () => {
     const dialog = screen.getByRole('dialog')
     expect(dialog).toHaveTextContent('NIM-101')
     expect(dialog).toHaveTextContent('Build login')
+  })
+
+  it('watches the open task from the drawer header', () => {
+    render(<TaskDrawer />)
+    fireEvent.click(screen.getByRole('button', { name: 'Watch' }))
+    expect(watchMutate).toHaveBeenCalledWith(true)
   })
 
   it('closes on Escape', () => {
@@ -157,14 +177,14 @@ describe('TaskDrawer', () => {
   })
 
   it('shows a loading panel (not "not found") while tasks are loading', () => {
-    useTasks.mockReturnValue({ data: undefined, isLoading: true, error: null })
+    useTask.mockReturnValue({ data: undefined, isLoading: true, error: null })
     render(<TaskDrawer />)
     expect(screen.getByRole('status')).toHaveTextContent(/loading/i)
     expect(screen.queryByText(/not found/i)).not.toBeInTheDocument()
   })
 
   it('shows an error panel (not "not found") when tasks fail to load', () => {
-    useTasks.mockReturnValue({ data: undefined, isLoading: false, error: new Error('boom') })
+    useTask.mockReturnValue({ data: undefined, isLoading: false, error: new Error('boom') })
     render(<TaskDrawer />)
     expect(screen.getByText(/couldn't load/i)).toBeInTheDocument()
     expect(screen.queryByText(/not found/i)).not.toBeInTheDocument()
@@ -233,12 +253,12 @@ describe('TaskDrawer', () => {
 
   it('keys delete confirmation by task and disables confirmation controls while pending', () => {
     const second = { ...TASKS[0], id: 't2', ref: 'NIM-102', title: 'Second task' }
-    useTasks.mockReturnValue({
-      data: [...TASKS, second],
+    useTask.mockImplementation((_workspaceId, ref) => ({
+      data: ref === second.ref ? second : TASKS[0],
       isLoading: false,
       error: null,
       refetch: vi.fn(),
-    })
+    }))
     const view = render(<TaskDrawer />)
     fireEvent.click(screen.getByRole('button', { name: 'Delete task' }))
     state.taskRef = 'NIM-102'

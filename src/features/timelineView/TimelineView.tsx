@@ -3,8 +3,9 @@ import { useActiveWorkspace } from '../../lib/workspace'
 import { useViewState } from '../../app/useViewState'
 import { STATUSES } from '../../types/constants'
 import { bucketTasks } from './buckets'
-import { parseDate } from '../../lib/weeks'
+import { addDays, isoLocal, parseDate } from '../../lib/weeks'
 import type { Task } from '../../data/tasksRepo'
+import { LoadMoreButton } from '../../components/LoadMoreButton'
 
 const COLOR: Record<string, string> = Object.fromEntries(STATUSES.map((s) => [s.id, s.color]))
 const STATUS_LABEL: Record<string, string> = Object.fromEntries(
@@ -20,13 +21,32 @@ function range(t: Task): string {
 
 export function TimelineView({ now = new Date() }: { now?: Date } = {}) {
   const { activeId, loading: wsLoading } = useActiveWorkspace()
-  const { data: tasks, isLoading, error, refetch } = useFilteredTasks(activeId ?? '')
+  const datedQ = useFilteredTasks(activeId ?? '', {
+    sort: 'due',
+    schedule: 'dated',
+    windowStart: isoLocal(addDays(now, -365)),
+    windowEnd: isoLocal(addDays(now, 365)),
+    limit: 500,
+  })
+  const unscheduledQ = useFilteredTasks(activeId ?? '', {
+    sort: 'position',
+    schedule: 'unscheduled',
+    limit: 100,
+  })
   const { setTaskRef } = useViewState()
 
-  if (wsLoading || isLoading) return <TimelineSkeleton />
-  if (error) return <TimelineError onRetry={() => refetch()} />
+  if (wsLoading || datedQ.isLoading || unscheduledQ.isLoading) return <TimelineSkeleton />
+  if (datedQ.error || unscheduledQ.error)
+    return (
+      <TimelineError
+        onRetry={() => {
+          void datedQ.refetch()
+          void unscheduledQ.refetch()
+        }}
+      />
+    )
 
-  const all = tasks ?? []
+  const all = [...(datedQ.data ?? []), ...(unscheduledQ.data ?? [])]
   if (all.length === 0) return <TimelineEmpty />
 
   const buckets = bucketTasks(all, now).filter((b) => b.tasks.length > 0)
@@ -69,6 +89,20 @@ export function TimelineView({ now = new Date() }: { now?: Date } = {}) {
           </ul>
         </section>
       ))}
+      {datedQ.hasNextPage && (
+        <LoadMoreButton
+          label="Load more scheduled tasks"
+          pending={datedQ.isFetchingNextPage}
+          onClick={() => void datedQ.fetchNextPage()}
+        />
+      )}
+      {unscheduledQ.hasNextPage && (
+        <LoadMoreButton
+          label="Load more unscheduled tasks"
+          pending={unscheduledQ.isFetchingNextPage}
+          onClick={() => void unscheduledQ.fetchNextPage()}
+        />
+      )}
     </div>
   )
 }

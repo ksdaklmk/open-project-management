@@ -32,6 +32,8 @@ export function useInvitations(workspaceId: string) {
   })
   const fail = (error: Error) => toast.error(error.message)
   const refresh = () => queryClient.invalidateQueries({ queryKey })
+  const refreshActivation = () =>
+    queryClient.invalidateQueries({ queryKey: ['activation', workspaceId] })
   const send = useMutation({
     mutationFn: ({ email, role }: { email: string; role: InvitationRole }) =>
       sendInvitation(workspaceId, email, role),
@@ -39,6 +41,7 @@ export function useInvitations(workspaceId: string) {
     onSuccess: (result) => {
       toast.success(result.message)
       refresh()
+      refreshActivation()
     },
   })
   const revoke = useMutation({

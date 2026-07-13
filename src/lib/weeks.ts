@@ -22,3 +22,10 @@ export function startOfWeek(d: Date): Date {
 export function daysBetween(a: Date, b: Date): number {
   return Math.round((b.getTime() - a.getTime()) / 86_400_000)
 }
+
+export function isoLocal(d: Date): string {
+  const y = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${month}-${day}`
+}

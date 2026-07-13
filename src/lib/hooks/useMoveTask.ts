@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { moveTask, TaskMoveConflict, type Task } from '../../data/tasksRepo'
+import { cachedTasks, patchTaskCaches, restoreTaskCaches, snapshotTaskCaches } from '../taskCache'
 
 interface MoveArgs {
   taskId: string
@@ -43,7 +44,7 @@ export function useMoveTask(workspaceId: string) {
     mutationFn: async (args: MoveArgs) => {
       const initialNeighbours =
         args.beforeTaskId === undefined && args.afterTaskId === undefined
-          ? refreshedMoveNeighbours(qc.getQueryData<Task[]>(key) ?? [], args)
+          ? refreshedMoveNeighbours(cachedTasks(qc, workspaceId), args)
           : {
               beforeTaskId: args.beforeTaskId ?? null,
               afterTaskId: args.afterTaskId ?? null,
@@ -58,26 +59,29 @@ export function useMoveTask(workspaceId: string) {
       } catch (error) {
         if (!(error instanceof TaskMoveConflict)) throw error
         await qc.invalidateQueries({ queryKey: key })
-        const refreshed = qc.getQueryData<Task[]>(key) ?? []
+        const refreshed = cachedTasks(qc, workspaceId)
         const neighbours = refreshedMoveNeighbours(refreshed, args)
         await moveTask(args.taskId, args.toStatus, neighbours.beforeTaskId, neighbours.afterTaskId)
       }
     },
     onMutate: async ({ taskId, toStatus, position }) => {
       await qc.cancelQueries({ queryKey: key })
-      const prev = qc.getQueryData<Task[]>(key)
-      qc.setQueryData<Task[]>(key, (old) =>
-        (old ?? []).map((t) => (t.id === taskId ? { ...t, status: toStatus, position } : t)),
+      const prev = snapshotTaskCaches(qc, workspaceId)
+      patchTaskCaches(qc, workspaceId, (task) =>
+        task.id === taskId ? { ...task, status: toStatus, position } : task,
       )
       return { prev }
     },
     onError: (err, _vars, ctx) => {
-      if (ctx?.prev) qc.setQueryData(key, ctx.prev)
+      if (ctx?.prev) restoreTaskCaches(qc, ctx.prev)
       toast.error(`Move failed: ${(err as Error).message}`)
     },
     onSettled: () => {
       qc.invalidateQueries({ queryKey: key })
+      qc.invalidateQueries({ queryKey: ['task', workspaceId] })
+      qc.invalidateQueries({ queryKey: ['workload', workspaceId] })
       qc.invalidateQueries({ queryKey: ['activity', workspaceId] })
+      qc.invalidateQueries({ queryKey: ['my-work'] })
     },
   })
 }

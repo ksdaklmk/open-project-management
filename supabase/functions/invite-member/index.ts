@@ -26,7 +26,21 @@ function isExistingAccount(error: { status?: number; message?: string }) {
 
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
-  if (request.method !== 'POST') return json(405, { error: 'Method not allowed.' })
+  const startedAt = performance.now()
+  const requestId = crypto.randomUUID()
+  const respond = (status: number, body: Record<string, unknown>) => {
+    console.log(
+      JSON.stringify({
+        event: 'invite_member_request',
+        request_id: requestId,
+        status,
+        outcome: status < 400 ? 'success' : 'failure',
+        duration_ms: Math.round(performance.now() - startedAt),
+      }),
+    )
+    return json(status, body)
+  }
+  if (request.method !== 'POST') return respond(405, { error: 'Method not allowed.' })
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   const anonKey = Deno.env.get('SUPABASE_ANON_KEY')
@@ -34,23 +48,23 @@ Deno.serve(async (request) => {
   const siteUrl = Deno.env.get('SITE_URL')
   const authorization = request.headers.get('Authorization')
   if (!supabaseUrl || !anonKey || !serviceRoleKey || !siteUrl) {
-    return json(500, { error: 'Invitation service is not configured.' })
+    return respond(500, { error: 'Invitation service is not configured.' })
   }
   if (!authorization?.startsWith('Bearer ')) {
-    return json(401, { error: 'Authentication required.' })
+    return respond(401, { error: 'Authentication required.' })
   }
 
   let body: InviteRequest
   try {
     body = (await request.json()) as InviteRequest
   } catch {
-    return json(400, { error: 'Invalid request.' })
+    return respond(400, { error: 'Invalid request.' })
   }
   const workspaceId = body.workspaceId
   const email = body.email?.trim().toLowerCase()
   const role = body.role ?? 'member'
   if (!workspaceId || !email || !['admin', 'member'].includes(role)) {
-    return json(400, { error: 'Workspace, email, and role are required.' })
+    return respond(400, { error: 'Workspace, email, and role are required.' })
   }
 
   const token = authorization.slice('Bearer '.length)
@@ -59,7 +73,7 @@ Deno.serve(async (request) => {
     auth: { persistSession: false, autoRefreshToken: false },
   })
   const { data: userData, error: userError } = await callerClient.auth.getUser(token)
-  if (userError || !userData.user) return json(401, { error: 'Authentication required.' })
+  if (userError || !userData.user) return respond(401, { error: 'Authentication required.' })
 
   // Verify membership and role with the caller's JWT before the service-role
   // client is constructed or the Auth Admin API is called.
@@ -70,10 +84,10 @@ Deno.serve(async (request) => {
     .eq('user_id', userData.user.id)
     .maybeSingle()
   if (membershipError || !membership || !['owner', 'admin'].includes(membership.role)) {
-    return json(403, { error: 'You do not have permission to invite workspace members.' })
+    return respond(403, { error: 'You do not have permission to invite workspace members.' })
   }
   if (role === 'admin' && membership.role !== 'owner') {
-    return json(403, { error: 'Only a workspace owner can invite an admin.' })
+    return respond(403, { error: 'Only a workspace owner can invite an admin.' })
   }
 
   const { data: invitation, error: invitationError } = await callerClient.rpc(
@@ -81,7 +95,7 @@ Deno.serve(async (request) => {
     { p_workspace_id: workspaceId, p_email: email, p_role: role },
   )
   if (invitationError || !invitation) {
-    return json(invitationError?.code === '22023' ? 400 : 403, {
+    return respond(invitationError?.code === '22023' ? 400 : 403, {
       error: invitationError?.message ?? 'Invitation could not be prepared.',
     })
   }
@@ -99,12 +113,12 @@ Deno.serve(async (request) => {
   // the address already has an account.
   if (deliveryError && !isExistingAccount(deliveryError)) {
     await callerClient.rpc('revoke_workspace_invitation', { p_invitation_id: invitation.id })
-    return json(502, {
+    return respond(502, {
       error: 'Invitation could not be delivered. Check the email provider and try again.',
     })
   }
 
-  return json(200, {
+  return respond(200, {
     invitationId: invitation.id,
     message: 'If this address can receive invitations, an email will arrive shortly.',
   })

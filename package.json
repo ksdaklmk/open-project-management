@@ -13,7 +13,11 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "env -u NO_COLOR playwright test",
-    "test:db": "./scripts/test-db.sh"
+    "test:db": "./scripts/test-db.sh",
+    "test:performance": "npm run build && node scripts/check-bundle-budget.mjs",
+    "test:performance:db": "./scripts/check-scale-query-budget.sh",
+    "test:restore": "./scripts/restore-rehearsal.sh",
+    "validate:release-env": "node scripts/validate-release-environments.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
@@ -24,6 +28,7 @@
     "sonner": "^1.5.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.12.1",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.61.1",
     "@testing-library/jest-dom": "^6.5.0",

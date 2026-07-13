@@ -38,15 +38,16 @@ auto-join it. Production must not run `supabase/seed.sql`.
 
 ## Quality commands
 
-| Command                 | Purpose                                              |
-| ----------------------- | ---------------------------------------------------- |
-| `npm run test`          | Run all Vitest tests once                            |
-| `npm run test:coverage` | Run Vitest and enforce the coverage baseline         |
-| `npm run build`         | Type-check with `tsc -b`, then build with Vite       |
-| `npm run lint`          | Run ESLint with zero warnings allowed                |
-| `npm run format:check`  | Check tracked source and documentation formatting    |
-| `npm run test:e2e`      | Run the Playwright browser smoke test                |
-| `npm run test:db`       | Run schema and RLS pgTAP suites against local Podman |
+| Command                    | Purpose                                              |
+| -------------------------- | ---------------------------------------------------- |
+| `npm run test`             | Run all Vitest tests once                            |
+| `npm run test:coverage`    | Run Vitest and enforce the coverage baseline         |
+| `npm run build`            | Type-check with `tsc -b`, then build with Vite       |
+| `npm run lint`             | Run ESLint with zero warnings allowed                |
+| `npm run format:check`     | Check tracked source and documentation formatting    |
+| `npm run test:e2e`         | Run the Playwright browser smoke test                |
+| `npm run test:db`          | Run schema and RLS pgTAP suites against local Podman |
+| `npm run test:performance` | Enforce the compressed entrypoint asset budget       |
 
 Install the browser once with `npx playwright install chromium`. Never substitute bare `tsc` for
 `npm run build`: the root TypeScript config uses project references and otherwise checks nothing.
@@ -85,7 +86,9 @@ procedures. Current privileged workspace administration is documented in [admin]
 
 ## Known limitations
 
-The repository is an internal beta. Owners and admins can manage normal workspace, project,
-membership, invitation, and ownership flows in the settings UI. Large task sets, activity feeds,
-and comment threads are not yet paginated, and the scale, observability, and production-operations
-release gates remain part of Phase 1C.
+The repository is an internal beta. Large task sets use server filters, stable cursor pages,
+bounded schedule windows, and a server Workload aggregate; Activity and Comments also retain
+cursor history. Production still requires environment-specific monitoring-provider configuration,
+hosted Supabase/Auth/SMTP protection, an independently reviewed permission matrix, staging scale
+evidence, and a timed hosted backup/PITR restore rehearsal. Track those operator-owned checks in
+[the release gate](docs/release-gate.md).

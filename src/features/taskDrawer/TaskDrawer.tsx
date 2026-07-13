@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { useViewState } from '../../app/useViewState'
 import { useActiveWorkspace } from '../../lib/workspace'
-import { useTasks } from '../../lib/hooks/useTasks'
+import { useTask } from '../../lib/hooks/useTasks'
 import { useDeleteTask } from '../../lib/hooks/useDeleteTask'
 import { DrawerFields } from './DrawerFields'
 import { TagEditor } from './TagEditor'
 import { SubtaskList } from './SubtaskList'
 import { CommentThread } from './CommentThread'
 import { AppIcon } from '../../components/AppIcon'
+import { useTaskWatch } from '../../lib/hooks/useNotifications'
 
 const FOCUSABLE =
   'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'
@@ -15,7 +16,7 @@ const FOCUSABLE =
 export function TaskDrawer() {
   const { taskRef, setTaskRef } = useViewState()
   const { activeId } = useActiveWorkspace()
-  const { data: tasks, isLoading, error, refetch } = useTasks(activeId ?? '')
+  const { data: task, isLoading, error, refetch } = useTask(activeId ?? '', taskRef ?? '')
   const dialogRef = useRef<HTMLDivElement>(null)
   const openerRef = useRef<HTMLElement | null>(null)
 
@@ -25,8 +26,6 @@ export function TaskDrawer() {
     ;(document.activeElement as HTMLElement | null)?.blur?.()
     setTaskRef(null)
   }
-  const task = taskRef ? tasks?.find((t) => t.ref === taskRef) : undefined
-
   // Focus the panel on open; restore focus to the opener on close.
   // ponytail: minimal focus management — querySelectorAll boundaries; reach for a
   // focus-trap lib only if the panel ever grows nested dialogs.
@@ -86,6 +85,7 @@ export function TaskDrawer() {
                 {task.title}
               </h2>
               <span className="flex-1" />
+              <TaskWatchButton taskId={task.id} />
               <button onClick={close} aria-label="Close" className="opm-icon-btn">
                 <AppIcon name="close" size={16} />
               </button>
@@ -138,6 +138,22 @@ export function TaskDrawer() {
         )}
       </div>
     </div>
+  )
+}
+
+function TaskWatchButton({ taskId }: { taskId: string }) {
+  const watch = useTaskWatch(taskId)
+  const watching = watch.data ?? false
+  return (
+    <button
+      type="button"
+      className="opm-btn"
+      aria-pressed={watching}
+      disabled={watch.isLoading || watch.toggle.isPending}
+      onClick={() => watch.toggle.mutate(!watching)}
+    >
+      {watch.toggle.isPending ? 'Saving…' : watching ? 'Watching' : 'Watch'}
+    </button>
   )
 }
 

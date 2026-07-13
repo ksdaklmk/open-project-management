@@ -1,12 +1,21 @@
 import { useActivity } from '../../lib/hooks/useActivity'
 import { useActiveWorkspace } from '../../lib/workspace'
 import { ActivityRow } from './ActivityRow'
+import { LoadMoreButton } from '../../components/LoadMoreButton'
 
 const SKEL_WIDTHS = ['68%', '55%', '72%', '60%']
 
 export function ActivityView() {
   const { activeId, loading: wsLoading } = useActiveWorkspace()
-  const { data: items, isLoading, error, refetch } = useActivity(activeId ?? '')
+  const {
+    data: items,
+    isLoading,
+    error,
+    refetch,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = useActivity(activeId ?? '')
 
   if (wsLoading || isLoading) return <ActivitySkeleton />
   if (error) return <ActivityError onRetry={() => refetch()} />
@@ -15,16 +24,25 @@ export function ActivityView() {
   if (feed.length === 0) return <ActivityEmpty />
 
   return (
-    <ol
-      aria-label="Activity feed"
-      className="opm-activity-feed overflow-hidden border-y border-[var(--border)] bg-[var(--surface)] divide-y divide-[var(--border)]"
-    >
-      {feed.map((item) => (
-        <li key={item.id} className="opm-row">
-          <ActivityRow item={item} />
-        </li>
-      ))}
-    </ol>
+    <>
+      <ol
+        aria-label="Activity feed"
+        className="opm-activity-feed overflow-hidden border-y border-[var(--border)] bg-[var(--surface)] divide-y divide-[var(--border)]"
+      >
+        {feed.map((item) => (
+          <li key={item.id} className="opm-row">
+            <ActivityRow item={item} />
+          </li>
+        ))}
+      </ol>
+      {hasNextPage && (
+        <LoadMoreButton
+          label="Load older activity"
+          pending={isFetchingNextPage}
+          onClick={() => void fetchNextPage()}
+        />
+      )}
+    </>
   )
 }
 

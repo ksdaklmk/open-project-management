@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { useViewState, VIEWS, type ViewId } from './useViewState'
 import { useActiveWorkspace } from '../lib/workspace'
 import { signOut } from '../lib/hooks/useSession'
@@ -9,10 +9,21 @@ import { WorkspaceSwitcher } from '../components/WorkspaceSwitcher'
 import { TaskDrawer } from '../features/taskDrawer/TaskDrawer'
 import { Toolbar } from '../features/toolbar/Toolbar'
 import { AppIcon, type AppIconName } from '../components/AppIcon'
+import { recordTelemetry } from '../lib/observability'
+import { FEATURES } from '../lib/features'
+import { useActivationTracking } from '../lib/hooks/useActivation'
+import { OnboardingChecklist } from '../features/onboarding/OnboardingChecklist'
+import { useUnreadNotifications } from '../lib/hooks/useNotifications'
 
 // Views are route-level code-split: the login/shell path no longer bundles all six.
 const ListView = lazy(() =>
   import('../features/listView/ListView').then((m) => ({ default: m.ListView })),
+)
+const MyWorkView = lazy(() =>
+  import('../features/myWorkView/MyWorkView').then((m) => ({ default: m.MyWorkView })),
+)
+const InboxView = lazy(() =>
+  import('../features/inboxView/InboxView').then((m) => ({ default: m.InboxView })),
 )
 const BoardView = lazy(() =>
   import('../features/boardView/BoardView').then((m) => ({ default: m.BoardView })),
@@ -41,6 +52,8 @@ const CreateWorkspaceForm = lazy(() =>
 const TASK_VIEWS: ViewId[] = ['list', 'board', 'gantt', 'timeline']
 
 const LABEL: Record<ViewId, string> = {
+  'my-work': 'My Work',
+  inbox: 'Inbox',
   list: 'List',
   board: 'Board',
   gantt: 'Gantt',
@@ -51,6 +64,8 @@ const LABEL: Record<ViewId, string> = {
 }
 
 const VIEW_ICON: Record<ViewId, AppIconName> = {
+  'my-work': 'mywork',
+  inbox: 'inbox',
   list: 'list',
   board: 'board',
   gantt: 'gantt',
@@ -69,6 +84,10 @@ export function Shell() {
   const canManageSettings = settingsPermissions(actorRole).canManage
   const [signOutPending, setSignOutPending] = useState(false)
   const [signOutError, setSignOutError] = useState('')
+  const unreadNotifications = useUnreadNotifications()
+
+  useEffect(() => recordTelemetry('view_opened', { view }), [view])
+  useActivationTracking(activeId ?? '', view)
 
   const handleSignOut = async () => {
     if (signOutPending) return
@@ -125,11 +144,16 @@ export function Shell() {
             >
               <AppIcon name={VIEW_ICON[v]} />
               <span className="sr-only">{LABEL[v]}</span>
+              {v === 'inbox' && (unreadNotifications.data ?? 0) > 0 && (
+                <span className="opm-nav-badge" aria-label={`${unreadNotifications.data} unread`}>
+                  {unreadNotifications.data! > 99 ? '99+' : unreadNotifications.data}
+                </span>
+              )}
             </button>
           ))}
         </div>
         <div className="opm-sidebar-actions">
-          {canManageSettings && (
+          {FEATURES.admin && canManageSettings && (
             <button
               type="button"
               onClick={() => setView('settings')}
@@ -156,12 +180,19 @@ export function Shell() {
         </div>
       </nav>
       <section className="opm-view-frame">
-        <header aria-label="View controls" className="opm-view-header">
+        <section aria-label="View controls" className="opm-view-header">
           <p className="opm-breadcrumb" aria-hidden="true">
             Projects <span>/</span>
           </p>
           <h1>{LABEL[view]}</h1>
-        </header>
+        </section>
+        {activeId && (
+          <OnboardingChecklist
+            workspaceId={activeId}
+            isOwner={actorRole === 'owner'}
+            setView={setView}
+          />
+        )}
         {TASK_VIEWS.includes(view) && <Toolbar showSort={view === 'list'} />}
         <main
           id="main-content"
@@ -173,6 +204,10 @@ export function Shell() {
           <Suspense fallback={<p className="text-[var(--muted)]">Loading…</p>}>
             {view === 'list' ? (
               <ListView />
+            ) : view === 'my-work' ? (
+              <MyWorkView />
+            ) : view === 'inbox' ? (
+              <InboxView />
             ) : view === 'board' ? (
               <BoardView />
             ) : view === 'gantt' ? (

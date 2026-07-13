@@ -9,10 +9,19 @@ import { sortTasks } from '../toolbar/sortTasks'
 import { useTaskFilters } from '../toolbar/useTaskFilters'
 import { TaskTable } from './TaskTable'
 import type { Task } from '../../data/tasksRepo'
+import { LoadMoreButton } from '../../components/LoadMoreButton'
 
 export function ListView() {
   const { activeId, loading: wsLoading } = useActiveWorkspace()
-  const { data: tasks, isLoading, error, refetch } = useFilteredTasks(activeId ?? '')
+  const {
+    data: tasks,
+    isLoading,
+    error,
+    refetch,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = useFilteredTasks(activeId ?? '')
   const { sort } = useTaskFilters()
   const { data: members } = useMembers(activeId ?? '')
   const { setTaskRef, taskRef } = useViewState()
@@ -47,6 +56,9 @@ export function ListView() {
           onMove={onMove}
         />
       ))}
+      {hasNextPage && (
+        <LoadMoreButton pending={isFetchingNextPage} onClick={() => void fetchNextPage()} />
+      )}
     </div>
   )
 }

@@ -14,6 +14,8 @@ describe('eventQueryKeys', () => {
     const client = new QueryClient()
     expect(eventQueryKeys(event('tasks', { workspace_id: 'w1' }), 'w1', client)).toEqual([
       ['tasks', 'w1'],
+      ['task', 'w1'],
+      ['workload', 'w1'],
     ])
     expect(eventQueryKeys(event('projects', { workspace_id: 'w1' }), 'w1', client)).toEqual([
       ['projects', 'w1'],
@@ -25,6 +27,12 @@ describe('eventQueryKeys', () => {
     expect(
       eventQueryKeys(event('activity', { workspace_id: 'other' }), 'w1', new QueryClient()),
     ).toEqual([])
+  })
+
+  it('maps personal notifications across workspace filters', () => {
+    expect(
+      eventQueryKeys(event('notifications', { workspace_id: 'other' }), 'w1', new QueryClient()),
+    ).toEqual([['notifications'], ['notification-unread']])
   })
 
   it('maps child payloads only when their task belongs to the active workspace', () => {

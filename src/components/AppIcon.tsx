@@ -4,8 +4,10 @@ export type AppIconName =
   | 'chevronDown'
   | 'close'
   | 'gantt'
+  | 'inbox'
   | 'list'
   | 'logout'
+  | 'mywork'
   | 'plus'
   | 'search'
   | 'settings'
@@ -36,6 +38,20 @@ export function AppIcon({
   }
 
   switch (name) {
+    case 'inbox':
+      return (
+        <svg {...common}>
+          <path d="M4 5h16v14H4z" />
+          <path d="m4 6 8 7 8-7" />
+        </svg>
+      )
+    case 'mywork':
+      return (
+        <svg {...common}>
+          <circle cx="8" cy="8" r="3" />
+          <path d="M3.5 19c.7-3.2 2.2-5 4.5-5s3.8 1.8 4.5 5M15 7h6M15 12h6M16 17h5" />
+        </svg>
+      )
     case 'list':
       return (
         <svg {...common}>

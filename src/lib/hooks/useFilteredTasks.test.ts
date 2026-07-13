@@ -3,8 +3,8 @@ import { renderHook } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import React from 'react'
 
-vi.mock('./useTasks', () => ({
-  useTasks: () => ({
+const { useTasks } = vi.hoisted(() => ({
+  useTasks: vi.fn(() => ({
     data: [
       {
         id: 'a',
@@ -31,8 +31,9 @@ vi.mock('./useTasks', () => ({
     ],
     isLoading: false,
     error: null,
-  }),
+  })),
 }))
+vi.mock('./useTasks', () => ({ useTasks }))
 import { useFilteredTasks } from './useFilteredTasks'
 
 const wrap =
@@ -48,9 +49,12 @@ const wrap =
     )
 
 describe('useFilteredTasks', () => {
-  it('narrows the task list by the URL filters', () => {
-    const { result } = renderHook(() => useFilteredTasks('w1'), { wrapper: wrap('/?status=done') })
-    expect(result.current.data?.map((t) => t.id)).toEqual(['b'])
+  it('passes URL filters to the server query', () => {
+    renderHook(() => useFilteredTasks('w1'), { wrapper: wrap('/?status=done&q=login') })
+    expect(useTasks).toHaveBeenCalledWith(
+      'w1',
+      expect.objectContaining({ status: ['done'], search: 'login' }),
+    )
   })
   it('passes everything through when no filters are set', () => {
     const { result } = renderHook(() => useFilteredTasks('w1'), { wrapper: wrap('/') })

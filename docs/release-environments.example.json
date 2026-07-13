@@ -1,0 +1,36 @@
+{
+  "staging": {
+    "projectRef": "replace-with-private-project-ref",
+    "region": "replace-with-region",
+    "owner": "replace-with-owner",
+    "siteUrl": "https://staging.example.com",
+    "smtpVerified": false,
+    "emailConfirmations": false,
+    "securePasswordChange": false,
+    "strongPasswordPolicy": false,
+    "abuseProtection": false,
+    "redirectsVerified": false,
+    "monitoringConfigured": false,
+    "backupsEnabled": false,
+    "backupMode": "replace-with-pitr-or-scheduled",
+    "alertOwner": "replace-with-alert-owner",
+    "keyRotationOwner": "replace-with-key-rotation-owner"
+  },
+  "production": {
+    "projectRef": "replace-with-private-project-ref",
+    "region": "replace-with-region",
+    "owner": "replace-with-owner",
+    "siteUrl": "https://app.example.com",
+    "smtpVerified": false,
+    "emailConfirmations": false,
+    "securePasswordChange": false,
+    "strongPasswordPolicy": false,
+    "abuseProtection": false,
+    "redirectsVerified": false,
+    "monitoringConfigured": false,
+    "backupsEnabled": false,
+    "backupMode": "replace-with-pitr-or-scheduled",
+    "alertOwner": "replace-with-alert-owner",
+    "keyRotationOwner": "replace-with-key-rotation-owner"
+  }
+}

@@ -88,7 +88,7 @@ describe('WorkspaceRealtimeProvider', () => {
       realtime.callbacks[0].event(event)
       vi.advanceTimersByTime(75)
     })
-    expect(invalidate).toHaveBeenCalledTimes(1)
+    expect(invalidate).toHaveBeenCalledTimes(3)
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['tasks', 'w1'] })
   })
 
