@@ -29,7 +29,7 @@ export function ListView() {
   if (groups.length === 0) return <EmptyState />
 
   return (
-    <div className="overflow-x-auto pb-4">
+    <div className="opm-list-scroll overflow-x-auto pb-4">
       {groups.map((g) => (
         <TaskTable
           key={g.status}
@@ -57,7 +57,7 @@ function ListSkeleton() {
             <div className="opm-skel h-3.5 w-24" />
           </div>
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="flex items-center gap-3 px-3 py-[9px]">
+            <div key={i} className="flex items-center gap-3 px-3 py-2">
               <div className="opm-skel h-4 w-4" />
               <div className="opm-skel h-3 w-14" />
               <div className="opm-skel h-3 flex-1" style={{ maxWidth: 220 + ((i * 53) % 160) }} />
@@ -74,7 +74,7 @@ function ListSkeleton() {
 
 function CenteredState({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-[320px] flex-col items-center justify-center px-6 py-12 text-center">
+    <div className="opm-state flex min-h-[320px] flex-col items-center justify-center px-6 py-12 text-center">
       {children}
     </div>
   )

@@ -18,6 +18,7 @@ export function BoardColumn({
   onCardDragStart,
   onDrop,
   onOpen,
+  selectedRef,
 }: {
   status: Status
   tasks: Task[]
@@ -25,6 +26,7 @@ export function BoardColumn({
   onCardDragStart: (taskId: string) => void
   onDrop: (status: Status, insertIndex: number) => void
   onOpen: (ref: string) => void
+  selectedRef?: string | null
 }) {
   const meta = STATUSES.find((s) => s.id === status)
   const [hoverIndex, setHoverIndex] = useState<number | null>(null)
@@ -32,7 +34,7 @@ export function BoardColumn({
 
   return (
     <section
-      className={`opm-board-col flex w-64 shrink-0 flex-col rounded-xl border border-[var(--border)] bg-[var(--bg)]${isDragOver ? ' is-drag-over' : ''}`}
+      className={`opm-board-col flex w-64 shrink-0 flex-col rounded-md border border-[var(--border)] bg-[var(--canvas)]${isDragOver ? ' is-drag-over' : ''}`}
       onDragOver={(e) => {
         e.preventDefault()
         // For empty columns there are no card wrappers to track position,
@@ -53,11 +55,11 @@ export function BoardColumn({
       }}
     >
       {/* Column header: status dot · label · count */}
-      <h3 className="flex items-center gap-2 px-3 py-2.5 text-[13px] font-semibold tracking-tight text-[var(--text)]">
+      <h2 className="opm-section-title flex items-center gap-2 px-3 py-2.5 text-[var(--text)]">
         <span className="opm-group-dot" style={cssVars(meta?.color)} aria-hidden="true" />
         <span>{meta?.label}</span>
         <span className="opm-count">{tasks.length}</span>
-      </h3>
+      </h2>
 
       {/* Divider */}
       <div className="mx-3 h-px bg-[var(--border)]" aria-hidden="true" />
@@ -70,7 +72,7 @@ export function BoardColumn({
             className={`flex min-h-[80px] items-center justify-center rounded-lg text-xs transition-colors duration-100 ${
               isDragOver
                 ? 'border border-dashed border-[var(--primary)] text-[var(--primary)]'
-                : 'border border-dashed border-[var(--border)] text-[var(--faint)]'
+                : 'border border-dashed border-[var(--border)] text-[var(--muted)]'
             }`}
           >
             {isDragOver ? 'Drop here' : 'No tasks'}
@@ -93,6 +95,7 @@ export function BoardColumn({
                   members={members}
                   onDragStart={onCardDragStart}
                   onOpen={onOpen}
+                  selected={t.ref === selectedRef}
                 />
                 {/* Indicator after this card */}
                 {hoverIndex === i + 1 && <DropIndicator />}

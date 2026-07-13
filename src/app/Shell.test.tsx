@@ -3,6 +3,7 @@ import { render, screen, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { Shell } from './Shell'
+import { expectNoA11yViolations } from '../test-a11y'
 
 const { ws, mockSignOut, members } = vi.hoisted(() => ({
   ws: { activeId: 'w1' as string | null, loading: false },
@@ -56,11 +57,28 @@ const renderShell = () =>
 describe('Shell', () => {
   beforeEach(() => {
     localStorage.clear()
-    document.documentElement.removeAttribute('data-theme')
     ws.activeId = 'w1'
     ws.loading = false
     mockSignOut.mockClear()
     members.data = [{ user_id: 'u1', role: 'owner' }]
+  })
+
+  it('has no automated accessibility violations', async () => {
+    const { container } = renderShell()
+    await act(async () => {})
+    await expectNoA11yViolations(container)
+  })
+
+  it('exposes labelled navigation, current view, main content, and a skip link', async () => {
+    renderShell()
+    expect(screen.getByRole('navigation', { name: 'Workspace views' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'List' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('main', { name: 'List view' })).toHaveAttribute('id', 'main-content')
+    expect(screen.getByRole('link', { name: 'Skip to main content' })).toHaveAttribute(
+      'href',
+      '#main-content',
+    )
+    await act(async () => {})
   })
 
   it('shows all six work views and settings to an owner', async () => {
@@ -92,16 +110,11 @@ describe('Shell', () => {
     expect(await screen.findByText('board view')).toBeInTheDocument()
   })
 
-  it('toggles the theme', async () => {
+  it('uses one light theme without a theme toggle', async () => {
     renderShell()
-    await userEvent.click(screen.getByRole('button', { name: /theme/i }))
-    expect(document.documentElement.getAttribute('data-theme')).toBe('slate')
-  })
-
-  it('applies the stored theme to the DOM on mount (render-synced, self-healing)', () => {
-    localStorage.setItem('theme', 'slate')
-    renderShell()
-    expect(document.documentElement.getAttribute('data-theme')).toBe('slate')
+    expect(screen.queryByRole('button', { name: /theme/i })).toBeNull()
+    expect(document.documentElement.getAttribute('data-theme')).toBeNull()
+    await act(async () => {})
   })
 
   it('mounts the Activity view on the Activity tab', async () => {

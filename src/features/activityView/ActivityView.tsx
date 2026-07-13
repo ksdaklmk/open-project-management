@@ -17,7 +17,7 @@ export function ActivityView() {
   return (
     <ol
       aria-label="Activity feed"
-      className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg)] divide-y divide-[var(--border)]"
+      className="opm-activity-feed overflow-hidden border-y border-[var(--border)] bg-[var(--surface)] divide-y divide-[var(--border)]"
     >
       {feed.map((item) => (
         <li key={item.id} className="opm-row">
@@ -33,7 +33,7 @@ function ActivitySkeleton() {
     <div
       role="status"
       aria-busy="true"
-      className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg)] divide-y divide-[var(--border)]"
+      className="opm-activity-feed overflow-hidden border-y border-[var(--border)] bg-[var(--surface)] divide-y divide-[var(--border)]"
     >
       <span className="sr-only">Loading activity…</span>
       {SKEL_WIDTHS.map((w, i) => (
@@ -54,7 +54,7 @@ function ActivityError() {
   return (
     <div
       role="alert"
-      className="mx-auto flex max-w-2xl min-h-[280px] flex-col items-center justify-center px-6 py-12 text-center"
+      className="opm-state mx-auto flex max-w-2xl min-h-[280px] flex-col items-center justify-center px-6 py-12 text-center"
     >
       <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)]">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -78,7 +78,7 @@ function ActivityError() {
 
 function ActivityEmpty() {
   return (
-    <div className="mx-auto flex max-w-2xl min-h-[280px] flex-col items-center justify-center px-6 py-12 text-center">
+    <div className="opm-state mx-auto flex max-w-2xl min-h-[280px] flex-col items-center justify-center px-6 py-12 text-center">
       <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)]">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.6" />

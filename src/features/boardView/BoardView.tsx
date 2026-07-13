@@ -15,7 +15,7 @@ export function BoardView() {
   const { data: tasks, isLoading, error } = useFilteredTasks(activeId ?? '')
   const { data: members } = useMembers(activeId ?? '')
   const move = useMoveTask(activeId ?? '')
-  const { setTaskRef } = useViewState()
+  const { setTaskRef, taskRef } = useViewState()
   const dragId = useRef<string | null>(null)
 
   const onCardDragStart = (taskId: string) => {
@@ -39,7 +39,7 @@ export function BoardView() {
 
   const columns = boardColumns(tasks ?? [])
   return (
-    <div className="flex gap-3 overflow-x-auto pb-4">
+    <div className="opm-board flex gap-3 overflow-x-auto pb-4">
       {columns.map((c) => (
         <BoardColumn
           key={c.status}
@@ -49,6 +49,7 @@ export function BoardView() {
           onCardDragStart={onCardDragStart}
           onDrop={onDrop}
           onOpen={setTaskRef}
+          selectedRef={taskRef}
         />
       ))}
     </div>
@@ -87,7 +88,7 @@ function BoardError() {
   return (
     <div
       role="alert"
-      className="flex min-h-[320px] flex-col items-center justify-center px-6 py-12 text-center"
+      className="opm-state flex min-h-[320px] flex-col items-center justify-center px-6 py-12 text-center"
     >
       <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)]">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">

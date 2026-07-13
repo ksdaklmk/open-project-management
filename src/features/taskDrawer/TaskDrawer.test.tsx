@@ -50,6 +50,7 @@ vi.mock('../../lib/hooks/useComments', () => ({
 }))
 
 import { TaskDrawer } from './TaskDrawer'
+import { expectNoA11yViolations } from '../../test-a11y'
 
 beforeEach(() => {
   state.taskRef = 'NIM-101'
@@ -61,6 +62,11 @@ beforeEach(() => {
 })
 
 describe('TaskDrawer', () => {
+  it('has no automated accessibility violations', async () => {
+    const { container } = render(<TaskDrawer />)
+    await expectNoA11yViolations(container)
+  })
+
   it('renders a dialog with the task ref + title when ?task matches', () => {
     render(<TaskDrawer />)
     const dialog = screen.getByRole('dialog')
@@ -80,9 +86,9 @@ describe('TaskDrawer', () => {
     expect(setTaskRef).toHaveBeenCalledWith(null)
   })
 
-  it('closes when the ✕ header button is clicked', () => {
+  it('closes when the header close button is clicked', () => {
     render(<TaskDrawer />)
-    fireEvent.click(screen.getByText('✕'))
+    fireEvent.click(screen.getAllByRole('button', { name: 'Close' })[1])
     expect(setTaskRef).toHaveBeenCalledWith(null)
   })
 
@@ -95,6 +101,38 @@ describe('TaskDrawer', () => {
       'a[href],button,input,select,textarea,[tabindex]:not([tabindex="-1"])',
     )
     expect(document.activeElement).toBe(f[f.length - 1])
+  })
+
+  it('Tab from the last control wraps to the first control', () => {
+    render(<TaskDrawer />)
+    const dialog = screen.getByRole('dialog')
+    const f = dialog.querySelectorAll<HTMLElement>(
+      'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])',
+    )
+    f[f.length - 1].focus()
+    fireEvent.keyDown(f[f.length - 1], { key: 'Tab' })
+    expect(document.activeElement).toBe(f[0])
+  })
+
+  it('does not intercept Tab from a nested control before the boundary', () => {
+    render(<TaskDrawer />)
+    const status = screen.getByLabelText('Status')
+    status.focus()
+    expect(fireEvent.keyDown(status, { key: 'Tab' })).toBe(true)
+  })
+
+  it('restores focus to the opener when the drawer closes', () => {
+    const opener = document.createElement('button')
+    document.body.append(opener)
+    opener.focus()
+    const view = render(<TaskDrawer />)
+    expect(document.activeElement).toBe(screen.getByRole('dialog'))
+
+    state.taskRef = null
+    view.rerender(<TaskDrawer />)
+
+    expect(document.activeElement).toBe(opener)
+    opener.remove()
   })
 
   it('shows a not-found panel for an unknown ref', () => {

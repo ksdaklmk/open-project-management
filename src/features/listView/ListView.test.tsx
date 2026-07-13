@@ -24,6 +24,7 @@ vi.mock('../../lib/hooks/useUpdateTask', () => ({ useUpdateTask: () => ({ mutate
 vi.mock('../../lib/hooks/useMoveTask', () => ({ useMoveTask: () => ({ mutate: moveMutate }) }))
 
 import { ListView } from './ListView'
+import { expectNoA11yViolations } from '../../test-a11y'
 
 const inRouter = (ui: React.ReactElement) => (
   <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
@@ -37,6 +38,58 @@ beforeEach(() => {
 })
 
 describe('ListView', () => {
+  it('has no automated accessibility violations', async () => {
+    useTasks.mockReturnValue({
+      data: [
+        {
+          id: 't1',
+          ref: 'NIM-1',
+          title: 'Hello',
+          status: 'todo',
+          priority: 'low',
+          position: 0,
+          type: 'feature',
+          assignee_id: null,
+          points: null,
+          tags: [],
+        },
+      ],
+      isLoading: false,
+      error: null,
+    })
+    const { container } = render(inRouter(<ListView />))
+    await expectNoA11yViolations(container)
+  })
+
+  it('opens a task from its native title button and exposes table headers', async () => {
+    useTasks.mockReturnValue({
+      data: [
+        {
+          id: 't1',
+          ref: 'NIM-1',
+          title: 'Hello',
+          status: 'todo',
+          priority: 'low',
+          position: 0,
+          type: 'feature',
+          assignee_id: null,
+          points: null,
+          tags: [],
+        },
+      ],
+      isLoading: false,
+      error: null,
+    })
+    const { default: userEvent } = await import('@testing-library/user-event')
+    render(inRouter(<ListView />))
+    const opener = screen.getByRole('button', { name: 'Open NIM-1: Hello' })
+    opener.focus()
+    await userEvent.keyboard(' ')
+    expect(setTaskRef).toHaveBeenCalledWith('NIM-1')
+    expect(screen.getByRole('columnheader', { name: 'Task' })).toBeInTheDocument()
+    expect(screen.getByText('To Do tasks')).toBeInTheDocument()
+  })
+
   it('renders a group with its task', () => {
     useTasks.mockReturnValue({
       data: [

@@ -8,6 +8,7 @@ import { useCreateTask } from '../../lib/hooks/useCreateTask'
 import type { ProjectOption } from '../../data/projectsRepo'
 import { useTaskFilters } from './useTaskFilters'
 import type { SortKey } from './sortTasks'
+import { AppIcon } from '../../components/AppIcon'
 
 type ListKey = 'status' | 'priority' | 'assignee' | 'type' | 'tag'
 const SORTS: { id: SortKey; label: string }[] = [
@@ -35,15 +36,19 @@ export function Toolbar({ showSort }: { showSort: boolean }) {
     filters.q.trim()
 
   return (
-    <div className="flex flex-wrap items-center gap-2 border-b border-[var(--border)] px-4 py-2 text-sm">
+    <div className="opm-toolbar" aria-label="Task tools">
       <NewTask workspaceId={activeId ?? ''} />
-      <input
-        aria-label="Search tasks"
-        placeholder="Search…"
-        value={filters.q}
-        onChange={(e) => setQ(e.target.value)}
-        className="opm-input w-48"
-      />
+      <label className="opm-search-field">
+        <AppIcon name="search" size={15} />
+        <span className="sr-only">Search tasks</span>
+        <input
+          aria-label="Search tasks"
+          placeholder="Search tasks…"
+          value={filters.q}
+          onChange={(e) => setQ(e.target.value)}
+          className="opm-toolbar-search"
+        />
+      </label>
       <Group
         label="Status"
         selected={filters.status}
@@ -78,13 +83,13 @@ export function Toolbar({ showSort }: { showSort: boolean }) {
         onToggle={(id) => toggle('assignee', id)}
       />
       {showSort && (
-        <label className="ml-auto flex items-center gap-1">
+        <label className="opm-sort-control">
           <span className="text-[var(--muted)]">Sort</span>
           <select
             aria-label="Sort by"
             value={sort}
             onChange={(e) => setSort(e.target.value as SortKey)}
-            className="opm-input w-auto"
+            className="opm-select w-auto"
           >
             {SORTS.map((s) => (
               <option key={s.id} value={s.id}>
@@ -116,14 +121,17 @@ function Group({
   onToggle: (id: string) => void
 }) {
   return (
-    <details className="relative">
+    <details className="opm-filter relative">
       <summary className="opm-btn list-none">
         {label}
         {selected.length ? ` (${selected.length})` : ''}
+        <AppIcon name="chevronDown" size={12} />
       </summary>
-      <div className="absolute z-20 mt-1 flex flex-col gap-1 rounded border border-[var(--border)] bg-[var(--surface)] p-2 shadow-lg">
+      <div
+        className={`opm-filter-menu${label === 'Assignee' || label === 'Tag' ? ' right-0' : ''}`}
+      >
         {options.map((o) => (
-          <label key={o.id} className="flex items-center gap-2 whitespace-nowrap">
+          <label key={o.id} className="opm-filter-option">
             <input
               type="checkbox"
               checked={selected.includes(o.id)}
@@ -160,12 +168,14 @@ function NewTask({ workspaceId }: { workspaceId: string }) {
     return (
       <button
         ref={btnRef}
-        className="opm-btn"
+        className="opm-btn-primary"
         disabled={!projects?.length}
         title={projects?.length ? undefined : 'Create a project first (see docs/admin.md)'}
         onClick={() => setOpen(true)}
+        aria-label="+ New task"
       >
-        + New task
+        <AppIcon name="plus" size={15} />
+        New task
       </button>
     )
 

@@ -34,60 +34,85 @@ export function LoginPage() {
   }
 
   return (
-    <div className="min-h-full grid place-items-center bg-[var(--bg)]">
-      <form
-        onSubmit={signIn}
-        className="w-80 p-6 rounded-xl bg-[var(--surface)] border border-[var(--border)] space-y-3"
-      >
-        <h1 className="text-lg font-semibold text-[var(--text)]">Sign in</h1>
-        <input
-          className="w-full px-3 py-2 rounded border border-[var(--border)] bg-[var(--bg)]"
-          placeholder="Email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <input
-          type="password"
-          className="w-full px-3 py-2 rounded border border-[var(--border)] bg-[var(--bg)]"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        <input
-          className="w-full px-3 py-2 rounded border border-[var(--border)] bg-[var(--bg)]"
-          placeholder="Name (used when signing up)"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
-        {error && <p style={{ color: 'var(--primary)' }}>{error}</p>}
-        <button type="submit" className="w-full py-2 rounded bg-[var(--primary)] text-white">
-          Sign in
-        </button>
-        <button
-          type="button"
-          onClick={signUp}
-          className="w-full py-2 rounded border border-[var(--border)] text-[var(--text)]"
-        >
-          Sign up
-        </button>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => oauth('google')}
-            className="flex-1 py-2 rounded border border-[var(--border)]"
-          >
-            Google
-          </button>
-          <button
-            type="button"
-            onClick={() => oauth('github')}
-            className="flex-1 py-2 rounded border border-[var(--border)]"
-          >
-            GitHub
-          </button>
+    <main className="opm-login">
+      <section className="opm-login-intro" aria-labelledby="login-product-name">
+        <div className="opm-login-mark" aria-hidden="true">
+          O
         </div>
-      </form>
-    </div>
+        <div>
+          <p id="login-product-name">Open Project Management</p>
+          <p>Quietly keep every project, task, and handoff in view.</p>
+        </div>
+      </section>
+      <div className="opm-login-panel">
+        <form onSubmit={signIn} className="opm-login-form">
+          <header>
+            <h1>Welcome back</h1>
+            <p>Sign in to continue to your workspace.</p>
+          </header>
+          <label htmlFor="login-email">
+            <span>Email</span>
+            <input
+              id="login-email"
+              className="opm-input"
+              placeholder="Email"
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </label>
+          <label htmlFor="login-password">
+            <span>Password</span>
+            <input
+              id="login-password"
+              type="password"
+              className="opm-input"
+              placeholder="Password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </label>
+          <label htmlFor="signup-name">
+            <span>
+              Name <small>for new accounts</small>
+            </span>
+            <input
+              id="signup-name"
+              className="opm-input"
+              placeholder="Name (used when signing up)"
+              autoComplete="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </label>
+          {error && (
+            <p role="alert" className="opm-login-error">
+              {error}
+            </p>
+          )}
+          <div className="opm-login-actions">
+            <button type="submit" className="opm-btn-primary">
+              Sign in
+            </button>
+            <button type="button" onClick={signUp} className="opm-btn">
+              Sign up
+            </button>
+          </div>
+          <div className="opm-login-divider">
+            <span>or continue with</span>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <button type="button" onClick={() => oauth('google')} className="opm-btn">
+              Google
+            </button>
+            <button type="button" onClick={() => oauth('github')} className="opm-btn">
+              GitHub
+            </button>
+          </div>
+        </form>
+      </div>
+    </main>
   )
 }

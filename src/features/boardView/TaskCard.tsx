@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { CSSProperties } from 'react'
-import { TASK_TYPES, PRIORITIES, TAG_COLORS } from '../../types/constants'
+import { TASK_TYPES, PRIORITIES, STATUSES, TAG_COLORS } from '../../types/constants'
 import type { Task } from '../../data/tasksRepo'
 import type { Member } from '../../data/membersRepo'
 
@@ -40,95 +40,103 @@ export function TaskCard({
   members,
   onDragStart,
   onOpen,
+  selected,
 }: {
   task: Task
   members: Member[]
   onDragStart: (taskId: string) => void
   onOpen: (ref: string) => void
+  selected?: boolean
 }) {
   const [isDragging, setIsDragging] = useState(false)
   const priority = PRIORITIES.find((p) => p.id === task.priority)
+  const status = STATUSES.find((s) => s.id === task.status)
   const assignee = members.find((m) => m.user_id === task.assignee_id)
   const tags = task.tags
 
   return (
     <article
       draggable
-      onClick={() => onOpen(task.ref)}
       onDragStart={(e) => {
         e.dataTransfer?.setData('text/plain', task.id)
         onDragStart(task.id)
         setIsDragging(true)
       }}
       onDragEnd={() => setIsDragging(false)}
-      className={`opm-board-card select-none rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3 text-[var(--text)] cursor-grab${isDragging ? ' is-dragging' : ''}`}
+      data-selected={selected || undefined}
+      className={`opm-board-card select-none rounded border border-[var(--border)] bg-[var(--surface)] text-[var(--text)] cursor-grab${isDragging ? ' is-dragging' : ''}`}
     >
-      {/* Row 1: type mark · ref · (points right-aligned) */}
-      <div className="flex items-center gap-1.5">
-        <TypeMark typeId={task.type} />
-        <span className="text-xs font-medium tabular-nums tracking-tight text-[var(--muted)]">
-          {task.ref}
+      <button
+        type="button"
+        onClick={() => onOpen(task.ref)}
+        aria-label={`Open ${task.ref}: ${task.title}. Status: ${status?.label ?? task.status}. Priority: ${priority?.label ?? task.priority}.`}
+        className="opm-task-open block w-full cursor-grab p-3 text-left"
+      >
+        {/* Row 1: type mark · ref · (points right-aligned) */}
+        <span className="flex items-center gap-1.5">
+          <TypeMark typeId={task.type} />
+          <span className="opm-task-ref">{task.ref}</span>
+          {task.points != null && <span className="opm-points ml-auto">{task.points}</span>}
         </span>
-        {task.points != null && <span className="opm-points ml-auto">{task.points}</span>}
-      </div>
 
-      {/* Title — up to 2 lines */}
-      <p className="mt-1.5 line-clamp-2 text-[13px] font-medium leading-snug text-[var(--text)]">
-        {task.title}
-      </p>
+        {/* Title — up to 2 lines */}
+        <span className="opm-task-title mt-1.5 block line-clamp-2 text-[var(--text)]">
+          {task.title}
+        </span>
 
-      {/* Row 3: priority chip · tags · assignee avatar */}
-      {(priority || tags.length > 0 || assignee) && (
-        <div className="mt-2 flex flex-wrap items-center gap-1.5">
-          {priority && (
-            <span
-              className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium"
-              style={{
-                color: `color-mix(in oklab, ${priority.color} 72%, var(--text))`,
-                background: `color-mix(in oklab, ${priority.color} 14%, var(--surface))`,
-                border: `1px solid color-mix(in oklab, ${priority.color} 28%, var(--surface))`,
-              }}
-            >
+        {/* Row 3: priority chip · tags · assignee avatar */}
+        {(priority || tags.length > 0 || assignee) && (
+          <span className="mt-2 flex flex-wrap items-center gap-1.5">
+            {priority && (
               <span
-                aria-hidden="true"
+                className="inline-flex items-center gap-1.5 rounded px-2 py-0.5 text-xs font-medium"
                 style={{
-                  background: priority.color,
-                  width: 6,
-                  height: 6,
-                  borderRadius: '50%',
-                  display: 'block',
-                  flexShrink: 0,
+                  color: `color-mix(in oklab, ${priority.color} 72%, var(--text))`,
+                  background: `color-mix(in oklab, ${priority.color} 14%, var(--surface))`,
+                  border: `1px solid color-mix(in oklab, ${priority.color} 28%, var(--surface))`,
                 }}
-              />
-              {priority.label}
-            </span>
-          )}
+              >
+                <span
+                  aria-hidden="true"
+                  style={{
+                    background: priority.color,
+                    width: 6,
+                    height: 6,
+                    borderRadius: '50%',
+                    display: 'block',
+                    flexShrink: 0,
+                  }}
+                />
+                {priority.label}
+              </span>
+            )}
 
-          {tags.map((tg) => (
-            <span
-              key={tg}
-              className="opm-tag"
-              style={{ '--chip': TAG_COLORS[tg] ?? 'var(--faint)' } as CSSProperties}
-            >
-              {tg}
-            </span>
-          ))}
+            {tags.map((tg) => (
+              <span
+                key={tg}
+                className="opm-tag"
+                style={{ '--chip': TAG_COLORS[tg] ?? 'var(--faint)' } as CSSProperties}
+              >
+                {tg}
+              </span>
+            ))}
 
-          {assignee && (
-            <span
-              className="ml-auto flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold uppercase"
-              style={{
-                background: `color-mix(in oklab, var(--primary) 18%, var(--surface))`,
-                color: 'var(--primary)',
-              }}
-              title={assignee.name}
-              aria-label={`Assigned to ${assignee.name}`}
-            >
-              {assignee.name.charAt(0)}
-            </span>
-          )}
-        </div>
-      )}
+            {assignee && (
+              <span
+                className="ml-auto flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-bold uppercase"
+                style={{
+                  background: `color-mix(in oklab, var(--primary) 18%, var(--surface))`,
+                  color: 'var(--primary)',
+                }}
+                title={assignee.name}
+                aria-label={`Assigned to ${assignee.name}`}
+              >
+                {assignee.name.charAt(0)}
+              </span>
+            )}
+          </span>
+        )}
+      </button>
     </article>
   )
 }

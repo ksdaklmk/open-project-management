@@ -14,8 +14,8 @@ export function SubtaskList({ taskId }: { taskId: string }) {
   }
 
   return (
-    <section>
-      <h3 className="mb-2 flex items-center gap-2 text-xs font-semibold text-[var(--muted)]">
+    <section className="opm-document-section">
+      <h3 className="opm-document-heading mb-3 flex items-center gap-2">
         Subtasks{' '}
         {rows.length > 0 && (
           <span className="tabular-nums">
@@ -40,7 +40,7 @@ export function SubtaskList({ taskId }: { taskId: string }) {
             <button
               aria-label={`Remove ${s.title}`}
               onClick={() => remove.mutate(s.id)}
-              className="text-[var(--muted)]"
+              className="opm-subtask-remove text-[var(--muted)]"
             >
               ✕
             </button>

@@ -14,8 +14,8 @@ export function CommentThread({ taskId, workspaceId }: { taskId: string; workspa
   }
 
   return (
-    <section>
-      <h3 className="mb-2 text-xs font-semibold text-[var(--muted)]">Comments</h3>
+    <section className="opm-document-section">
+      <h3 className="opm-document-heading mb-3">Comments</h3>
       {isLoading && <p className="text-sm text-[var(--muted)]">Loading…</p>}
       {error && <p className="text-sm text-[var(--text)]">Couldn't load comments.</p>}
       <ul className="space-y-3">
@@ -23,9 +23,9 @@ export function CommentThread({ taskId, workspaceId }: { taskId: string; workspa
           <li key={c.id}>
             <div className="flex items-baseline gap-2">
               <span className="text-sm font-medium">{c.author?.name || 'Someone'}</span>
-              <span className="text-[11px] text-[var(--muted)]">{relativeTime(c.created_at)}</span>
+              <span className="text-xs text-[var(--muted)]">{relativeTime(c.created_at)}</span>
             </div>
-            <p className="text-sm text-[var(--text)]">{c.body}</p>
+            <p className="max-w-[70ch] text-sm leading-relaxed text-[var(--text)]">{c.body}</p>
           </li>
         ))}
       </ul>
@@ -38,7 +38,7 @@ export function CommentThread({ taskId, workspaceId }: { taskId: string; workspa
           onChange={(e) => setDraft(e.target.value)}
           className="opm-input text-sm"
         />
-        <button onClick={submit} className="opm-btn-primary text-sm">
+        <button onClick={submit} className="opm-btn-primary text-sm" disabled={!draft.trim()}>
           Post
         </button>
       </div>

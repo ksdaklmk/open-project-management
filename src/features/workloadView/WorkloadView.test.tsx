@@ -13,6 +13,7 @@ vi.mock('../../lib/hooks/useMembers', () => ({ useMembers }))
 vi.mock('../../lib/workspace', () => ({ useActiveWorkspace }))
 
 import { WorkloadView } from './WorkloadView'
+import { expectNoA11yViolations } from '../../test-a11y'
 
 const t = (over: Partial<Task>): Task => ({
   id: 'x',
@@ -47,6 +48,21 @@ const m = (over: Partial<Member>): Member => ({
 beforeEach(() => vi.clearAllMocks())
 
 describe('WorkloadView', () => {
+  it('has no automated accessibility violations', async () => {
+    useMembers.mockReturnValue({
+      data: [m({ user_id: 'a', name: 'Alice' })],
+      isLoading: false,
+      error: null,
+    })
+    useTasks.mockReturnValue({
+      data: [t({ id: '1', assignee_id: 'a', start_date: '2026-06-29', points: 5 })],
+      isLoading: false,
+      error: null,
+    })
+    const { container } = render(<WorkloadView now={new Date(2026, 5, 28)} />)
+    await expectNoA11yViolations(container)
+  })
+
   it('renders an assignee row, an over-capacity cell, and the not-shown footer', () => {
     useMembers.mockReturnValue({
       data: [m({ user_id: 'a', name: 'Alice', capacity_per_week: 10 })],

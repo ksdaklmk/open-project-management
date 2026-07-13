@@ -26,13 +26,14 @@ export function TaskTable({
 }) {
   const meta = STATUSES.find((s) => s.id === status)
   return (
-    <section className="mb-6">
-      <h2 className="mb-1.5 flex items-center gap-2 px-3 text-[13px] font-semibold tracking-tight text-[var(--text)]">
+    <section className="opm-task-group mb-6">
+      <h2 className="opm-section-title mb-1.5 flex items-center gap-2 px-3 text-[var(--text)]">
         <span className="opm-group-dot" style={cssVars(meta?.color)} aria-hidden="true" />
         <span>{meta?.label}</span>
         <span className="opm-count">{tasks.length}</span>
       </h2>
-      <table className="w-full min-w-[720px] table-fixed border-collapse text-sm">
+      <table className="opm-data-table w-full min-w-[940px] table-fixed border-collapse">
+        <caption className="sr-only">{meta?.label} tasks</caption>
         <colgroup>
           <col style={{ width: 34 }} />
           <col style={{ width: 76 }} />
@@ -43,6 +44,22 @@ export function TaskTable({
           <col style={{ width: 150 }} />
           <col style={{ width: 56 }} />
         </colgroup>
+        <thead className="opm-table-head">
+          <tr>
+            <th scope="col">
+              <span className="sr-only">Type</span>
+            </th>
+            <th scope="col">Key</th>
+            <th scope="col">Task</th>
+            <th scope="col">Status</th>
+            <th scope="col">Priority</th>
+            <th scope="col">Assignee</th>
+            <th scope="col">Tags</th>
+            <th scope="col" className="text-right">
+              Points
+            </th>
+          </tr>
+        </thead>
         <tbody>
           {tasks.map((t) => (
             <TaskRow

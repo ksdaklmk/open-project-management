@@ -9,6 +9,7 @@ vi.mock('../../lib/hooks/useActivity', () => ({ useActivity }))
 vi.mock('../../lib/workspace', () => ({ useActiveWorkspace }))
 
 import { ActivityView } from './ActivityView'
+import { expectNoA11yViolations } from '../../test-a11y'
 
 const MOVED = {
   id: 'a1',
@@ -50,6 +51,12 @@ const DELETED = {
 beforeEach(() => vi.clearAllMocks())
 
 describe('ActivityView', () => {
+  it('has no automated accessibility violations', async () => {
+    useActivity.mockReturnValue({ data: [MOVED], isLoading: false, error: null })
+    const { container } = render(<ActivityView />)
+    await expectNoA11yViolations(container)
+  })
+
   it('renders a commented activity row referencing the task', () => {
     useActivity.mockReturnValue({ data: [COMMENTED], isLoading: false, error: null })
     render(<ActivityView />)

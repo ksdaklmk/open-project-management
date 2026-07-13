@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test'
 test('renders the unauthenticated sign-in flow', async ({ page }) => {
   await page.goto('/')
 
-  await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Welcome back' })).toBeVisible()
   await expect(page.getByPlaceholder('Email')).toBeEditable()
   await expect(page.getByPlaceholder('Password')).toBeEditable()
   await expect(page.getByRole('button', { name: 'Sign up' })).toBeEnabled()

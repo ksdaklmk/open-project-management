@@ -7,6 +7,9 @@ import { parseDate } from '../../lib/weeks'
 import type { Task } from '../../data/tasksRepo'
 
 const COLOR: Record<string, string> = Object.fromEntries(STATUSES.map((s) => [s.id, s.color]))
+const STATUS_LABEL: Record<string, string> = Object.fromEntries(
+  STATUSES.map((s) => [s.id, s.label]),
+)
 const fmt = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 
 function range(t: Task): string {
@@ -29,34 +32,38 @@ export function TimelineView({ now = new Date() }: { now?: Date } = {}) {
   const buckets = bucketTasks(all, now).filter((b) => b.tasks.length > 0)
 
   return (
-    <div className="space-y-7">
+    <div className="opm-timeline space-y-7">
       {buckets.map((b) => (
         <section key={b.id}>
-          <h2 className="mb-2 flex items-center gap-2 px-0.5 text-[13px] font-semibold tracking-tight text-[var(--text)]">
+          <h2 className="opm-section-title mb-2 flex items-center gap-2 px-0.5 text-[var(--text)]">
             {b.label}
             <span className="opm-count">{b.tasks.length}</span>
           </h2>
-          <ul className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg)] divide-y divide-[var(--border)]">
+          <ul className="opm-database-list overflow-hidden border-y border-[var(--border)] bg-[var(--surface)] divide-y divide-[var(--border)]">
             {b.tasks.map((t) => (
-              <li
-                key={t.id}
-                onClick={() => setTaskRef(t.ref)}
-                className="opm-row flex items-center gap-3 px-4 py-3 cursor-pointer"
-              >
-                <span
-                  aria-hidden="true"
-                  className="h-2.5 w-2.5 shrink-0 rounded-full"
-                  style={{ background: COLOR[t.status] ?? 'var(--muted)' }}
-                />
-                <span className="font-mono text-[11px] tracking-tight text-[var(--muted)]">
-                  {t.ref}
-                </span>
-                <span className="flex-1 truncate text-sm text-[var(--text)]">{t.title}</span>
-                {range(t) && (
-                  <span className="shrink-0 text-[11px] tabular-nums text-[var(--muted)]">
-                    {range(t)}
+              <li key={t.id}>
+                <button
+                  type="button"
+                  onClick={() => setTaskRef(t.ref)}
+                  aria-label={`Open ${t.ref}: ${t.title}. Status: ${STATUS_LABEL[t.status] ?? t.status}.${range(t) ? ` ${range(t)}.` : ''}`}
+                  className="opm-task-open opm-row opm-timeline-row flex w-full items-center gap-3 px-3 py-2 text-left"
+                >
+                  <span
+                    aria-hidden="true"
+                    className="h-2.5 w-2.5 shrink-0 rounded-full"
+                    style={{ background: COLOR[t.status] ?? 'var(--muted)' }}
+                  />
+                  <span className="opm-task-ref">{t.ref}</span>
+                  <span className="flex-1 truncate text-sm text-[var(--text)]">{t.title}</span>
+                  <span className="shrink-0 text-xs text-[var(--muted)]">
+                    {STATUS_LABEL[t.status] ?? t.status}
                   </span>
-                )}
+                  {range(t) && (
+                    <span className="shrink-0 text-xs tabular-nums text-[var(--muted)]">
+                      {range(t)}
+                    </span>
+                  )}
+                </button>
               </li>
             ))}
           </ul>
@@ -93,7 +100,7 @@ function TimelineError() {
   return (
     <div
       role="alert"
-      className="mx-auto flex max-w-2xl min-h-[280px] flex-col items-center justify-center px-6 py-12 text-center"
+      className="opm-state mx-auto flex max-w-2xl min-h-[280px] flex-col items-center justify-center px-6 py-12 text-center"
     >
       <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)]">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -117,7 +124,7 @@ function TimelineError() {
 
 function TimelineEmpty() {
   return (
-    <div className="mx-auto flex max-w-2xl min-h-[280px] flex-col items-center justify-center px-6 py-12 text-center">
+    <div className="opm-state mx-auto flex max-w-2xl min-h-[280px] flex-col items-center justify-center px-6 py-12 text-center">
       <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)]">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <rect

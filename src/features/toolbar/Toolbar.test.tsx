@@ -16,6 +16,7 @@ vi.mock('../../lib/hooks/useCreateTask', () => ({
   useCreateTask: () => ({ mutate: createMutate }),
 }))
 import { Toolbar } from './Toolbar'
+import { expectNoA11yViolations } from '../../test-a11y'
 
 function Probe() {
   const [params] = useSearchParams()
@@ -38,6 +39,11 @@ beforeEach(() => {
 })
 
 describe('Toolbar', () => {
+  it('has no automated accessibility violations', async () => {
+    const { container } = renderAt('/', true)
+    await expectNoA11yViolations(container)
+  })
+
   it('checking a status writes it to the URL', () => {
     renderAt('/')
     fireEvent.click(screen.getByLabelText('To Do'))

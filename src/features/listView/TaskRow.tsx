@@ -38,13 +38,7 @@ export function TaskRow({
   const type = TASK_TYPES[task.type]
   const tags = task.tags
   return (
-    <tr
-      onClick={() => onSelect(task.ref)}
-      tabIndex={0}
-      onKeyDown={(e) => e.key === 'Enter' && onSelect(task.ref)}
-      aria-selected={selected || undefined}
-      className="opm-row cursor-pointer border-b border-[var(--border)]"
-    >
+    <tr data-selected={selected || undefined} className="opm-row border-b border-[var(--border)]">
       <td className="py-1.5 pl-3 pr-1 align-middle">
         <span
           className="inline-flex h-4 w-4 items-center justify-center"
@@ -56,12 +50,18 @@ export function TaskRow({
         </span>
       </td>
       <td className="px-2 py-1.5 align-middle">
-        <span className="text-xs font-medium tabular-nums tracking-tight text-[var(--muted)]">
-          {task.ref}
-        </span>
+        <span className="opm-task-ref">{task.ref}</span>
       </td>
       <td className="px-2 py-1.5 align-middle">
-        <span className="block truncate font-medium text-[var(--text)]">{task.title}</span>
+        <button
+          type="button"
+          aria-label={`Open ${task.ref}: ${task.title}`}
+          aria-current={selected ? 'true' : undefined}
+          onClick={() => onSelect(task.ref)}
+          className="opm-task-open opm-task-title block w-full truncate text-left text-[var(--text)]"
+        >
+          {task.title}
+        </button>
       </td>
       <td className="px-2 py-1.5 align-middle">
         <StatusCell task={task} onChange={(p) => p.status && onMove(task, p.status)} />

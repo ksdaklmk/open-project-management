@@ -7,6 +7,10 @@ import { DrawerFields } from './DrawerFields'
 import { TagEditor } from './TagEditor'
 import { SubtaskList } from './SubtaskList'
 import { CommentThread } from './CommentThread'
+import { AppIcon } from '../../components/AppIcon'
+
+const FOCUSABLE =
+  'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'
 
 export function TaskDrawer() {
   const { taskRef, setTaskRef } = useViewState()
@@ -38,9 +42,7 @@ export function TaskDrawer() {
       return close()
     }
     if (e.key !== 'Tab') return
-    const f = dialogRef.current?.querySelectorAll<HTMLElement>(
-      'a[href],button,input,select,textarea,[tabindex]:not([tabindex="-1"])',
-    )
+    const f = dialogRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE)
     if (!f || f.length === 0) return
     const first = f[0]
     const last = f[f.length - 1]
@@ -57,12 +59,12 @@ export function TaskDrawer() {
   }
 
   return (
-    <div className="fixed inset-0 z-30 flex justify-end">
+    <div className="fixed inset-0 flex justify-end" style={{ zIndex: 'var(--layer-backdrop)' }}>
       <button
         data-testid="drawer-backdrop"
         aria-label="Close"
         onClick={close}
-        className="absolute inset-0 bg-black/30 opm-drawer-backdrop"
+        className="absolute inset-0 bg-black/20 opm-drawer-backdrop"
       />
       <div
         ref={dialogRef}
@@ -71,31 +73,27 @@ export function TaskDrawer() {
         aria-labelledby="drawer-title"
         tabIndex={-1}
         onKeyDown={onKeyDown}
-        className="opm-drawer-panel relative h-full w-[420px] max-w-full overflow-y-auto border-l border-[var(--border)] bg-[var(--bg)] text-[var(--text)] shadow-xl"
+        className="opm-drawer-panel relative h-full w-[540px] max-w-full overflow-y-auto border-l border-[var(--border)] bg-[var(--surface)] text-[var(--text)]"
+        style={{ zIndex: 'var(--layer-modal)' }}
       >
         {task ? (
           <>
-            <header className="flex items-center gap-2 border-b border-[var(--border)] px-4 py-3">
-              <span className="text-xs font-medium tabular-nums text-[var(--muted)]">
-                {task.ref}
-              </span>
-              <h2 id="drawer-title" className="flex-1 truncate font-medium">
+            <header className="opm-drawer-header flex items-center gap-2 border-b border-[var(--border)] px-5 py-3">
+              <span className="opm-task-ref">{task.ref}</span>
+              <h2 id="drawer-title" className="sr-only">
                 {task.title}
               </h2>
-              <button
-                onClick={close}
-                aria-label="Close"
-                className="rounded px-2 py-1 hover:bg-[var(--surface)]"
-              >
-                ✕
+              <span className="flex-1" />
+              <button onClick={close} aria-label="Close" className="opm-icon-btn">
+                <AppIcon name="close" size={16} />
               </button>
             </header>
-            <div data-testid="drawer-body" className="space-y-5 px-4 py-4">
+            <div data-testid="drawer-body" className="opm-drawer-body space-y-8 px-8 py-7">
               <DrawerFields key={task.id} task={task} workspaceId={activeId ?? ''} />
               <TagEditor task={task} workspaceId={activeId ?? ''} />
               <SubtaskList taskId={task.id} />
               <CommentThread taskId={task.id} workspaceId={activeId ?? ''} />
-              <footer className="border-t border-[var(--border)] pt-4">
+              <footer className="border-t border-[var(--border)] pt-6">
                 <DeleteTaskButton taskId={task.id} workspaceId={activeId ?? ''} onDeleted={close} />
               </footer>
             </div>
@@ -152,7 +150,7 @@ function DeleteTaskButton({
 
   if (!confirming)
     return (
-      <button onClick={() => setConfirming(true)} className="opm-btn">
+      <button onClick={() => setConfirming(true)} className="opm-btn opm-btn-danger">
         Delete task
       </button>
     )
@@ -162,7 +160,7 @@ function DeleteTaskButton({
       <span>Delete this task?</span>
       <button
         onClick={() => del.mutate(taskId, { onSuccess: onDeleted })}
-        className="opm-btn font-semibold"
+        className="opm-btn opm-btn-danger font-semibold"
       >
         Delete
       </button>

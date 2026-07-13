@@ -23,7 +23,10 @@ export function CreateWorkspaceForm({ embedded = false }: { embedded?: boolean }
     )
   }
   return (
-    <form onSubmit={submit} className="opm-settings-card w-full max-w-xl text-left">
+    <form
+      onSubmit={submit}
+      className="opm-settings-card opm-settings-form w-full max-w-xl text-left"
+    >
       {embedded ? (
         <h2 className="font-semibold text-[var(--text)]">Create another workspace</h2>
       ) : (
@@ -120,7 +123,7 @@ export function WorkspaceSettings() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-5">
+    <div className="opm-settings mx-auto w-full max-w-5xl">
       <section className="opm-settings-card" aria-labelledby="workspace-settings-title">
         <h1 id="workspace-settings-title" className="text-lg font-semibold text-[var(--text)]">
           Workspace settings

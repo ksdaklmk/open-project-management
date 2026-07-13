@@ -2,7 +2,7 @@
 
 Open Project Management is a multi-tenant project-management web app for delivery teams. It
 provides List, Board, Gantt, Timeline, Activity, and Workload views, plus task details, filters,
-sorting, comments, subtasks, tags, and two themes.
+sorting, comments, subtasks, tags, and a focused light interface.
 
 The frontend is Vite, React 18, TypeScript, Tailwind CSS, and TanStack Query. Supabase supplies
 PostgreSQL, Auth, Row Level Security (RLS), and Realtime. RLS is the tenant-isolation boundary;
@@ -74,8 +74,8 @@ podman exec -i supabase_db_open-project-management psql -U postgres -d postgres
 - Supabase imports belong only in `src/lib/supabase.ts`, `src/data/`, and the existing auth
   carve-outs. `src/architecture.test.ts` enforces this.
 - Feature components use repository functions through TanStack Query hooks.
-- Theme colours come from CSS variables; Bloom and Slate are both supported.
-- View, selected task, filters, and sort stay in the URL. Theme selection stays in local storage.
+- Interface colours come from semantic CSS variables in the light Quiet Canvas system.
+- View, selected task, filters, and sort stay in the URL.
 
 ## Deployment and operations
 

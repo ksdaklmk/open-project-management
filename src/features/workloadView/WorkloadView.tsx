@@ -13,9 +13,7 @@ const LEVEL_HEX: Record<Level, string> = {
 }
 
 // Per-level tint strength. Graduated so the alarm (over) reads loudest and a
-// healthy load (under) stays calm. Scaled per theme via --load-boost so the
-// tints survive the dark Slate surface without washing out (and stay quiet on
-// the light Bloom surface).
+// healthy load (under) stays calm on the light canvas.
 const LEVEL_PCT: Record<Level, number> = { none: 0, under: 16, near: 22, over: 26 }
 
 function tint(level: Level): string {
@@ -50,8 +48,11 @@ export function WorkloadView({ now = new Date() }: { now?: Date } = {}) {
   const notShown = wl.unscheduledPoints + wl.outOfRangePoints
 
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-4">
-      <table className="w-full border-separate" style={{ tableLayout: 'fixed', borderSpacing: 5 }}>
+    <div className="opm-workload overflow-x-auto border border-[var(--border)] bg-[var(--surface)] p-4">
+      <table
+        className="w-full min-w-[720px] border-separate"
+        style={{ tableLayout: 'fixed', borderSpacing: 4 }}
+      >
         <caption className="sr-only">Workload by week</caption>
         <thead>
           <tr>
@@ -62,7 +63,7 @@ export function WorkloadView({ now = new Date() }: { now?: Date } = {}) {
               <th
                 key={w.key}
                 scope="col"
-                className="pb-1 text-center text-[11px] font-medium tabular-nums text-[var(--muted)]"
+                className="pb-1 text-center text-xs font-medium tabular-nums text-[var(--muted)]"
               >
                 {w.label}
               </th>
@@ -73,17 +74,17 @@ export function WorkloadView({ now = new Date() }: { now?: Date } = {}) {
           {wl.rows.map((row) => (
             <tr key={row.id}>
               <th scope="row" className="pr-3 text-left align-middle">
-                <span className="block truncate text-[13px] font-medium text-[var(--text)]">
+                <span className="block truncate text-sm font-medium text-[var(--text)]">
                   {row.name}
                 </span>
-                <span className="block text-[11px] tabular-nums text-[var(--muted)]">
+                <span className="block text-xs tabular-nums text-[var(--muted)]">
                   {row.capacity === null ? 'no capacity' : `cap ${row.capacity}/wk`}
                 </span>
               </th>
               {row.cells.map((cell, i) => (
                 <td key={wl.weeks[i].key} className="align-middle">
                   <div
-                    className="flex h-9 items-center justify-center gap-0.5 rounded-md text-[13px] font-semibold tabular-nums text-[var(--text)]"
+                    className="flex h-9 items-center justify-center gap-0.5 rounded-md text-sm font-semibold tabular-nums text-[var(--text)]"
                     style={{ background: tint(cell.level) }}
                   >
                     {cell.points === 0 ? (
@@ -112,7 +113,7 @@ export function WorkloadView({ now = new Date() }: { now?: Date } = {}) {
           {LEGEND.map(({ level, label }) => (
             <li
               key={level}
-              className="inline-flex items-center gap-1.5 text-[11px] text-[var(--muted)]"
+              className="inline-flex items-center gap-1.5 text-xs text-[var(--muted)]"
             >
               <span
                 aria-hidden="true"
@@ -125,7 +126,7 @@ export function WorkloadView({ now = new Date() }: { now?: Date } = {}) {
         </ul>
         {notShown > 0 && (
           <p
-            className="text-[11px] tabular-nums text-[var(--muted)]"
+            className="text-xs tabular-nums text-[var(--muted)]"
             title={`${wl.unscheduledPoints} unscheduled · ${wl.outOfRangePoints} outside window`}
           >
             {notShown} {notShown === 1 ? 'point' : 'points'} not shown
@@ -175,7 +176,7 @@ function WorkloadError() {
   return (
     <div
       role="alert"
-      className="mx-auto flex max-w-4xl min-h-[280px] flex-col items-center justify-center px-6 py-12 text-center"
+      className="opm-state mx-auto flex max-w-4xl min-h-[280px] flex-col items-center justify-center px-6 py-12 text-center"
     >
       <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)]">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -199,7 +200,7 @@ function WorkloadError() {
 
 function WorkloadEmpty() {
   return (
-    <div className="mx-auto flex max-w-4xl min-h-[280px] flex-col items-center justify-center px-6 py-12 text-center">
+    <div className="opm-state mx-auto flex max-w-4xl min-h-[280px] flex-col items-center justify-center px-6 py-12 text-center">
       <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)]">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M4 19.5h16" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />

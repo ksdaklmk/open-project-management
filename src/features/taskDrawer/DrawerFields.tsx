@@ -40,19 +40,19 @@ export function DrawerFields({ task, workspaceId }: { task: Task; workspaceId: s
   }, [task.title, task.description])
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <label className="block">
-        <span className="mb-1 block text-xs font-medium text-[var(--muted)]">Title</span>
+        <span className="sr-only">Title</span>
         <input
           aria-label="Title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           onBlur={() => title !== task.title && save({ title })}
-          className="opm-input"
+          className="opm-document-title"
         />
       </label>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="opm-property-grid grid grid-cols-2 gap-x-4 gap-y-2">
         <Field label="Status">
           <StatusCell task={task} onChange={onStatus} />
         </Field>
@@ -110,14 +110,14 @@ export function DrawerFields({ task, workspaceId }: { task: Task; workspaceId: s
       </div>
 
       <label className="block">
-        <span className="mb-1 block text-xs font-medium text-[var(--muted)]">Description</span>
+        <span className="opm-field-label mb-2 block">Description</span>
         <textarea
           aria-label="Description"
           rows={4}
           value={desc}
           onChange={(e) => setDesc(e.target.value)}
           onBlur={() => desc !== task.description && save({ description: desc })}
-          className="opm-input"
+          className="opm-input opm-description"
         />
       </label>
     </div>
@@ -127,7 +127,7 @@ export function DrawerFields({ task, workspaceId }: { task: Task; workspaceId: s
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-xs font-medium text-[var(--muted)]">{label}</span>
+      <span className="opm-field-label mb-1 block">{label}</span>
       {children}
     </label>
   )

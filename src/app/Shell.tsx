@@ -1,6 +1,5 @@
-import { useState, useEffect, lazy, Suspense } from 'react'
+import { lazy, Suspense } from 'react'
 import { useViewState, VIEWS, type ViewId } from './useViewState'
-import { getTheme, setTheme, type Theme } from '../lib/theme'
 import { useActiveWorkspace } from '../lib/workspace'
 import { signOut } from '../lib/hooks/useSession'
 import { useActorId } from '../lib/hooks/useSession'
@@ -9,6 +8,7 @@ import { settingsPermissions } from '../features/settings/settingsPermissions'
 import { WorkspaceSwitcher } from '../components/WorkspaceSwitcher'
 import { TaskDrawer } from '../features/taskDrawer/TaskDrawer'
 import { Toolbar } from '../features/toolbar/Toolbar'
+import { AppIcon, type AppIconName } from '../components/AppIcon'
 
 // Views are route-level code-split: the login/shell path no longer bundles all six.
 const ListView = lazy(() =>
@@ -50,26 +50,27 @@ const LABEL: Record<ViewId, string> = {
   settings: 'Settings',
 }
 
+const VIEW_ICON: Record<ViewId, AppIconName> = {
+  list: 'list',
+  board: 'board',
+  gantt: 'gantt',
+  timeline: 'timeline',
+  activity: 'activity',
+  workload: 'workload',
+  settings: 'settings',
+}
+
 export function Shell() {
   const { view, setView } = useViewState()
-  const [theme, setThemeState] = useState<Theme>(getTheme())
   const { activeId, loading: workspacesLoading } = useActiveWorkspace()
   const actorId = useActorId()
   const members = useMembers(activeId ?? '')
   const actorRole = members.data?.find((member) => member.user_id === actorId)?.role
   const canManageSettings = settingsPermissions(actorRole).canManage
 
-  // Apply the theme to the DOM (and persist it) on mount and on every change,
-  // so the DOM always reflects state — self-healing across remounts/desyncs.
-  useEffect(() => {
-    setTheme(theme)
-  }, [theme])
-
-  const toggleTheme = () => setThemeState((t) => (t === 'bloom' ? 'slate' : 'bloom'))
-
   if (!workspacesLoading && activeId === null)
     return (
-      <div className="min-h-full grid place-items-center bg-[var(--bg)] text-[var(--text)]">
+      <main className="min-h-full grid place-items-center bg-[var(--bg)] text-[var(--text)]">
         <div className="w-full max-w-xl space-y-3 p-4 text-center">
           <Suspense fallback={<p>Loading…</p>}>
             <CreateWorkspaceForm />
@@ -78,40 +79,75 @@ export function Shell() {
             Sign out
           </button>
         </div>
-      </div>
+      </main>
     )
 
   return (
     <div className="opm-shell min-h-full bg-[var(--bg)] text-[var(--text)]">
-      <aside className="opm-sidebar border-r border-[var(--border)] p-3 space-y-1">
-        <div className="mb-3">
+      <a href="#main-content" className="opm-skip-link">
+        Skip to main content
+      </a>
+      <nav aria-label="Workspace views" className="opm-sidebar">
+        <div className="opm-sidebar-brand">
           <WorkspaceSwitcher />
         </div>
-        {VIEWS.filter((v) => v !== 'settings' || canManageSettings).map((v) => (
+        <div className="opm-sidebar-views">
+          {VIEWS.filter((v) => v !== 'settings').map((v) => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => setView(v)}
+              aria-label={LABEL[v]}
+              aria-current={v === view ? 'page' : undefined}
+              className="opm-nav-button"
+              data-label={LABEL[v]}
+            >
+              <AppIcon name={VIEW_ICON[v]} />
+              <span className="sr-only">{LABEL[v]}</span>
+            </button>
+          ))}
+        </div>
+        <div className="opm-sidebar-actions">
+          {canManageSettings && (
+            <button
+              type="button"
+              onClick={() => setView('settings')}
+              aria-label="Settings"
+              aria-current={view === 'settings' ? 'page' : undefined}
+              className="opm-nav-button"
+              data-label="Settings"
+            >
+              <AppIcon name="settings" />
+              <span className="sr-only">Settings</span>
+            </button>
+          )}
           <button
-            key={v}
-            onClick={() => setView(v)}
-            className={`block w-full text-left px-3 py-2 rounded ${
-              v === view ? 'bg-[var(--primary)] text-white' : 'hover:bg-[var(--surface)]'
-            }`}
+            type="button"
+            onClick={() => signOut()}
+            aria-label="Sign out"
+            className="opm-nav-button"
+            data-label="Sign out"
           >
-            {LABEL[v]}
+            <AppIcon name="logout" />
+            <span className="sr-only">Sign out</span>
           </button>
-        ))}
-      </aside>
-      <section className="flex flex-col">
-        <header className="flex items-center justify-between px-4 h-12 border-b border-[var(--border)]">
-          <span className="font-medium">{LABEL[view]}</span>
-          <button
-            onClick={toggleTheme}
-            aria-label="Toggle theme"
-            className="px-3 py-1 rounded border border-[var(--border)]"
-          >
-            Theme
-          </button>
+        </div>
+      </nav>
+      <section className="opm-view-frame">
+        <header aria-label="View controls" className="opm-view-header">
+          <p className="opm-breadcrumb" aria-hidden="true">
+            Projects <span>/</span>
+          </p>
+          <h1>{LABEL[view]}</h1>
         </header>
         {TASK_VIEWS.includes(view) && <Toolbar showSort={view === 'list'} />}
-        <main data-testid="view-region" className="flex-1 p-4 text-[var(--muted)]">
+        <main
+          id="main-content"
+          data-testid="view-region"
+          aria-label={`${LABEL[view]} view`}
+          className="opm-main"
+          data-view={view}
+        >
           <Suspense fallback={<p className="text-[var(--muted)]">Loading…</p>}>
             {view === 'list' ? (
               <ListView />

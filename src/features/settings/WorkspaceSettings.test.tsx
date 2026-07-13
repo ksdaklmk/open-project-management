@@ -30,6 +30,7 @@ vi.mock('./InvitationSettings', () => ({
 }))
 
 import { WorkspaceSettings } from './WorkspaceSettings'
+import { expectNoA11yViolations } from '../../test-a11y'
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -38,6 +39,11 @@ beforeEach(() => {
 })
 
 describe('WorkspaceSettings', () => {
+  it('has no automated accessibility violations', async () => {
+    const { container } = render(<WorkspaceSettings />)
+    await expectNoA11yViolations(container)
+  })
+
   it('renames the workspace and mounts project/member settings for an owner', async () => {
     render(<WorkspaceSettings />)
     await userEvent.type(screen.getByLabelText('Display name'), 'Acme Two')
