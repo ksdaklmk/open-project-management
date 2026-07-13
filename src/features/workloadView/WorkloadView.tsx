@@ -38,7 +38,15 @@ export function WorkloadView({ now = new Date() }: { now?: Date } = {}) {
   const membersQ = useMembers(activeId ?? '')
 
   if (wsLoading || tasksQ.isLoading || membersQ.isLoading) return <WorkloadSkeleton />
-  if (tasksQ.error || membersQ.error) return <WorkloadError />
+  if (tasksQ.error || membersQ.error)
+    return (
+      <WorkloadError
+        onRetry={() => {
+          tasksQ.refetch()
+          membersQ.refetch()
+        }}
+      />
+    )
 
   const tasks = tasksQ.data ?? []
   const members = membersQ.data ?? []
@@ -48,7 +56,12 @@ export function WorkloadView({ now = new Date() }: { now?: Date } = {}) {
   const notShown = wl.unscheduledPoints + wl.outOfRangePoints
 
   return (
-    <div className="opm-workload overflow-x-auto border border-[var(--border)] bg-[var(--surface)] p-4">
+    <div
+      role="region"
+      aria-label="Workload table, horizontally scrollable"
+      tabIndex={0}
+      className="opm-workload overflow-x-auto border border-[var(--border)] bg-[var(--surface)] p-4"
+    >
       <table
         className="w-full min-w-[720px] border-separate"
         style={{ tableLayout: 'fixed', borderSpacing: 4 }}
@@ -172,7 +185,7 @@ function WorkloadSkeleton() {
   )
 }
 
-function WorkloadError() {
+function WorkloadError({ onRetry }: { onRetry: () => void }) {
   return (
     <div
       role="alert"
@@ -194,6 +207,9 @@ function WorkloadError() {
       <p className="mt-1 max-w-xs text-sm text-[var(--muted)]">
         Check your connection and try again.
       </p>
+      <button type="button" className="opm-btn mt-4" onClick={onRetry}>
+        Retry
+      </button>
     </div>
   )
 }

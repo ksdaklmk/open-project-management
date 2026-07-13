@@ -8,7 +8,7 @@
 -- no RLS impersonation fixture is needed.
 
 begin;
-select plan(12);
+select plan(15);
 set local role postgres;
 
 insert into auth.users (id, email) values
@@ -49,6 +49,11 @@ select throws_ok(
   '23514', null,
   'negative task points are rejected');
 select throws_ok(
+  $$ update tasks set points = 1000
+     where id = '00000000-0000-0000-0000-000000000094' $$,
+  '23514', null,
+  'task points above 999 are rejected');
+select throws_ok(
   $$ update tasks set start_date = '2026-07-10', end_date = '2026-07-01'
      where id = '00000000-0000-0000-0000-000000000094' $$,
   '23514', null,
@@ -78,6 +83,21 @@ select throws_ok(
      where user_id = '00000000-0000-0000-0000-000000000091' $$,
   '23514', null,
   'a negative member capacity is rejected');
+select throws_ok(
+  $$ update projects set key = '1 invalid'
+     where id = '00000000-0000-0000-0000-000000000093' $$,
+  '23514', null,
+  'an invalid project key is rejected');
+select is(
+  (select count(*) from pg_constraint
+   where conname in (
+     'tasks_title_not_blank', 'tasks_points_range', 'tasks_dates_ordered',
+     'tasks_dates_sane', 'subtasks_title_not_blank', 'comments_body_not_blank',
+     'projects_name_not_blank', 'projects_key_not_blank', 'projects_key_format',
+     'workspaces_name_not_blank', 'members_capacity_range'
+   ) and convalidated),
+  11::bigint,
+  'all domain constraints are validated');
 
 -- ---------------------------------------------------------------------------
 -- Attribution FKs: deleting an auth user (cascades to the profile) must not

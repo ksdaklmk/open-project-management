@@ -3,6 +3,7 @@ import { useMembers } from '../../lib/hooks/useMembers'
 import { useTasks } from '../../lib/hooks/useTasks'
 import { useMemberAdmin } from '../../lib/hooks/useMemberAdmin'
 import { canRemoveMember, type MemberRole } from './settingsPermissions'
+import { capacityError } from '../../lib/validation'
 
 export function MemberSettings({
   workspaceId,
@@ -19,6 +20,7 @@ export function MemberSettings({
   const [removing, setRemoving] = useState<string | null>(null)
   const [newOwner, setNewOwner] = useState('')
   const [confirmTransfer, setConfirmTransfer] = useState(false)
+  const [validationMessage, setValidationMessage] = useState('')
   const candidates = members.data?.filter((member) => member.user_id !== actorId) ?? []
   const assignmentsUnavailable = tasks.isLoading || !!tasks.error
 
@@ -122,11 +124,19 @@ export function MemberSettings({
                       type="number"
                       min="0"
                       max="168"
+                      step="1"
                       defaultValue={member.capacity_per_week}
                       disabled={admin.setCapacity.isPending}
                       onBlur={(e) => {
-                        const capacity = Number(e.target.value)
+                        const capacity = e.target.value === '' ? Number.NaN : Number(e.target.value)
                         if (capacity === member.capacity_per_week) return
+                        const error = capacityError(capacity)
+                        e.target.setCustomValidity(error ?? '')
+                        setValidationMessage(error ?? '')
+                        if (error) {
+                          e.target.value = String(member.capacity_per_week)
+                          return
+                        }
                         admin.setCapacity.mutate({
                           userId: member.user_id,
                           capacity,
@@ -182,6 +192,11 @@ export function MemberSettings({
           </tbody>
         </table>
       </div>
+      {validationMessage && (
+        <p role="alert" className="mt-2 text-sm text-[var(--danger)]">
+          {validationMessage}
+        </p>
+      )}
 
       {actorRole === 'owner' && (
         <div className="mt-6 border-t border-[var(--border)] pt-4">

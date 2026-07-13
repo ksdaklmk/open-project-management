@@ -12,7 +12,7 @@ import type { Task } from '../../data/tasksRepo'
 
 export function ListView() {
   const { activeId, loading: wsLoading } = useActiveWorkspace()
-  const { data: tasks, isLoading, error } = useFilteredTasks(activeId ?? '')
+  const { data: tasks, isLoading, error, refetch } = useFilteredTasks(activeId ?? '')
   const { sort } = useTaskFilters()
   const { data: members } = useMembers(activeId ?? '')
   const { setTaskRef, taskRef } = useViewState()
@@ -24,12 +24,17 @@ export function ListView() {
     move.mutate({ taskId: task.id, toStatus, position: task.position, fromStatus: task.status })
 
   if (wsLoading || isLoading) return <ListSkeleton />
-  if (error) return <ErrorState />
+  if (error) return <ErrorState onRetry={() => refetch()} />
   const groups = groupTasksByStatus(sortTasks(tasks ?? [], sort))
   if (groups.length === 0) return <EmptyState />
 
   return (
-    <div className="opm-list-scroll overflow-x-auto pb-4">
+    <div
+      role="region"
+      aria-label="Task list, horizontally scrollable"
+      tabIndex={0}
+      className="opm-list-scroll overflow-x-auto pb-4"
+    >
       {groups.map((g) => (
         <TaskTable
           key={g.status}
@@ -107,7 +112,7 @@ function EmptyState() {
   )
 }
 
-function ErrorState() {
+function ErrorState({ onRetry }: { onRetry: () => void }) {
   return (
     <div role="alert">
       <CenteredState>
@@ -127,6 +132,9 @@ function ErrorState() {
         <p className="mt-1 max-w-xs text-sm text-[var(--muted)]">
           Check your connection and try again in a moment.
         </p>
+        <button type="button" className="opm-btn mt-4" onClick={onRetry}>
+          Retry
+        </button>
       </CenteredState>
     </div>
   )

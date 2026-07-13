@@ -72,6 +72,17 @@ describe('MemberSettings', () => {
     expect(setCapacity.mutate).not.toHaveBeenCalled()
   })
 
+  it('rejects invalid capacity before mutation', async () => {
+    render(<MemberSettings workspaceId="w1" actorId="u1" actorRole="owner" />)
+    const capacity = screen.getByLabelText('Weekly capacity for Ben')
+    await userEvent.clear(capacity)
+    await userEvent.type(capacity, '169')
+    await userEvent.tab()
+    expect(setCapacity.mutate).not.toHaveBeenCalled()
+    expect(screen.getByRole('alert')).toHaveTextContent(/between 0 and 168/i)
+    expect(capacity).toHaveValue(30)
+  })
+
   it('summarises unassignment and confirms removal safely', async () => {
     render(<MemberSettings workspaceId="w1" actorId="u1" actorRole="owner" />)
     const removeButtons = screen.getAllByRole('button', { name: 'Remove' })

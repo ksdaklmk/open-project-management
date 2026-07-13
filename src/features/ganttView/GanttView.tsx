@@ -17,11 +17,11 @@ const GRIDLINE = 'color-mix(in oklab, var(--border) 75%, transparent)'
 
 export function GanttView({ now = new Date() }: { now?: Date } = {}) {
   const { activeId, loading: wsLoading } = useActiveWorkspace()
-  const { data: tasks, isLoading, error } = useFilteredTasks(activeId ?? '')
+  const { data: tasks, isLoading, error, refetch } = useFilteredTasks(activeId ?? '')
   const { setTaskRef } = useViewState()
 
   if (wsLoading || isLoading) return <GanttSkeleton />
-  if (error) return <GanttError />
+  if (error) return <GanttError onRetry={() => refetch()} />
 
   const all = tasks ?? []
   if (all.length === 0) return <GanttEmpty />
@@ -44,7 +44,12 @@ export function GanttView({ now = new Date() }: { now?: Date } = {}) {
           </p>
         </div>
       ) : (
-        <div className="opm-chart-scroll">
+        <div
+          role="region"
+          aria-label="Gantt chart, horizontally scrollable"
+          tabIndex={0}
+          className="opm-chart-scroll"
+        >
           <GanttChart ordered={ordered} now={now} onOpen={setTaskRef} />
         </div>
       )}
@@ -96,11 +101,7 @@ function GanttChart({
   const weekCount = scale.weeks.length
 
   return (
-    <div
-      role="region"
-      aria-label="Scheduled task timeline"
-      className="opm-chart-panel min-w-[720px] border border-[var(--border)] bg-[var(--surface)] p-4"
-    >
+    <div className="opm-chart-panel min-w-[720px] border border-[var(--border)] bg-[var(--surface)] p-4">
       {/* Week axis */}
       <div
         className="grid border-b border-[var(--border)] pb-2"
@@ -244,7 +245,7 @@ function GanttSkeleton() {
   )
 }
 
-function GanttError() {
+function GanttError({ onRetry }: { onRetry: () => void }) {
   return (
     <div
       role="alert"
@@ -266,6 +267,9 @@ function GanttError() {
       <p className="mt-1 max-w-xs text-sm text-[var(--muted)]">
         Check your connection and try again.
       </p>
+      <button type="button" className="opm-btn mt-4" onClick={onRetry}>
+        Retry
+      </button>
     </div>
   )
 }

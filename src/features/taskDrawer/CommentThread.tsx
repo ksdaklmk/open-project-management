@@ -3,13 +3,13 @@ import { useComments, useAddComment } from '../../lib/hooks/useComments'
 import { relativeTime } from '../../lib/relativeTime'
 
 export function CommentThread({ taskId, workspaceId }: { taskId: string; workspaceId: string }) {
-  const { data, isLoading, error } = useComments(taskId)
+  const { data, isLoading, error, refetch } = useComments(taskId)
   const add = useAddComment(taskId, workspaceId)
   const [draft, setDraft] = useState('')
 
   const submit = () => {
     const t = draft.trim()
-    if (!t) return
+    if (!t || add.isPending) return
     add.mutate(t, { onSuccess: () => setDraft('') })
   }
 
@@ -17,7 +17,14 @@ export function CommentThread({ taskId, workspaceId }: { taskId: string; workspa
     <section className="opm-document-section">
       <h3 className="opm-document-heading mb-3">Comments</h3>
       {isLoading && <p className="text-sm text-[var(--muted)]">Loading…</p>}
-      {error && <p className="text-sm text-[var(--text)]">Couldn't load comments.</p>}
+      {error && (
+        <div role="alert" className="text-sm text-[var(--text)]">
+          <p>Couldn't load comments.</p>
+          <button type="button" className="opm-btn mt-2" onClick={() => refetch()}>
+            Retry
+          </button>
+        </div>
+      )}
       <ul className="space-y-3">
         {(data ?? []).map((c) => (
           <li key={c.id}>
@@ -36,10 +43,15 @@ export function CommentThread({ taskId, workspaceId }: { taskId: string; workspa
           placeholder="Write a comment…"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
+          disabled={add.isPending}
           className="opm-input text-sm"
         />
-        <button onClick={submit} className="opm-btn-primary text-sm" disabled={!draft.trim()}>
-          Post
+        <button
+          onClick={submit}
+          className="opm-btn-primary text-sm"
+          disabled={!draft.trim() || add.isPending}
+        >
+          {add.isPending ? 'Posting…' : 'Post'}
         </button>
       </div>
     </section>

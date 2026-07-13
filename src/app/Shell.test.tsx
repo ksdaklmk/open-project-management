@@ -60,6 +60,7 @@ describe('Shell', () => {
     ws.activeId = 'w1'
     ws.loading = false
     mockSignOut.mockClear()
+    mockSignOut.mockResolvedValue({ error: null })
     members.data = [{ user_id: 'u1', role: 'owner' }]
   })
 
@@ -153,6 +154,15 @@ describe('Shell', () => {
     renderShell()
     await userEvent.click(screen.getByRole('button', { name: 'Sign out' }))
     expect(mockSignOut).toHaveBeenCalledTimes(1)
+  })
+
+  it('surfaces sign-out failures', async () => {
+    mockSignOut.mockResolvedValueOnce({ error: new Error('network unavailable') })
+    renderShell()
+    await userEvent.click(screen.getByRole('button', { name: 'Sign out' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      "Couldn't sign out: network unavailable",
+    )
   })
 
   it('does not flash the no-workspace state while workspaces load', () => {

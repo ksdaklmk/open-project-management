@@ -8,6 +8,7 @@ import { settingsPermissions } from './settingsPermissions'
 import { ProjectSettings } from './ProjectSettings'
 import { MemberSettings } from './MemberSettings'
 import { InvitationSettings } from './InvitationSettings'
+import { normaliseProjectKey, projectKeyError } from '../../lib/validation'
 
 export function CreateWorkspaceForm({ embedded = false }: { embedded?: boolean }) {
   const create = useCreateWorkspace()
@@ -15,10 +16,18 @@ export function CreateWorkspaceForm({ embedded = false }: { embedded?: boolean }
   const [name, setName] = useState('')
   const [projectName, setProjectName] = useState('')
   const [projectKey, setProjectKey] = useState('')
+  const [validationMessage, setValidationMessage] = useState('')
   const submit = (event: FormEvent) => {
     event.preventDefault()
+    const error = projectKeyError(projectKey)
+    setValidationMessage(error ?? '')
+    if (error || !name.trim() || !projectName.trim()) return
     create.mutate(
-      { name, initialProjectName: projectName, initialProjectKey: projectKey },
+      {
+        name: name.trim(),
+        initialProjectName: projectName.trim(),
+        initialProjectKey: normaliseProjectKey(projectKey),
+      },
       { onSuccess: ({ workspaceId }) => setActiveId(workspaceId) },
     )
   }
@@ -61,11 +70,18 @@ export function CreateWorkspaceForm({ embedded = false }: { embedded?: boolean }
             className="opm-input mt-1 uppercase"
             value={projectKey}
             onChange={(e) => setProjectKey(e.target.value)}
+            pattern="[A-Za-z][A-Za-z0-9]{0,11}"
+            title="Use 1–12 letters or numbers, starting with a letter."
             maxLength={12}
             required
           />
         </label>
       </div>
+      {validationMessage && (
+        <p role="alert" className="mt-2 text-sm text-[var(--danger)]">
+          {validationMessage}
+        </p>
+      )}
       <button className="opm-btn-primary mt-4" disabled={create.isPending}>
         {create.isPending ? 'Creating…' : 'Create workspace'}
       </button>

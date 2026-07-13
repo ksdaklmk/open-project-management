@@ -44,6 +44,13 @@ describe('InvitationSettings', () => {
     expect(screen.queryByRole('option', { name: 'Admin' })).toBeNull()
   })
 
+  it('rejects an invalid invitation email before mutation', async () => {
+    render(<InvitationSettings workspaceId="w1" actorRole="owner" />)
+    await userEvent.type(screen.getByLabelText('Email address'), 'not-an-email')
+    await userEvent.click(screen.getByRole('button', { name: 'Send invitation' }))
+    expect(send.mutate).not.toHaveBeenCalled()
+  })
+
   it('shows lifecycle states and supports resend and revoke', async () => {
     invitationQuery.data = [
       {

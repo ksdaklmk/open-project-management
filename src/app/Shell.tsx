@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { useViewState, VIEWS, type ViewId } from './useViewState'
 import { useActiveWorkspace } from '../lib/workspace'
 import { signOut } from '../lib/hooks/useSession'
@@ -67,6 +67,22 @@ export function Shell() {
   const members = useMembers(activeId ?? '')
   const actorRole = members.data?.find((member) => member.user_id === actorId)?.role
   const canManageSettings = settingsPermissions(actorRole).canManage
+  const [signOutPending, setSignOutPending] = useState(false)
+  const [signOutError, setSignOutError] = useState('')
+
+  const handleSignOut = async () => {
+    if (signOutPending) return
+    setSignOutPending(true)
+    setSignOutError('')
+    try {
+      const result = await signOut()
+      if (result?.error) setSignOutError(`Couldn't sign out: ${result.error.message}`)
+    } catch (error) {
+      setSignOutError(`Couldn't sign out: ${(error as Error).message}`)
+    } finally {
+      setSignOutPending(false)
+    }
+  }
 
   if (!workspacesLoading && activeId === null)
     return (
@@ -75,9 +91,14 @@ export function Shell() {
           <Suspense fallback={<p>Loading…</p>}>
             <CreateWorkspaceForm />
           </Suspense>
-          <button onClick={() => signOut()} className="opm-btn">
-            Sign out
+          <button onClick={handleSignOut} className="opm-btn" disabled={signOutPending}>
+            {signOutPending ? 'Signing out…' : 'Sign out'}
           </button>
+          {signOutError && (
+            <p role="alert" className="text-sm text-[var(--danger)]">
+              {signOutError}
+            </p>
+          )}
         </div>
       </main>
     )
@@ -123,7 +144,8 @@ export function Shell() {
           )}
           <button
             type="button"
-            onClick={() => signOut()}
+            onClick={handleSignOut}
+            disabled={signOutPending}
             aria-label="Sign out"
             className="opm-nav-button"
             data-label="Sign out"
@@ -170,6 +192,15 @@ export function Shell() {
         </main>
       </section>
       <TaskDrawer />
+      {signOutError && (
+        <p
+          role="alert"
+          className="fixed right-4 top-4 rounded-md border border-[var(--danger)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--danger)]"
+          style={{ zIndex: 'var(--layer-toast)' }}
+        >
+          {signOutError}
+        </p>
+      )}
     </div>
   )
 }

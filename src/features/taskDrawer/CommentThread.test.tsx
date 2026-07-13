@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 
 const post = vi.fn()
+const refetch = vi.fn()
+const addState = { isPending: false }
 const comment = {
   id: 'c1',
   body: 'First!',
@@ -11,8 +13,8 @@ const comment = {
 const comments: { data: (typeof comment)[] | undefined; isLoading: boolean; error: Error | null } =
   { data: [comment], isLoading: false, error: null }
 vi.mock('../../lib/hooks/useComments', () => ({
-  useComments: () => comments,
-  useAddComment: () => ({ mutate: post }),
+  useComments: () => ({ ...comments, refetch }),
+  useAddComment: () => ({ mutate: post, ...addState }),
 }))
 import { CommentThread } from './CommentThread'
 
@@ -23,6 +25,8 @@ beforeEach(() => {
   comments.data = [comment]
   comments.isLoading = false
   comments.error = null
+  addState.isPending = false
+  refetch.mockReset()
 })
 
 describe('CommentThread', () => {
@@ -67,5 +71,14 @@ describe('CommentThread', () => {
     comments.error = new Error('boom')
     render(<CommentThread taskId="t1" workspaceId="w1" />)
     expect(screen.getByText(/couldn't load comments/i)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }))
+    expect(refetch).toHaveBeenCalled()
+  })
+
+  it('prevents duplicate posts while a comment is pending', () => {
+    addState.isPending = true
+    render(<CommentThread taskId="t1" workspaceId="w1" />)
+    expect(screen.getByRole('button', { name: 'Posting…' })).toBeDisabled()
+    expect(draftBox()).toBeDisabled()
   })
 })

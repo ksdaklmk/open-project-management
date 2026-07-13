@@ -102,4 +102,33 @@ describe('BoardView', () => {
       expect.objectContaining({ taskId: 't1', toStatus: 'done', fromStatus: 'todo' }),
     )
   })
+
+  it('moves a card by keyboard/touch controls and announces the result', async () => {
+    const second = { ...TASK, id: 't2', ref: 'NIM-2', title: 'Second', position: 1 }
+    useTasks.mockReturnValue({ data: [TASK, second], isLoading: false, error: null })
+    moveMutate.mockImplementationOnce((_args, options) => options?.onSuccess?.())
+    render(inRouter(<BoardView />))
+
+    await userEvent.click(screen.getByRole('button', { name: 'Move NIM-2' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Move up' }))
+
+    expect(moveMutate).toHaveBeenCalledWith(
+      expect.objectContaining({ taskId: 't2', toStatus: 'todo', beforeTaskId: null }),
+      expect.objectContaining({ onSuccess: expect.any(Function), onError: expect.any(Function) }),
+    )
+    expect(screen.getByText('NIM-2 moved to To Do, position 1.')).toBeInTheDocument()
+  })
+
+  it('moves a card to another status without drag', async () => {
+    useTasks.mockReturnValue({ data: [TASK], isLoading: false, error: null })
+    render(inRouter(<BoardView />))
+
+    await userEvent.click(screen.getByRole('button', { name: 'Move NIM-1' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Done' }))
+
+    expect(moveMutate).toHaveBeenCalledWith(
+      expect.objectContaining({ taskId: 't1', toStatus: 'done', fromStatus: 'todo' }),
+      expect.any(Object),
+    )
+  })
 })

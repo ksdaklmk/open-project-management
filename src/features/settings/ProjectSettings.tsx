@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useProjects } from '../../lib/hooks/useProjects'
 import { useProjectAdmin } from '../../lib/hooks/useProjectAdmin'
+import { normaliseProjectKey, projectKeyError } from '../../lib/validation'
 
 export function ProjectSettings({ workspaceId }: { workspaceId: string }) {
   const projects = useProjects(workspaceId)
@@ -10,11 +11,15 @@ export function ProjectSettings({ workspaceId }: { workspaceId: string }) {
   const [editing, setEditing] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
   const [archiving, setArchiving] = useState<string | null>(null)
+  const [validationMessage, setValidationMessage] = useState('')
 
   const create = (event: FormEvent) => {
     event.preventDefault()
+    const error = projectKeyError(key)
+    setValidationMessage(error ?? '')
+    if (error || !name.trim()) return
     admin.create.mutate(
-      { name, key },
+      { name: name.trim(), key: normaliseProjectKey(key) },
       {
         onSuccess: () => {
           setName('')
@@ -51,6 +56,8 @@ export function ProjectSettings({ workspaceId }: { workspaceId: string }) {
             className="opm-input mt-1 uppercase"
             value={key}
             onChange={(e) => setKey(e.target.value)}
+            pattern="[A-Za-z][A-Za-z0-9]{0,11}"
+            title="Use 1–12 letters or numbers, starting with a letter."
             maxLength={12}
             required
           />
@@ -59,6 +66,11 @@ export function ProjectSettings({ workspaceId }: { workspaceId: string }) {
           {admin.create.isPending ? 'Creating…' : 'Create project'}
         </button>
       </form>
+      {validationMessage && (
+        <p role="alert" className="mt-2 text-sm text-[var(--danger)]">
+          {validationMessage}
+        </p>
+      )}
 
       {projects.isLoading ? (
         <p className="mt-4 text-sm">Loading projects…</p>

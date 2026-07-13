@@ -20,11 +20,11 @@ function range(t: Task): string {
 
 export function TimelineView({ now = new Date() }: { now?: Date } = {}) {
   const { activeId, loading: wsLoading } = useActiveWorkspace()
-  const { data: tasks, isLoading, error } = useFilteredTasks(activeId ?? '')
+  const { data: tasks, isLoading, error, refetch } = useFilteredTasks(activeId ?? '')
   const { setTaskRef } = useViewState()
 
   if (wsLoading || isLoading) return <TimelineSkeleton />
-  if (error) return <TimelineError />
+  if (error) return <TimelineError onRetry={() => refetch()} />
 
   const all = tasks ?? []
   if (all.length === 0) return <TimelineEmpty />
@@ -96,7 +96,7 @@ function TimelineSkeleton() {
   )
 }
 
-function TimelineError() {
+function TimelineError({ onRetry }: { onRetry: () => void }) {
   return (
     <div
       role="alert"
@@ -118,6 +118,9 @@ function TimelineError() {
       <p className="mt-1 max-w-xs text-sm text-[var(--muted)]">
         Check your connection and try again.
       </p>
+      <button type="button" className="opm-btn mt-4" onClick={onRetry}>
+        Retry
+      </button>
     </div>
   )
 }

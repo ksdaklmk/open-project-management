@@ -73,7 +73,7 @@ describe('WorkspaceSettings', () => {
     await userEvent.type(screen.getByLabelText('Project key'), 'del')
     await userEvent.click(screen.getByRole('button', { name: 'Create workspace' }))
     expect(state.create.mutate).toHaveBeenCalledWith(
-      { name: 'New team', initialProjectName: 'Delivery', initialProjectKey: 'del' },
+      { name: 'New team', initialProjectName: 'Delivery', initialProjectKey: 'DEL' },
       expect.objectContaining({ onSuccess: expect.any(Function) }),
     )
     state.create.mutate.mock.calls[0][1].onSuccess({ workspaceId: 'w2' })

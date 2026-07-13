@@ -41,14 +41,25 @@ export function TaskCard({
   onDragStart,
   onOpen,
   selected,
+  canMoveUp,
+  canMoveDown,
+  onMoveUp,
+  onMoveDown,
+  onMoveToStatus,
 }: {
   task: Task
   members: Member[]
   onDragStart: (taskId: string) => void
   onOpen: (ref: string) => void
   selected?: boolean
+  canMoveUp: boolean
+  canMoveDown: boolean
+  onMoveUp: () => void
+  onMoveDown: () => void
+  onMoveToStatus: (status: Task['status']) => void
 }) {
   const [isDragging, setIsDragging] = useState(false)
+  const [moveOpen, setMoveOpen] = useState(false)
   const priority = PRIORITIES.find((p) => p.id === task.priority)
   const status = STATUSES.find((s) => s.id === task.status)
   const assignee = members.find((m) => m.user_id === task.assignee_id)
@@ -137,6 +148,56 @@ export function TaskCard({
           </span>
         )}
       </button>
+      <div className="opm-card-move border-t border-[var(--border)]">
+        <button
+          type="button"
+          className="opm-card-move-summary list-none"
+          aria-label={`Move ${task.ref}`}
+          aria-expanded={moveOpen}
+          aria-controls={`move-${task.id}`}
+          onClick={() => setMoveOpen((open) => !open)}
+          onDragStart={(event) => event.preventDefault()}
+        >
+          Move task
+          <span aria-hidden="true">⌄</span>
+        </button>
+        {moveOpen && (
+          <div
+            id={`move-${task.id}`}
+            className="opm-card-move-menu"
+            role="group"
+            aria-label={`Move options for ${task.ref}`}
+          >
+            <div className="grid grid-cols-2 gap-1">
+              <button type="button" className="opm-btn" disabled={!canMoveUp} onClick={onMoveUp}>
+                Move up
+              </button>
+              <button
+                type="button"
+                className="opm-btn"
+                disabled={!canMoveDown}
+                onClick={onMoveDown}
+              >
+                Move down
+              </button>
+            </div>
+            <p className="opm-field-label mt-2">Move to status</p>
+            <div className="mt-1 grid grid-cols-2 gap-1">
+              {STATUSES.map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  className="opm-btn justify-start"
+                  disabled={option.id === task.status}
+                  onClick={() => onMoveToStatus(option.id)}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </article>
   )
 }

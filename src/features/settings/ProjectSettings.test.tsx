@@ -29,7 +29,7 @@ describe('ProjectSettings', () => {
     await userEvent.type(screen.getByLabelText('Key'), 'del')
     await userEvent.click(screen.getByRole('button', { name: 'Create project' }))
     expect(create.mutate).toHaveBeenCalledWith(
-      { name: 'Delivery', key: 'del' },
+      { name: 'Delivery', key: 'DEL' },
       expect.objectContaining({ onSuccess: expect.any(Function) }),
     )
     create.mutate.mock.calls[0][1].onSuccess()
@@ -43,6 +43,14 @@ describe('ProjectSettings', () => {
       expect.any(Object),
     )
     update.mutate.mock.calls[0][1].onSuccess()
+  })
+
+  it('rejects an invalid project key before mutation', async () => {
+    render(<ProjectSettings workspaceId="w1" />)
+    await userEvent.type(screen.getByLabelText('Project name'), 'Delivery')
+    await userEvent.type(screen.getByLabelText('Key'), '1bad')
+    await userEvent.click(screen.getByRole('button', { name: 'Create project' }))
+    expect(create.mutate).not.toHaveBeenCalled()
   })
 
   it('requires a second confirmation and focuses Cancel before archive', async () => {

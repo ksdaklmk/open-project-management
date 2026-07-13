@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useInvitations } from '../../lib/hooks/useInvitations'
 import type { MemberRole } from './settingsPermissions'
+import { emailError } from '../../lib/validation'
 
 function invitationState(invitation: {
   accepted_at: string | null
@@ -23,10 +24,14 @@ export function InvitationSettings({
   const { invitations, send, revoke } = useInvitations(workspaceId)
   const [email, setEmail] = useState('')
   const [role, setRole] = useState<'admin' | 'member'>('member')
+  const [validationMessage, setValidationMessage] = useState('')
 
   const submit = (event: FormEvent) => {
     event.preventDefault()
-    send.mutate({ email, role }, { onSuccess: () => setEmail('') })
+    const error = emailError(email)
+    setValidationMessage(error ?? '')
+    if (error) return
+    send.mutate({ email: email.trim(), role }, { onSuccess: () => setEmail('') })
   }
 
   return (
@@ -64,6 +69,11 @@ export function InvitationSettings({
           {send.isPending ? 'Sending…' : 'Send invitation'}
         </button>
       </form>
+      {validationMessage && (
+        <p role="alert" className="mt-2 text-sm text-[var(--danger)]">
+          {validationMessage}
+        </p>
+      )}
 
       {invitations.isLoading ? (
         <p className="mt-4 text-sm">Loading invitations…</p>

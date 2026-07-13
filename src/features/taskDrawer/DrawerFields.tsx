@@ -5,6 +5,13 @@ import { useUpdateTask } from '../../lib/hooks/useUpdateTask'
 import { useMoveTask } from '../../lib/hooks/useMoveTask'
 import { useMembers } from '../../lib/hooks/useMembers'
 import type { Task } from '../../data/tasksRepo'
+import {
+  dateRangeError,
+  MAX_TASK_DATE,
+  MIN_TASK_DATE,
+  pointsError,
+  titleError,
+} from '../../lib/validation'
 
 export function DrawerFields({ task, workspaceId }: { task: Task; workspaceId: string }) {
   const update = useUpdateTask(workspaceId)
@@ -27,7 +34,15 @@ export function DrawerFields({ task, workspaceId }: { task: Task; workspaceId: s
 
   const [title, setTitle] = useState(task.title)
   const [desc, setDesc] = useState(task.description)
-  const previousTask = useRef({ title: task.title, description: task.description })
+  const [startDate, setStartDate] = useState(task.start_date ?? '')
+  const [endDate, setEndDate] = useState(task.end_date ?? '')
+  const [validationMessage, setValidationMessage] = useState('')
+  const previousTask = useRef({
+    title: task.title,
+    description: task.description,
+    startDate: task.start_date ?? '',
+    endDate: task.end_date ?? '',
+  })
 
   // Realtime can replace the cached task while the drawer stays mounted. Adopt
   // remote values only when the corresponding local draft is still pristine,
@@ -36,8 +51,15 @@ export function DrawerFields({ task, workspaceId }: { task: Task; workspaceId: s
     const previous = previousTask.current
     setTitle((current) => (current === previous.title ? task.title : current))
     setDesc((current) => (current === previous.description ? task.description : current))
-    previousTask.current = { title: task.title, description: task.description }
-  }, [task.title, task.description])
+    setStartDate((current) => (current === previous.startDate ? (task.start_date ?? '') : current))
+    setEndDate((current) => (current === previous.endDate ? (task.end_date ?? '') : current))
+    previousTask.current = {
+      title: task.title,
+      description: task.description,
+      startDate: task.start_date ?? '',
+      endDate: task.end_date ?? '',
+    }
+  }, [task.title, task.description, task.start_date, task.end_date])
 
   return (
     <div className="space-y-6">
@@ -47,7 +69,11 @@ export function DrawerFields({ task, workspaceId }: { task: Task; workspaceId: s
           aria-label="Title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          onBlur={() => title !== task.title && save({ title })}
+          onBlur={() => {
+            const error = titleError(title)
+            setValidationMessage(error ?? '')
+            if (!error && title !== task.title) save({ title: title.trim() })
+          }}
           className="opm-document-title"
         />
       </label>
@@ -81,10 +107,15 @@ export function DrawerFields({ task, workspaceId }: { task: Task; workspaceId: s
             aria-label="Points"
             type="number"
             min={0}
+            max={999}
+            step={1}
             defaultValue={task.points ?? ''}
             onBlur={(e) => {
               const v = e.target.value === '' ? null : Number(e.target.value)
-              if (v !== task.points) save({ points: v })
+              const error = pointsError(v)
+              e.target.setCustomValidity(error ?? '')
+              setValidationMessage(error ?? '')
+              if (!error && v !== task.points) save({ points: v })
             }}
             className="opm-input"
           />
@@ -93,8 +124,18 @@ export function DrawerFields({ task, workspaceId }: { task: Task; workspaceId: s
           <input
             aria-label="Start date"
             type="date"
-            defaultValue={task.start_date ?? ''}
-            onChange={(e) => save({ start_date: e.target.value || null })}
+            min={MIN_TASK_DATE}
+            max={MAX_TASK_DATE}
+            value={startDate}
+            onChange={(e) => {
+              const value = e.target.value
+              setStartDate(value)
+              const error = dateRangeError(value || null, endDate || null)
+              e.target.setCustomValidity(error ?? '')
+              setValidationMessage(error ?? '')
+              if (!error && value !== (task.start_date ?? ''))
+                save({ start_date: value || null, end_date: endDate || null })
+            }}
             className="opm-input"
           />
         </Field>
@@ -102,12 +143,28 @@ export function DrawerFields({ task, workspaceId }: { task: Task; workspaceId: s
           <input
             aria-label="Due date"
             type="date"
-            defaultValue={task.end_date ?? ''}
-            onChange={(e) => save({ end_date: e.target.value || null })}
+            min={MIN_TASK_DATE}
+            max={MAX_TASK_DATE}
+            value={endDate}
+            onChange={(e) => {
+              const value = e.target.value
+              setEndDate(value)
+              const error = dateRangeError(startDate || null, value || null)
+              e.target.setCustomValidity(error ?? '')
+              setValidationMessage(error ?? '')
+              if (!error && value !== (task.end_date ?? ''))
+                save({ start_date: startDate || null, end_date: value || null })
+            }}
             className="opm-input"
           />
         </Field>
       </div>
+
+      {validationMessage && (
+        <p role="alert" className="text-sm text-[var(--danger)]">
+          {validationMessage}
+        </p>
+      )}
 
       <label className="block">
         <span className="opm-field-label mb-2 block">Description</span>

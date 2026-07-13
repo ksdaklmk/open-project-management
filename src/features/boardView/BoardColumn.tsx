@@ -17,6 +17,7 @@ export function BoardColumn({
   members,
   onCardDragStart,
   onDrop,
+  onMove,
   onOpen,
   selectedRef,
 }: {
@@ -25,6 +26,7 @@ export function BoardColumn({
   members: Member[]
   onCardDragStart: (taskId: string) => void
   onDrop: (status: Status, insertIndex: number) => void
+  onMove: (taskId: string, status: Status, insertIndex?: number) => void
   onOpen: (ref: string) => void
   selectedRef?: string | null
 }) {
@@ -96,6 +98,11 @@ export function BoardColumn({
                   onDragStart={onCardDragStart}
                   onOpen={onOpen}
                   selected={t.ref === selectedRef}
+                  canMoveUp={i > 0}
+                  canMoveDown={i < tasks.length - 1}
+                  onMoveUp={() => onMove(t.id, status, i - 1)}
+                  onMoveDown={() => onMove(t.id, status, i + 2)}
+                  onMoveToStatus={(nextStatus) => onMove(t.id, nextStatus)}
                 />
                 {/* Indicator after this card */}
                 {hoverIndex === i + 1 && <DropIndicator />}

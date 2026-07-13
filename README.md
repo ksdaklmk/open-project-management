@@ -86,6 +86,6 @@ procedures. Current privileged workspace administration is documented in [admin]
 ## Known limitations
 
 The repository is an internal beta. Owners and admins can manage normal workspace, project,
-membership, invitation, and ownership flows in the settings UI. Realtime reconciliation and
-server-authored activity are not yet implemented; large task sets are not yet paginated; and the
-full responsive/accessibility production gate remains pending.
+membership, invitation, and ownership flows in the settings UI. Large task sets, activity feeds,
+and comment threads are not yet paginated, and the scale, observability, and production-operations
+release gates remain part of Phase 1C.

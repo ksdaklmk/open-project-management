@@ -1061,6 +1061,38 @@ input[type='checkbox'] {
   }
 }
 
+.opm-card-move-summary {
+  width: 100%;
+  display: flex;
+  min-height: 32px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.35rem 0.75rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.opm-card-move-summary:hover,
+.opm-card-move-summary:focus-visible {
+  background: var(--canvas);
+  color: var(--text);
+}
+
+.opm-card-move-menu {
+  border-top: 1px solid var(--border);
+  padding: 0.5rem;
+  background: var(--canvas);
+}
+
+@media (pointer: coarse) {
+  .opm-card-move-summary,
+  .opm-card-move-menu .opm-btn {
+    min-height: 44px;
+  }
+}
+
 /* Existing feature markup uses Tailwind radius utilities. These scoped overrides
    flatten database surfaces without affecting true controls or floating UI. */
 .opm-main .rounded-xl {

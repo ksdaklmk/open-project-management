@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { useFilteredTasks } from '../../lib/hooks/useFilteredTasks'
 import { useMembers } from '../../lib/hooks/useMembers'
 import { useMoveTask } from '../../lib/hooks/useMoveTask'
@@ -12,47 +12,73 @@ import type { Status } from '../../types/constants'
 
 export function BoardView() {
   const { activeId, loading: wsLoading } = useActiveWorkspace()
-  const { data: tasks, isLoading, error } = useFilteredTasks(activeId ?? '')
+  const { data: tasks, isLoading, error, refetch } = useFilteredTasks(activeId ?? '')
   const { data: members } = useMembers(activeId ?? '')
   const move = useMoveTask(activeId ?? '')
   const { setTaskRef, taskRef } = useViewState()
   const dragId = useRef<string | null>(null)
+  const [moveAnnouncement, setMoveAnnouncement] = useState('')
 
   const onCardDragStart = (taskId: string) => {
     dragId.current = taskId
+  }
+
+  const moveTask = (taskId: string, toStatus: Status, insertIndex: number, announce = false) => {
+    const all = tasks ?? []
+    const dragged = all.find((t) => t.id === taskId)
+    if (!dragged) return
+    const sorted = all.filter((t) => t.status === toStatus).sort((a, b) => a.position - b.position)
+    const target = dropTarget(sorted, taskId, insertIndex)
+    const statusLabel = STATUSES.find((status) => status.id === toStatus)?.label ?? toStatus
+    const args = { taskId, toStatus, ...target, fromStatus: dragged.status }
+    if (!announce) return move.mutate(args)
+    move.mutate(args, {
+      onSuccess: () => {
+        const targetTasks = sorted.filter((task) => task.id !== taskId)
+        const position = targetTasks.filter((task) => task.position < target.position).length + 1
+        setMoveAnnouncement(`${dragged.ref} moved to ${statusLabel}, position ${position}.`)
+      },
+      onError: () => setMoveAnnouncement(`${dragged.ref} could not be moved.`),
+    })
   }
 
   const onDrop = (toStatus: Status, insertIndex: number) => {
     const taskId = dragId.current
     dragId.current = null
     if (!taskId) return
-    const all = tasks ?? []
-    const dragged = all.find((t) => t.id === taskId)
-    if (!dragged) return
-    const sorted = all.filter((t) => t.status === toStatus).sort((a, b) => a.position - b.position)
-    const target = dropTarget(sorted, taskId, insertIndex)
-    move.mutate({ taskId, toStatus, ...target, fromStatus: dragged.status })
+    moveTask(taskId, toStatus, insertIndex)
+  }
+
+  const onAccessibleMove = (taskId: string, toStatus: Status, insertIndex?: number) => {
+    const targetLength = (tasks ?? []).filter((task) => task.status === toStatus).length
+    moveTask(taskId, toStatus, insertIndex ?? targetLength, true)
   }
 
   if (wsLoading || isLoading) return <BoardSkeleton />
-  if (error) return <BoardError />
+  if (error) return <BoardError onRetry={() => refetch()} />
 
   const columns = boardColumns(tasks ?? [])
   return (
-    <div className="opm-board flex gap-3 overflow-x-auto pb-4">
-      {columns.map((c) => (
-        <BoardColumn
-          key={c.status}
-          status={c.status}
-          tasks={c.tasks}
-          members={members ?? []}
-          onCardDragStart={onCardDragStart}
-          onDrop={onDrop}
-          onOpen={setTaskRef}
-          selectedRef={taskRef}
-        />
-      ))}
-    </div>
+    <>
+      <p className="sr-only" aria-live="polite" aria-atomic="true">
+        {moveAnnouncement}
+      </p>
+      <div className="opm-board flex gap-3 overflow-x-auto pb-4">
+        {columns.map((c) => (
+          <BoardColumn
+            key={c.status}
+            status={c.status}
+            tasks={c.tasks}
+            members={members ?? []}
+            onCardDragStart={onCardDragStart}
+            onDrop={onDrop}
+            onMove={onAccessibleMove}
+            onOpen={setTaskRef}
+            selectedRef={taskRef}
+          />
+        ))}
+      </div>
+    </>
   )
 }
 
@@ -84,7 +110,7 @@ function BoardSkeleton() {
   )
 }
 
-function BoardError() {
+function BoardError({ onRetry }: { onRetry: () => void }) {
   return (
     <div
       role="alert"
@@ -106,6 +132,9 @@ function BoardError() {
       <p className="mt-1 max-w-xs text-sm text-[var(--muted)]">
         Check your connection and try again.
       </p>
+      <button type="button" className="opm-btn mt-4" onClick={onRetry}>
+        Retry
+      </button>
     </div>
   )
 }

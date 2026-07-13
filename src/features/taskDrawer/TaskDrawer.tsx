@@ -15,11 +15,16 @@ const FOCUSABLE =
 export function TaskDrawer() {
   const { taskRef, setTaskRef } = useViewState()
   const { activeId } = useActiveWorkspace()
-  const { data: tasks, isLoading, error } = useTasks(activeId ?? '')
+  const { data: tasks, isLoading, error, refetch } = useTasks(activeId ?? '')
   const dialogRef = useRef<HTMLDivElement>(null)
   const openerRef = useRef<HTMLElement | null>(null)
 
-  const close = () => setTaskRef(null)
+  const close = () => {
+    // Title and description save on blur. Blur before every explicit close path
+    // so backdrop, close button, Escape, and post-delete closure behave alike.
+    ;(document.activeElement as HTMLElement | null)?.blur?.()
+    setTaskRef(null)
+  }
   const task = taskRef ? tasks?.find((t) => t.ref === taskRef) : undefined
 
   // Focus the panel on open; restore focus to the opener on close.
@@ -36,9 +41,6 @@ export function TaskDrawer() {
 
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
-      // Title/description save on blur; unmounting never fires it. Blur the
-      // active field first so a dirty value is saved, not discarded.
-      ;(document.activeElement as HTMLElement | null)?.blur?.()
       return close()
     }
     if (e.key !== 'Tab') return
@@ -114,6 +116,9 @@ export function TaskDrawer() {
               Couldn't load this task
             </p>
             <p className="text-sm text-[var(--muted)]">Check your connection, then try again.</p>
+            <button type="button" onClick={() => refetch()} className="opm-btn mt-2">
+              Retry
+            </button>
             <button onClick={close} className="opm-btn mt-2">
               Close
             </button>
@@ -145,12 +150,17 @@ function DeleteTaskButton({
   workspaceId: string
   onDeleted: () => void
 }) {
-  const [confirming, setConfirming] = useState(false)
+  const [confirmingTaskId, setConfirmingTaskId] = useState<string | null>(null)
   const del = useDeleteTask(workspaceId)
+  const confirming = confirmingTaskId === taskId
 
   if (!confirming)
     return (
-      <button onClick={() => setConfirming(true)} className="opm-btn opm-btn-danger">
+      <button
+        onClick={() => setConfirmingTaskId(taskId)}
+        className="opm-btn opm-btn-danger"
+        disabled={del.isPending}
+      >
         Delete task
       </button>
     )
@@ -161,11 +171,17 @@ function DeleteTaskButton({
       <button
         onClick={() => del.mutate(taskId, { onSuccess: onDeleted })}
         className="opm-btn opm-btn-danger font-semibold"
+        disabled={del.isPending}
       >
-        Delete
+        {del.isPending ? 'Deleting…' : 'Delete'}
       </button>
       {/* autoFocus lands on the safe option; both stay inside the drawer's focus trap */}
-      <button autoFocus onClick={() => setConfirming(false)} className="opm-btn">
+      <button
+        autoFocus
+        onClick={() => setConfirmingTaskId(null)}
+        className="opm-btn"
+        disabled={del.isPending}
+      >
         Cancel
       </button>
     </div>

@@ -3,6 +3,8 @@ import { render, screen, fireEvent } from '@testing-library/react'
 
 const toggle = vi.fn()
 const add = vi.fn()
+const refetch = vi.fn()
+const addState = { isPending: false }
 const rows = [
   { id: 's1', title: 'Spec it', done: true },
   { id: 's2', title: 'Build it', done: false },
@@ -15,7 +17,8 @@ const subs: { data: typeof rows | undefined; isLoading: boolean; error: Error | 
 vi.mock('../../lib/hooks/useSubtasks', () => ({
   useSubtasks: () => ({
     ...subs,
-    add: { mutate: add },
+    refetch,
+    add: { mutate: add, ...addState },
     toggle: { mutate: toggle },
     remove: { mutate: vi.fn() },
   }),
@@ -30,6 +33,8 @@ beforeEach(() => {
   subs.data = rows
   subs.isLoading = false
   subs.error = null
+  addState.isPending = false
+  refetch.mockReset()
 })
 
 describe('SubtaskList', () => {
@@ -73,5 +78,14 @@ describe('SubtaskList', () => {
     subs.error = new Error('boom')
     render(<SubtaskList taskId="t1" />)
     expect(screen.getByText(/couldn't load subtasks/i)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }))
+    expect(refetch).toHaveBeenCalled()
+  })
+
+  it('prevents duplicate subtask submissions while add is pending', () => {
+    addState.isPending = true
+    render(<SubtaskList taskId="t1" />)
+    expect(draftBox()).toBeDisabled()
+    expect(screen.getByText('Adding subtask…')).toBeInTheDocument()
   })
 })

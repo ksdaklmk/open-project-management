@@ -6,10 +6,10 @@ const SKEL_WIDTHS = ['68%', '55%', '72%', '60%']
 
 export function ActivityView() {
   const { activeId, loading: wsLoading } = useActiveWorkspace()
-  const { data: items, isLoading, error } = useActivity(activeId ?? '')
+  const { data: items, isLoading, error, refetch } = useActivity(activeId ?? '')
 
   if (wsLoading || isLoading) return <ActivitySkeleton />
-  if (error) return <ActivityError />
+  if (error) return <ActivityError onRetry={() => refetch()} />
 
   const feed = items ?? []
   if (feed.length === 0) return <ActivityEmpty />
@@ -50,7 +50,7 @@ function ActivitySkeleton() {
   )
 }
 
-function ActivityError() {
+function ActivityError({ onRetry }: { onRetry: () => void }) {
   return (
     <div
       role="alert"
@@ -72,6 +72,9 @@ function ActivityError() {
       <p className="mt-1 max-w-xs text-sm text-[var(--muted)]">
         Check your connection and try again.
       </p>
+      <button type="button" className="opm-btn mt-4" onClick={onRetry}>
+        Retry
+      </button>
     </div>
   )
 }

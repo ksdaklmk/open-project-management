@@ -29,9 +29,12 @@ const TASKS = [
 const mutate = vi.fn()
 const moveMutate = vi.fn()
 const delMutate = vi.fn()
+const deleteState = { isPending: false }
 vi.mock('../../lib/hooks/useUpdateTask', () => ({ useUpdateTask: () => ({ mutate }) }))
 vi.mock('../../lib/hooks/useMoveTask', () => ({ useMoveTask: () => ({ mutate: moveMutate }) }))
-vi.mock('../../lib/hooks/useDeleteTask', () => ({ useDeleteTask: () => ({ mutate: delMutate }) }))
+vi.mock('../../lib/hooks/useDeleteTask', () => ({
+  useDeleteTask: () => ({ mutate: delMutate, ...deleteState }),
+}))
 vi.mock('../../lib/hooks/useMembers', () => ({ useMembers: () => ({ data: [] }) }))
 vi.mock('../../lib/hooks/useTaskTags', () => ({
   useTaskTags: () => ({ add: { mutate: vi.fn() }, remove: { mutate: vi.fn() } }),
@@ -45,8 +48,8 @@ vi.mock('../../lib/hooks/useSubtasks', () => ({
   }),
 }))
 vi.mock('../../lib/hooks/useComments', () => ({
-  useComments: () => ({ data: [] }),
-  useAddComment: () => ({ mutate: vi.fn() }),
+  useComments: () => ({ data: [], refetch: vi.fn() }),
+  useAddComment: () => ({ mutate: vi.fn(), isPending: false }),
 }))
 
 import { TaskDrawer } from './TaskDrawer'
@@ -58,7 +61,8 @@ beforeEach(() => {
   mutate.mockClear()
   moveMutate.mockClear()
   delMutate.mockClear()
-  useTasks.mockReturnValue({ data: TASKS, isLoading: false, error: null })
+  deleteState.isPending = false
+  useTasks.mockReturnValue({ data: TASKS, isLoading: false, error: null, refetch: vi.fn() })
 })
 
 describe('TaskDrawer', () => {
@@ -82,13 +86,24 @@ describe('TaskDrawer', () => {
 
   it('closes when the backdrop is clicked', () => {
     render(<TaskDrawer />)
+    const title = screen.getByLabelText('Title')
+    fireEvent.change(title, { target: { value: 'Backdrop draft' } })
+    title.focus()
     fireEvent.click(screen.getByTestId('drawer-backdrop'))
+    expect(mutate).toHaveBeenCalledWith({ id: 't1', patch: { title: 'Backdrop draft' } })
     expect(setTaskRef).toHaveBeenCalledWith(null)
   })
 
   it('closes when the header close button is clicked', () => {
     render(<TaskDrawer />)
+    const description = screen.getByLabelText('Description')
+    fireEvent.change(description, { target: { value: 'Close button draft' } })
+    description.focus()
     fireEvent.click(screen.getAllByRole('button', { name: 'Close' })[1])
+    expect(mutate).toHaveBeenCalledWith({
+      id: 't1',
+      patch: { description: 'Close button draft' },
+    })
     expect(setTaskRef).toHaveBeenCalledWith(null)
   })
 
@@ -214,5 +229,26 @@ describe('TaskDrawer', () => {
     render(<TaskDrawer />)
     fireEvent.click(screen.getByRole('button', { name: 'Delete task' }))
     expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Cancel' }))
+  })
+
+  it('keys delete confirmation by task and disables confirmation controls while pending', () => {
+    const second = { ...TASKS[0], id: 't2', ref: 'NIM-102', title: 'Second task' }
+    useTasks.mockReturnValue({
+      data: [...TASKS, second],
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    })
+    const view = render(<TaskDrawer />)
+    fireEvent.click(screen.getByRole('button', { name: 'Delete task' }))
+    state.taskRef = 'NIM-102'
+    view.rerender(<TaskDrawer />)
+    expect(screen.getByRole('button', { name: 'Delete task' })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete task' }))
+    deleteState.isPending = true
+    view.rerender(<TaskDrawer />)
+    expect(screen.getByRole('button', { name: 'Deleting…' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled()
   })
 })

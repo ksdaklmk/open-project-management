@@ -2,14 +2,14 @@ import { useState } from 'react'
 import { useSubtasks } from '../../lib/hooks/useSubtasks'
 
 export function SubtaskList({ taskId }: { taskId: string }) {
-  const { data, isLoading, error, add, toggle, remove } = useSubtasks(taskId)
+  const { data, isLoading, error, refetch, add, toggle, remove } = useSubtasks(taskId)
   const rows = data ?? []
   const done = rows.filter((s) => s.done).length
   const [draft, setDraft] = useState('')
 
   const submit = () => {
     const t = draft.trim()
-    if (!t) return
+    if (!t || add.isPending) return
     add.mutate(t, { onSuccess: () => setDraft('') })
   }
 
@@ -24,7 +24,14 @@ export function SubtaskList({ taskId }: { taskId: string }) {
         )}
       </h3>
       {isLoading && <p className="text-sm text-[var(--muted)]">Loading…</p>}
-      {error && <p className="text-sm text-[var(--text)]">Couldn't load subtasks.</p>}
+      {error && (
+        <div role="alert" className="text-sm text-[var(--text)]">
+          <p>Couldn't load subtasks.</p>
+          <button type="button" className="opm-btn mt-2" onClick={() => refetch()}>
+            Retry
+          </button>
+        </div>
+      )}
       <ul className="space-y-1">
         {rows.map((s) => (
           <li key={s.id} className="flex items-center gap-2">
@@ -53,8 +60,10 @@ export function SubtaskList({ taskId }: { taskId: string }) {
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         onKeyDown={(e) => e.key === 'Enter' && submit()}
+        disabled={add.isPending}
         className="opm-input mt-2 text-sm"
       />
+      {add.isPending && <p className="mt-1 text-xs text-[var(--muted)]">Adding subtask…</p>}
     </section>
   )
 }
