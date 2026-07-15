@@ -39,6 +39,29 @@ vi.mock('../../lib/hooks/useMembers', () => ({ useMembers: () => ({ data: [] }) 
 vi.mock('../../lib/hooks/useTaskTags', () => ({
   useTaskTags: () => ({ add: { mutate: vi.fn() }, remove: { mutate: vi.fn() } }),
 }))
+vi.mock('../../lib/hooks/useTaskRecurrence', () => ({
+  useTaskRecurrence: () => ({
+    data: null,
+    isLoading: false,
+    error: null,
+    refetch: vi.fn(),
+    save: { mutate: vi.fn(), isPending: false },
+    remove: { mutate: vi.fn(), isPending: false },
+  }),
+}))
+vi.mock('../../lib/hooks/useTaskDependencies', () => ({
+  useTaskDependencies: () => ({
+    data: [],
+    isLoading: false,
+    error: null,
+    refetch: vi.fn(),
+  }),
+  useDependencyCandidates: () => ({ data: [], isLoading: false }),
+  useTaskDependencyMutations: () => ({
+    create: { mutate: vi.fn(), isPending: false },
+    remove: { mutate: vi.fn(), isPending: false },
+  }),
+}))
 vi.mock('../../lib/hooks/useSubtasks', () => ({
   useSubtasks: () => ({
     data: [],

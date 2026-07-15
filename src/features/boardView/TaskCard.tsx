@@ -3,6 +3,7 @@ import type { CSSProperties } from 'react'
 import { TASK_TYPES, PRIORITIES, STATUSES, TAG_COLORS } from '../../types/constants'
 import type { Task } from '../../data/tasksRepo'
 import type { Member } from '../../data/membersRepo'
+import { BlockedBadge } from '../../components/BlockedBadge'
 
 // Mirrors the shape geometry from TaskRow's shapeStyle for visual consistency.
 function TypeMark({ typeId }: { typeId: string }) {
@@ -41,6 +42,8 @@ export function TaskCard({
   onDragStart,
   onOpen,
   selected,
+  bulkSelected,
+  onToggleSelected,
   canMoveUp,
   canMoveDown,
   onMoveUp,
@@ -52,6 +55,8 @@ export function TaskCard({
   onDragStart: (taskId: string) => void
   onOpen: (ref: string) => void
   selected?: boolean
+  bulkSelected: boolean
+  onToggleSelected: (taskId: string) => void
   canMoveUp: boolean
   canMoveDown: boolean
   onMoveUp: () => void
@@ -74,14 +79,22 @@ export function TaskCard({
         setIsDragging(true)
       }}
       onDragEnd={() => setIsDragging(false)}
-      data-selected={selected || undefined}
-      className={`opm-board-card select-none rounded border border-[var(--border)] bg-[var(--surface)] text-[var(--text)] cursor-grab${isDragging ? ' is-dragging' : ''}`}
+      data-selected={selected || bulkSelected || undefined}
+      className={`opm-board-card relative select-none rounded border border-[var(--border)] bg-[var(--surface)] text-[var(--text)] cursor-grab${isDragging ? ' is-dragging' : ''}`}
     >
+      <input
+        type="checkbox"
+        aria-label={`Select ${task.ref}: ${task.title}`}
+        checked={bulkSelected}
+        className="absolute right-3 top-3 z-10"
+        onChange={() => onToggleSelected(task.id)}
+        onDragStart={(event) => event.preventDefault()}
+      />
       <button
         type="button"
         onClick={() => onOpen(task.ref)}
         aria-label={`Open ${task.ref}: ${task.title}. Status: ${status?.label ?? task.status}. Priority: ${priority?.label ?? task.priority}.`}
-        className="opm-task-open block w-full cursor-grab p-3 text-left"
+        className="opm-task-open block w-full cursor-grab p-3 pr-10 text-left"
       >
         {/* Row 1: type mark · ref · (points right-aligned) */}
         <span className="flex items-center gap-1.5">
@@ -96,8 +109,9 @@ export function TaskCard({
         </span>
 
         {/* Row 3: priority chip · tags · assignee avatar */}
-        {(priority || tags.length > 0 || assignee) && (
+        {(task.blocked_by_count || priority || tags.length > 0 || assignee) && (
           <span className="mt-2 flex flex-wrap items-center gap-1.5">
+            <BlockedBadge count={task.blocked_by_count} />
             {priority && (
               <span
                 className="inline-flex items-center gap-1.5 rounded px-2 py-0.5 text-xs font-medium"

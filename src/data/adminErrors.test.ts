@@ -8,6 +8,7 @@ describe('mapAdminError', () => {
     ['23514', 'workspace must retain at least one owner', 'Transfer ownership'],
     ['23514', 'members_capacity_range', 'between 0 and 168'],
     ['23505', 'projects_workspace_id_key_key', 'already in use'],
+    ['23505', 'project_templates_workspace_name_idx', 'template name is already in use'],
   ])('maps %s errors to actionable copy', (code, message, expected) => {
     expect(mapAdminError({ code, message }).message).toContain(expected)
   })

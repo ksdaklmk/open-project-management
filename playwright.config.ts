@@ -2,7 +2,10 @@ import { defineConfig, devices } from '@playwright/test'
 
 export default defineConfig({
   testDir: './e2e',
-  fullyParallel: true,
+  // Authenticated journeys share one deterministic workspace. Keep test files
+  // ordered so a template capture cannot race a task-edit journey; browser
+  // projects still exercise that workspace concurrently.
+  fullyParallel: false,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 2 : 0,
   reporter: process.env.CI ? [['html', { open: 'never' }], ['github']] : 'list',

@@ -6,6 +6,11 @@ import { splitGantt, buildScale } from './timeScale'
 import { addDays, isoLocal, parseDate, startOfWeek } from '../../lib/weeks'
 import type { Task } from '../../data/tasksRepo'
 import { LoadMoreButton } from '../../components/LoadMoreButton'
+import { useMilestones } from '../../lib/hooks/useMilestones'
+import { useTaskDependencyEdges } from '../../lib/hooks/useTaskDependencies'
+import type { ProjectMilestone } from '../../data/milestonesRepo'
+import type { TaskDependencyEdge } from '../../data/dependenciesRepo'
+import { BlockedBadge } from '../../components/BlockedBadge'
 
 const COLOR: Record<string, string> = Object.fromEntries(STATUSES.map((s) => [s.id, s.color]))
 const STATUS_LABEL: Record<string, string> = Object.fromEntries(
@@ -32,21 +37,38 @@ export function GanttView({ now = new Date() }: { now?: Date } = {}) {
     schedule: 'unscheduled',
     limit: 100,
   })
+  const milestonesQ = useMilestones(activeId ?? '')
+  const dependenciesQ = useTaskDependencyEdges(
+    activeId ?? '',
+    (scheduledQ.data ?? []).map((task) => task.id),
+  )
   const { setTaskRef } = useViewState()
 
-  if (wsLoading || scheduledQ.isLoading || unscheduledQ.isLoading) return <GanttSkeleton />
-  if (scheduledQ.error || unscheduledQ.error)
+  if (
+    wsLoading ||
+    scheduledQ.isLoading ||
+    unscheduledQ.isLoading ||
+    milestonesQ.isLoading ||
+    dependenciesQ.isLoading
+  )
+    return <GanttSkeleton />
+  if (scheduledQ.error || unscheduledQ.error || milestonesQ.error || dependenciesQ.error)
     return (
       <GanttError
         onRetry={() => {
           void scheduledQ.refetch()
           void unscheduledQ.refetch()
+          void milestonesQ.refetch()
+          void dependenciesQ.refetch()
         }}
       />
     )
 
   const all = [...(scheduledQ.data ?? []), ...(unscheduledQ.data ?? [])]
-  if (all.length === 0) return <GanttEmpty />
+  const milestones = (milestonesQ.data ?? []).filter(
+    (milestone) => milestone.target_date >= windowStart && milestone.target_date <= windowEnd,
+  )
+  if (all.length === 0 && milestones.length === 0) return <GanttEmpty />
 
   const { scheduled, unscheduled } = splitGantt(all)
   const ordered = [...scheduled].sort((a, b) =>
@@ -59,7 +81,7 @@ export function GanttView({ now = new Date() }: { now?: Date } = {}) {
 
   return (
     <div>
-      {ordered.length === 0 ? (
+      {ordered.length === 0 && milestones.length === 0 ? (
         <div className="rounded-xl border border-dashed border-[var(--border)] bg-[var(--bg)] px-6 py-10 text-center">
           <p className="text-sm text-[var(--muted)]">
             No scheduled tasks yet. Add start and due dates to place a task on the timeline.
@@ -72,7 +94,13 @@ export function GanttView({ now = new Date() }: { now?: Date } = {}) {
           tabIndex={0}
           className="opm-chart-scroll"
         >
-          <GanttChart ordered={ordered} now={now} onOpen={setTaskRef} />
+          <GanttChart
+            ordered={ordered}
+            milestones={milestones}
+            dependencies={dependenciesQ.data ?? []}
+            now={now}
+            onOpen={setTaskRef}
+          />
         </div>
       )}
       {unscheduled.length > 0 && (
@@ -126,15 +154,24 @@ export function GanttView({ now = new Date() }: { now?: Date } = {}) {
 
 function GanttChart({
   ordered,
+  milestones,
+  dependencies,
   now,
   onOpen,
 }: {
   ordered: Task[]
+  milestones: ProjectMilestone[]
+  dependencies: TaskDependencyEdge[]
   now: Date
   onOpen: (ref: string) => void
 }) {
-  const scale = buildScale(ordered, now)
+  const scale = buildScale(
+    ordered,
+    now,
+    milestones.map((milestone) => parseDate(milestone.target_date)),
+  )
   const weekCount = scale.weeks.length
+  const milestoneLaneHeight = milestones.length ? 44 : 0
 
   return (
     <div className="opm-chart-panel min-w-[720px] border border-[var(--border)] bg-[var(--surface)] p-4">
@@ -174,6 +211,57 @@ function GanttChart({
           ))}
         </div>
 
+        {milestones.length > 0 && (
+          <div
+            className="grid border-b border-[var(--border)]"
+            style={{ gridTemplateColumns: GRID }}
+          >
+            <span className="self-center pr-3 text-xs font-medium text-[var(--muted)]">
+              Milestones
+            </span>
+            <span className="relative block h-11">
+              {milestones.map((milestone) => {
+                const { leftPct } = scale.position(
+                  parseDate(milestone.target_date),
+                  parseDate(milestone.target_date),
+                )
+                const color =
+                  milestone.status === 'complete'
+                    ? 'var(--success)'
+                    : milestone.status === 'at_risk'
+                      ? 'var(--danger)'
+                      : 'var(--primary)'
+                return (
+                  <span
+                    key={milestone.id}
+                    role="img"
+                    aria-label={`${milestone.title}, ${milestone.projectName}, ${milestone.target_date}, ${milestone.status.replace('_', ' ')}`}
+                    title={`${milestone.title} · ${milestone.projectName} · ${milestone.target_date}`}
+                    className="absolute top-1 flex max-w-24 -translate-x-1/2 flex-col items-center"
+                    style={{ left: `${leftPct}%`, color }}
+                  >
+                    <span
+                      aria-hidden="true"
+                      className="h-3 w-3 rotate-45 border border-[var(--surface)]"
+                      style={{ background: color }}
+                    />
+                    <span className="mt-0.5 block max-w-24 truncate text-[10px]">
+                      {milestone.title}
+                    </span>
+                  </span>
+                )
+              })}
+            </span>
+          </div>
+        )}
+
+        <DependencyLines
+          ordered={ordered}
+          dependencies={dependencies}
+          scale={scale}
+          top={milestoneLaneHeight}
+        />
+
         {ordered.map((t) => {
           const { leftPct, widthPct } = scale.position(
             parseDate(t.start_date!),
@@ -193,6 +281,7 @@ function GanttChart({
                   <span className="shrink-0 font-medium tabular-nums">{t.ref}</span>
                   <span aria-hidden="true">·</span>
                   <span className="truncate">{STATUS_LABEL[t.status] ?? t.status}</span>
+                  <BlockedBadge count={t.blocked_by_count} compact />
                 </span>
                 <span className="block truncate text-xs text-[var(--text)]">{t.title}</span>
               </span>
@@ -231,6 +320,81 @@ function GanttChart({
         )}
       </div>
     </div>
+  )
+}
+
+function DependencyLines({
+  ordered,
+  dependencies,
+  scale,
+  top,
+}: {
+  ordered: Task[]
+  dependencies: TaskDependencyEdge[]
+  scale: ReturnType<typeof buildScale>
+  top: number
+}) {
+  const rows = new Map(ordered.map((task, index) => [task.id, { task, index }]))
+  const visible = dependencies.flatMap((dependency) => {
+    const predecessor = rows.get(dependency.predecessor.id)
+    const successor = rows.get(dependency.successor.id)
+    if (!predecessor || !successor) return []
+    const predecessorBar = scale.position(
+      parseDate(predecessor.task.start_date!),
+      parseDate(predecessor.task.end_date!),
+    )
+    const successorBar = scale.position(
+      parseDate(successor.task.start_date!),
+      parseDate(successor.task.end_date!),
+    )
+    return [
+      {
+        id: dependency.id,
+        x1: predecessorBar.leftPct + predecessorBar.widthPct,
+        y1: predecessor.index * 34 + 17,
+        x2: successorBar.leftPct,
+        y2: successor.index * 34 + 17,
+      },
+    ]
+  })
+  if (visible.length === 0) return null
+  return (
+    <svg
+      data-testid="gantt-dependencies"
+      aria-hidden="true"
+      className="pointer-events-none absolute right-0"
+      style={{ left: LABEL_COL, top, height: Math.max(ordered.length * 34, 1) }}
+      viewBox={`0 0 100 ${Math.max(ordered.length * 34, 1)}`}
+      preserveAspectRatio="none"
+    >
+      <defs>
+        <marker
+          id="gantt-dependency-arrow"
+          viewBox="0 0 6 6"
+          refX="5"
+          refY="3"
+          markerWidth="5"
+          markerHeight="5"
+          orient="auto-start-reverse"
+        >
+          <path d="M0 0 6 3 0 6Z" fill="var(--muted)" />
+        </marker>
+      </defs>
+      {visible.map((line) => {
+        const bend = (line.x1 + line.x2) / 2
+        return (
+          <path
+            key={line.id}
+            d={`M ${line.x1} ${line.y1} C ${bend} ${line.y1}, ${bend} ${line.y2}, ${line.x2} ${line.y2}`}
+            fill="none"
+            stroke="var(--muted)"
+            strokeWidth="0.5"
+            vectorEffect="non-scaling-stroke"
+            markerEnd="url(#gantt-dependency-arrow)"
+          />
+        )
+      })}
+    </svg>
   )
 }
 

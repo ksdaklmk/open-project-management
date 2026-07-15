@@ -36,6 +36,9 @@ export function mapAdminError(error: DatabaseErrorLike): AdminError {
   if (error.code === '23505' && context.includes('projects_workspace_id_key_key')) {
     return new AdminError('That project key is already in use in this workspace.', error.code)
   }
+  if (error.code === '23505' && context.includes('project_templates_workspace_name_idx')) {
+    return new AdminError('That template name is already in use in this workspace.', error.code)
+  }
   if (error.code === '22023') {
     return new AdminError(error.message, error.code)
   }

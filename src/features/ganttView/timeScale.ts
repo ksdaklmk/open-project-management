@@ -18,9 +18,15 @@ export interface GanttScale {
 
 const LABEL = { month: 'short', day: 'numeric' } as const
 
-export function buildScale(scheduled: Task[], now: Date): GanttScale {
-  const starts = scheduled.map((t) => parseDate(t.start_date!).getTime())
-  const ends = scheduled.map((t) => parseDate(t.end_date!).getTime())
+export function buildScale(scheduled: Task[], now: Date, markerDates: Date[] = []): GanttScale {
+  const starts = [
+    ...scheduled.map((t) => parseDate(t.start_date!).getTime()),
+    ...markerDates.map((date) => date.getTime()),
+  ]
+  const ends = [
+    ...scheduled.map((t) => parseDate(t.end_date!).getTime()),
+    ...markerDates.map((date) => date.getTime()),
+  ]
   const rangeStart = startOfWeek(new Date(Math.min(...starts)))
   const lastWeek = startOfWeek(new Date(Math.max(...ends)))
   const weekCount = Math.floor(daysBetween(rangeStart, lastWeek) / 7) + 1

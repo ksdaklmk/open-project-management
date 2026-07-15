@@ -36,7 +36,12 @@ describe('subscribeToWorkspace', () => {
       { event: '*', schema: 'public', table: 'notifications' },
       expect.any(Function),
     )
-    expect(on).toHaveBeenCalledTimes(10)
+    expect(on).toHaveBeenCalledWith(
+      'postgres_changes',
+      expect.objectContaining({ table: 'project_milestones', filter: 'workspace_id=eq.w1' }),
+      expect.any(Function),
+    )
+    expect(on).toHaveBeenCalledTimes(12)
     expect(subscribe).toHaveBeenCalledOnce()
   })
 

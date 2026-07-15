@@ -12,7 +12,10 @@ export function TaskTable({
   tasks,
   members,
   selectedRef,
+  bulkSelectedIds,
   onSelect,
+  onToggleTask,
+  onToggleAll,
   onPatch,
   onMove,
 }: {
@@ -20,11 +23,16 @@ export function TaskTable({
   tasks: Task[]
   members: Member[]
   selectedRef?: string | null
+  bulkSelectedIds: Set<string>
   onSelect: (ref: string) => void
+  onToggleTask: (taskId: string) => void
+  onToggleAll: (taskIds: string[], selected: boolean) => void
   onPatch: (id: string, p: Patch) => void
   onMove: (task: Task, toStatus: Task['status']) => void
 }) {
   const meta = STATUSES.find((s) => s.id === status)
+  const taskIds = tasks.map((task) => task.id)
+  const allSelected = taskIds.length > 0 && taskIds.every((id) => bulkSelectedIds.has(id))
   return (
     <section className="opm-task-group mb-6">
       <h2 className="opm-section-title mb-1.5 flex items-center gap-2 px-3 text-[var(--text)]">
@@ -35,6 +43,7 @@ export function TaskTable({
       <table className="opm-data-table w-full min-w-[940px] table-fixed border-collapse">
         <caption className="sr-only">{meta?.label} tasks</caption>
         <colgroup>
+          <col style={{ width: 38 }} />
           <col style={{ width: 34 }} />
           <col style={{ width: 76 }} />
           <col />
@@ -46,6 +55,14 @@ export function TaskTable({
         </colgroup>
         <thead className="opm-table-head">
           <tr>
+            <th scope="col" className="pl-3 text-left">
+              <input
+                type="checkbox"
+                aria-label={`Select all ${meta?.label ?? status} tasks`}
+                checked={allSelected}
+                onChange={(event) => onToggleAll(taskIds, event.target.checked)}
+              />
+            </th>
             <th scope="col">
               <span className="sr-only">Type</span>
             </th>
@@ -67,7 +84,9 @@ export function TaskTable({
               task={t}
               members={members}
               selected={t.ref === selectedRef}
+              bulkSelected={bulkSelectedIds.has(t.id)}
               onSelect={onSelect}
+              onToggleSelected={onToggleTask}
               onPatch={onPatch}
               onMove={onMove}
             />

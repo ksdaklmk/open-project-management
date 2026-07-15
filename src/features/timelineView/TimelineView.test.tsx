@@ -10,6 +10,15 @@ const { useTasks, useActiveWorkspace, setTaskRef } = vi.hoisted(() => ({
   setTaskRef: vi.fn(),
 }))
 vi.mock('../../lib/hooks/useTasks', () => ({ useTasks }))
+const timelineData = vi.hoisted(() => ({ milestones: [] as any[] }))
+vi.mock('../../lib/hooks/useMilestones', () => ({
+  useMilestones: () => ({
+    data: timelineData.milestones,
+    isLoading: false,
+    error: null,
+    refetch: vi.fn(),
+  }),
+}))
 vi.mock('../../lib/workspace', () => ({ useActiveWorkspace }))
 vi.mock('../../app/useViewState', () => ({ useViewState: () => ({ setTaskRef }) }))
 
@@ -44,7 +53,10 @@ const t = (over: Partial<Task>): Task => ({
   ...over,
 })
 
-beforeEach(() => vi.clearAllMocks())
+beforeEach(() => {
+  vi.clearAllMocks()
+  timelineData.milestones = []
+})
 
 describe('TimelineView', () => {
   it('has no automated accessibility violations', async () => {
@@ -86,6 +98,22 @@ describe('TimelineView', () => {
     expect(screen.getByText('NIM-101')).toBeInTheDocument()
     expect(screen.getByText(/Unscheduled/i)).toBeInTheDocument()
     expect(screen.queryByText('Earlier')).toBeNull() // empty bucket hidden
+  })
+
+  it('renders dated milestone markers independently of tasks', () => {
+    useTasks.mockReturnValue({ data: [], isLoading: false, error: null })
+    timelineData.milestones = [
+      {
+        id: 'm1',
+        title: 'General availability',
+        projectName: 'Nimbus',
+        target_date: '2026-06-27',
+        status: 'at_risk',
+      },
+    ]
+    render(inRouter(<TimelineView now={new Date(2026, 5, 25)} />))
+    expect(screen.getByText('General availability')).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'at risk milestone' })).toBeInTheDocument()
   })
 
   it('shows loading / error / empty states', () => {

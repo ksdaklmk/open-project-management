@@ -489,6 +489,112 @@ export type Database = {
         }
         Relationships: []
       }
+      project_milestones: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          project_id: string
+          status: Database["public"]["Enums"]["milestone_status"]
+          target_date: string
+          title: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          project_id: string
+          status?: Database["public"]["Enums"]["milestone_status"]
+          target_date: string
+          title: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          project_id?: string
+          status?: Database["public"]["Enums"]["milestone_status"]
+          target_date?: string
+          title?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_milestones_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_milestones_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_milestones_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_templates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          definition: Json
+          description: string
+          id: string
+          name: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          definition: Json
+          description?: string
+          id?: string
+          name: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          definition?: Json
+          description?: string
+          id?: string
+          name?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_templates_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           archived_at: string | null
@@ -523,6 +629,68 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "projects_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recurrence_occurrences: {
+        Row: {
+          created_at: string
+          generated_project_id: string | null
+          generated_task_id: string | null
+          id: string
+          occurrence_at: string
+          occurrence_key: string
+          recurrence_id: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          generated_project_id?: string | null
+          generated_task_id?: string | null
+          id?: string
+          occurrence_at: string
+          occurrence_key: string
+          recurrence_id: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          generated_project_id?: string | null
+          generated_task_id?: string | null
+          id?: string
+          occurrence_at?: string
+          occurrence_key?: string
+          recurrence_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurrence_occurrences_generated_project_id_fkey"
+            columns: ["generated_project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurrence_occurrences_generated_task_id_fkey"
+            columns: ["generated_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurrence_occurrences_recurrence_id_fkey"
+            columns: ["recurrence_id"]
+            isOneToOne: false
+            referencedRelation: "task_recurrences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurrence_occurrences_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
@@ -662,6 +830,248 @@ export type Database = {
           },
         ]
       }
+      task_bulk_operation_items: {
+        Row: {
+          after_state: Json
+          after_updated_at: string
+          before_state: Json
+          operation_id: string
+          task_id: string
+        }
+        Insert: {
+          after_state: Json
+          after_updated_at: string
+          before_state: Json
+          operation_id: string
+          task_id: string
+        }
+        Update: {
+          after_state?: Json
+          after_updated_at?: string
+          before_state?: Json
+          operation_id?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_bulk_operation_items_operation_id_fkey"
+            columns: ["operation_id"]
+            isOneToOne: false
+            referencedRelation: "task_bulk_operations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_bulk_operation_items_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_bulk_operations: {
+        Row: {
+          action: Json
+          actor_id: string
+          changed_count: number
+          created_at: string
+          id: string
+          requested_count: number
+          skipped_count: number
+          unchanged_count: number
+          undoable_until: string | null
+          undone_at: string | null
+          workspace_id: string
+        }
+        Insert: {
+          action: Json
+          actor_id: string
+          changed_count?: number
+          created_at?: string
+          id: string
+          requested_count?: number
+          skipped_count?: number
+          unchanged_count?: number
+          undoable_until?: string | null
+          undone_at?: string | null
+          workspace_id: string
+        }
+        Update: {
+          action?: Json
+          actor_id?: string
+          changed_count?: number
+          created_at?: string
+          id?: string
+          requested_count?: number
+          skipped_count?: number
+          unchanged_count?: number
+          undoable_until?: string | null
+          undone_at?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_bulk_operations_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_bulk_operations_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_dependencies: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          predecessor_task_id: string
+          successor_task_id: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          predecessor_task_id: string
+          successor_task_id: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          predecessor_task_id?: string
+          successor_task_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_dependencies_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_dependencies_predecessor_task_id_fkey"
+            columns: ["predecessor_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_dependencies_successor_task_id_fkey"
+            columns: ["successor_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_dependencies_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_recurrences: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          enabled: boolean
+          frequency: Database["public"]["Enums"]["recurrence_frequency"]
+          id: string
+          last_error_code: string | null
+          last_generated_at: string | null
+          next_occurrence_at: string
+          schedule_interval: number
+          source_task_id: string | null
+          source_template_id: string | null
+          target_project_id: string | null
+          timezone: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          enabled?: boolean
+          frequency: Database["public"]["Enums"]["recurrence_frequency"]
+          id?: string
+          last_error_code?: string | null
+          last_generated_at?: string | null
+          next_occurrence_at: string
+          schedule_interval?: number
+          source_task_id?: string | null
+          source_template_id?: string | null
+          target_project_id?: string | null
+          timezone: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          enabled?: boolean
+          frequency?: Database["public"]["Enums"]["recurrence_frequency"]
+          id?: string
+          last_error_code?: string | null
+          last_generated_at?: string | null
+          next_occurrence_at?: string
+          schedule_interval?: number
+          source_task_id?: string | null
+          source_template_id?: string | null
+          target_project_id?: string | null
+          timezone?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_recurrences_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_recurrences_source_task_id_fkey"
+            columns: ["source_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_recurrences_source_template_id_fkey"
+            columns: ["source_template_id"]
+            isOneToOne: false
+            referencedRelation: "project_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_recurrences_target_project_id_fkey"
+            columns: ["target_project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_recurrences_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_tags: {
         Row: {
           tag: string
@@ -720,6 +1130,7 @@ export type Database = {
       }
       tasks: {
         Row: {
+          archived_at: string | null
           assignee_id: string | null
           created_at: string
           created_by: string | null
@@ -739,6 +1150,7 @@ export type Database = {
           workspace_id: string
         }
         Insert: {
+          archived_at?: string | null
           assignee_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -758,6 +1170,7 @@ export type Database = {
           workspace_id: string
         }
         Update: {
+          archived_at?: string | null
           assignee_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -946,6 +1359,22 @@ export type Database = {
         Returns: number
       }
       accept_workspace_invitations: { Args: never; Returns: number }
+      apply_bulk_task_action: {
+        Args: {
+          p_action: Json
+          p_operation_id: string
+          p_task_ids: string[]
+          p_workspace_id: string
+        }
+        Returns: {
+          changed_count: number
+          operation_id: string
+          requested_count: number
+          skipped_count: number
+          unchanged_count: number
+          undoable_until: string
+        }[]
+      }
       archive_project: {
         Args: { p_project_id: string }
         Returns: {
@@ -974,6 +1403,31 @@ export type Database = {
           p_workspace_id: string
         }
         Returns: undefined
+      }
+      capture_project_template: {
+        Args: {
+          p_anchor_date: string
+          p_capacity_per_week?: number
+          p_description: string
+          p_name: string
+          p_project_id: string
+        }
+        Returns: {
+          created_at: string
+          created_by: string | null
+          definition: Json
+          description: string
+          id: string
+          name: string
+          updated_at: string
+          workspace_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "project_templates"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       claim_notification_outbox: {
         Args: { p_limit?: number }
@@ -1034,6 +1488,31 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      create_project_milestone: {
+        Args: {
+          p_project_id: string
+          p_status?: Database["public"]["Enums"]["milestone_status"]
+          p_target_date: string
+          p_title: string
+        }
+        Returns: {
+          created_at: string
+          created_by: string | null
+          id: string
+          project_id: string
+          status: Database["public"]["Enums"]["milestone_status"]
+          target_date: string
+          title: string
+          updated_at: string
+          workspace_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "project_milestones"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       create_saved_view: {
         Args: {
           p_configuration: Json
@@ -1063,6 +1542,7 @@ export type Database = {
       create_task: {
         Args: { p_project_id: string; p_title: string }
         Returns: {
+          archived_at: string | null
           assignee_id: string | null
           created_at: string
           created_by: string | null
@@ -1088,6 +1568,23 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      create_task_dependency: {
+        Args: { p_predecessor_task_id: string; p_successor_task_id: string }
+        Returns: {
+          created_at: string
+          created_by: string | null
+          id: string
+          predecessor_task_id: string
+          successor_task_id: string
+          workspace_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "task_dependencies"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       create_workspace: {
         Args: {
           p_initial_project_key: string
@@ -1099,7 +1596,24 @@ export type Database = {
           workspace_id: string
         }[]
       }
+      delete_project_milestone: {
+        Args: { p_milestone_id: string }
+        Returns: boolean
+      }
+      delete_project_template: {
+        Args: { p_template_id: string }
+        Returns: boolean
+      }
       delete_saved_view: { Args: { p_saved_view_id: string }; Returns: boolean }
+      delete_task_dependency: {
+        Args: { p_dependency_id: string }
+        Returns: boolean
+      }
+      delete_task_recurrence: { Args: { p_task_id: string }; Returns: boolean }
+      delete_template_recurrence: {
+        Args: { p_template_id: string }
+        Returns: boolean
+      }
       duplicate_saved_view: {
         Args: { p_name?: string; p_saved_view_id: string }
         Returns: {
@@ -1133,6 +1647,15 @@ export type Database = {
           p_workspace_id: string
         }
         Returns: string
+      }
+      generate_due_recurrences: {
+        Args: { p_limit?: number; p_now?: string }
+        Returns: {
+          generated_occurrence_key: string
+          generated_project_id: string
+          generated_task_id: string
+          processed_recurrence_id: string
+        }[]
       }
       get_activation_status: {
         Args: { p_workspace_id: string }
@@ -1179,6 +1702,33 @@ export type Database = {
         }
         Returns: boolean
       }
+      instantiate_project_template: {
+        Args: {
+          p_anchor_date: string
+          p_project_key: string
+          p_project_name: string
+          p_template_id: string
+        }
+        Returns: {
+          dependency_count: number
+          project_id: string
+          task_count: number
+        }[]
+      }
+      instantiate_project_template_internal: {
+        Args: {
+          p_actor_id: string
+          p_anchor_date: string
+          p_project_key: string
+          p_project_name: string
+          p_template_id: string
+        }
+        Returns: {
+          dependency_count: number
+          project_id: string
+          task_count: number
+        }[]
+      }
       is_member: { Args: { ws: string }; Returns: boolean }
       is_task_watched: { Args: { p_task_id: string }; Returns: boolean }
       mark_all_notifications_read: { Args: never; Returns: number }
@@ -1190,6 +1740,7 @@ export type Database = {
           p_to_status: Database["public"]["Enums"]["task_status"]
         }
         Returns: {
+          archived_at: string | null
           assignee_id: string | null
           created_at: string
           created_by: string | null
@@ -1215,6 +1766,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      normalize_bulk_task_action: {
+        Args: { p_action: Json; p_workspace_id: string }
+        Returns: Json
+      }
       normalize_saved_view_array: {
         Args: {
           p_allow_empty?: boolean
@@ -1224,6 +1779,15 @@ export type Database = {
           p_value: Json
         }
         Returns: Json
+      }
+      preflight_bulk_task_action: {
+        Args: { p_action: Json; p_task_ids: string[]; p_workspace_id: string }
+        Returns: {
+          requested_count: number
+          skipped_count: number
+          unchanged_count: number
+          will_change_count: number
+        }[]
       }
       query_inbox: {
         Args: {
@@ -1271,6 +1835,25 @@ export type Database = {
           workspace_name: string
         }[]
       }
+      query_task_dependencies: {
+        Args: { p_task_id?: string; p_workspace_id: string }
+        Returns: {
+          id: string
+          predecessor_end_date: string
+          predecessor_ref: string
+          predecessor_start_date: string
+          predecessor_status: Database["public"]["Enums"]["task_status"]
+          predecessor_task_id: string
+          predecessor_title: string
+          successor_end_date: string
+          successor_ref: string
+          successor_start_date: string
+          successor_status: Database["public"]["Enums"]["task_status"]
+          successor_task_id: string
+          successor_title: string
+          workspace_id: string
+        }[]
+      }
       query_tasks: {
         Args: {
           p_assignee?: string[]
@@ -1291,6 +1874,7 @@ export type Database = {
         }
         Returns: {
           assignee_id: string
+          blocked_by_count: number
           created_at: string
           created_by: string
           description: string
@@ -1327,6 +1911,15 @@ export type Database = {
       record_activation_signal: {
         Args: { p_event_name: string; p_workspace_id: string }
         Returns: undefined
+      }
+      recurrence_next_occurrence: {
+        Args: {
+          p_frequency: Database["public"]["Enums"]["recurrence_frequency"]
+          p_interval: number
+          p_occurrence_at: string
+          p_timezone: string
+        }
+        Returns: string
       }
       remove_workspace_member: {
         Args: { p_user_id: string; p_workspace_id: string }
@@ -1412,6 +2005,14 @@ export type Database = {
           previous_owner_id: string
         }[]
       }
+      undo_bulk_task_action: {
+        Args: { p_operation_id: string }
+        Returns: {
+          conflict_count: number
+          missing_count: number
+          restored_count: number
+        }[]
+      }
       update_project: {
         Args: { p_name: string; p_project_id: string }
         Returns: {
@@ -1427,6 +2028,31 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "projects"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      update_project_milestone: {
+        Args: {
+          p_milestone_id: string
+          p_status: Database["public"]["Enums"]["milestone_status"]
+          p_target_date: string
+          p_title: string
+        }
+        Returns: {
+          created_at: string
+          created_by: string | null
+          id: string
+          project_id: string
+          status: Database["public"]["Enums"]["milestone_status"]
+          target_date: string
+          title: string
+          updated_at: string
+          workspace_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "project_milestones"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -1471,6 +2097,70 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      upsert_task_recurrence: {
+        Args: {
+          p_first_occurrence_local: string
+          p_frequency: Database["public"]["Enums"]["recurrence_frequency"]
+          p_interval: number
+          p_task_id: string
+          p_timezone: string
+        }
+        Returns: {
+          created_at: string
+          created_by: string | null
+          enabled: boolean
+          frequency: Database["public"]["Enums"]["recurrence_frequency"]
+          id: string
+          last_error_code: string | null
+          last_generated_at: string | null
+          next_occurrence_at: string
+          schedule_interval: number
+          source_task_id: string | null
+          source_template_id: string | null
+          target_project_id: string | null
+          timezone: string
+          updated_at: string
+          workspace_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "task_recurrences"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      upsert_template_recurrence: {
+        Args: {
+          p_first_occurrence_local: string
+          p_frequency: Database["public"]["Enums"]["recurrence_frequency"]
+          p_interval: number
+          p_template_id: string
+          p_timezone: string
+        }
+        Returns: {
+          created_at: string
+          created_by: string | null
+          enabled: boolean
+          frequency: Database["public"]["Enums"]["recurrence_frequency"]
+          id: string
+          last_error_code: string | null
+          last_generated_at: string | null
+          next_occurrence_at: string
+          schedule_interval: number
+          source_task_id: string | null
+          source_template_id: string | null
+          target_project_id: string | null
+          timezone: string
+          updated_at: string
+          workspace_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "task_recurrences"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       upsert_workspace_invitation: {
         Args: {
           p_email: string
@@ -1496,6 +2186,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      validate_project_template_definition: {
+        Args: { p_definition: Json }
+        Returns: Json
+      }
       validate_saved_view_assignees: {
         Args: { p_configuration: Json; p_workspace_id: string }
         Returns: undefined
@@ -1510,6 +2204,7 @@ export type Database = {
     }
     Enums: {
       member_role: "owner" | "admin" | "member"
+      milestone_status: "planned" | "at_risk" | "complete"
       notification_delivery_status: "pending" | "processing" | "sent" | "dead"
       notification_kind:
         | "assignment"
@@ -1518,6 +2213,7 @@ export type Database = {
         | "status_change"
         | "invitation"
         | "due_soon"
+      recurrence_frequency: "daily" | "weekly" | "monthly"
       saved_view_type: "list" | "board" | "gantt" | "timeline"
       saved_view_visibility: "private" | "workspace"
       task_priority: "urgent" | "high" | "medium" | "low"
@@ -1654,6 +2350,7 @@ export const Constants = {
   public: {
     Enums: {
       member_role: ["owner", "admin", "member"],
+      milestone_status: ["planned", "at_risk", "complete"],
       notification_delivery_status: ["pending", "processing", "sent", "dead"],
       notification_kind: [
         "assignment",
@@ -1663,6 +2360,7 @@ export const Constants = {
         "invitation",
         "due_soon",
       ],
+      recurrence_frequency: ["daily", "weekly", "monthly"],
       saved_view_type: ["list", "board", "gantt", "timeline"],
       saved_view_visibility: ["private", "workspace"],
       task_priority: ["urgent", "high", "medium", "low"],

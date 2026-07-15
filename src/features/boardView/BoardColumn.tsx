@@ -20,6 +20,9 @@ export function BoardColumn({
   onMove,
   onOpen,
   selectedRef,
+  bulkSelectedIds,
+  onToggleTask,
+  onToggleAll,
 }: {
   status: Status
   tasks: Task[]
@@ -29,10 +32,15 @@ export function BoardColumn({
   onMove: (taskId: string, status: Status, insertIndex?: number) => void
   onOpen: (ref: string) => void
   selectedRef?: string | null
+  bulkSelectedIds: Set<string>
+  onToggleTask: (taskId: string) => void
+  onToggleAll: (taskIds: string[], selected: boolean) => void
 }) {
   const meta = STATUSES.find((s) => s.id === status)
   const [hoverIndex, setHoverIndex] = useState<number | null>(null)
   const isDragOver = hoverIndex !== null
+  const taskIds = tasks.map((task) => task.id)
+  const allSelected = taskIds.length > 0 && taskIds.every((id) => bulkSelectedIds.has(id))
 
   return (
     <section
@@ -57,11 +65,20 @@ export function BoardColumn({
       }}
     >
       {/* Column header: status dot · label · count */}
-      <h2 className="opm-section-title flex items-center gap-2 px-3 py-2.5 text-[var(--text)]">
-        <span className="opm-group-dot" style={cssVars(meta?.color)} aria-hidden="true" />
-        <span>{meta?.label}</span>
-        <span className="opm-count">{tasks.length}</span>
-      </h2>
+      <div className="flex items-center gap-2 px-3 py-2.5">
+        <h2 className="opm-section-title flex flex-1 items-center gap-2 text-[var(--text)]">
+          <span className="opm-group-dot" style={cssVars(meta?.color)} aria-hidden="true" />
+          <span>{meta?.label}</span>
+          <span className="opm-count">{tasks.length}</span>
+        </h2>
+        <input
+          type="checkbox"
+          aria-label={`Select all ${meta?.label ?? status} tasks`}
+          checked={allSelected}
+          disabled={tasks.length === 0}
+          onChange={(event) => onToggleAll(taskIds, event.target.checked)}
+        />
+      </div>
 
       {/* Divider */}
       <div className="mx-3 h-px bg-[var(--border)]" aria-hidden="true" />
@@ -99,6 +116,8 @@ export function BoardColumn({
                   onDragStart={onCardDragStart}
                   onOpen={onOpen}
                   selected={t.ref === selectedRef}
+                  bulkSelected={bulkSelectedIds.has(t.id)}
+                  onToggleSelected={onToggleTask}
                   canMoveUp={i > 0}
                   canMoveDown={i < tasks.length - 1}
                   onMoveUp={() => onMove(t.id, status, i - 1)}

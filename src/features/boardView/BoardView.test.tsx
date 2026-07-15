@@ -3,18 +3,25 @@ import { render, screen, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 
-const { useTasks, useMembers, useActiveWorkspace, moveMutate, setTaskRef } = vi.hoisted(() => ({
-  useTasks: vi.fn(),
-  useMembers: vi.fn(),
-  useActiveWorkspace: vi.fn(() => ({ activeId: 'w1', setActiveId: vi.fn(), loading: false })),
-  moveMutate: vi.fn(),
-  setTaskRef: vi.fn(),
-}))
+const { useTasks, useMembers, useProjects, useActiveWorkspace, moveMutate, setTaskRef } =
+  vi.hoisted(() => ({
+    useTasks: vi.fn(),
+    useMembers: vi.fn(),
+    useProjects: vi.fn(),
+    useActiveWorkspace: vi.fn(() => ({ activeId: 'w1', setActiveId: vi.fn(), loading: false })),
+    moveMutate: vi.fn(),
+    setTaskRef: vi.fn(),
+  }))
 vi.mock('../../lib/hooks/useTasks', () => ({ useTasks }))
 vi.mock('../../lib/hooks/useMembers', () => ({ useMembers }))
+vi.mock('../../lib/hooks/useProjects', () => ({ useProjects }))
 vi.mock('../../lib/workspace', () => ({ useActiveWorkspace }))
 vi.mock('../../lib/hooks/useMoveTask', () => ({ useMoveTask: () => ({ mutate: moveMutate }) }))
 vi.mock('../../app/useViewState', () => ({ useViewState: () => ({ setTaskRef }) }))
+vi.mock('../bulkActions/BulkActionBar', () => ({
+  BulkActionBar: ({ taskIds }: { taskIds: string[] }) =>
+    taskIds.length ? <div>{taskIds.length} selected for bulk action</div> : null,
+}))
 
 import { BoardView } from './BoardView'
 import { expectNoA11yViolations } from '../../test-a11y'
@@ -41,6 +48,7 @@ const TASK = {
 beforeEach(() => {
   vi.clearAllMocks()
   useMembers.mockReturnValue({ data: [] })
+  useProjects.mockReturnValue({ data: [] })
 })
 
 describe('BoardView', () => {
@@ -65,6 +73,16 @@ describe('BoardView', () => {
     for (const label of ['Backlog', 'To Do', 'In Progress', 'In Review', 'Done'])
       expect(screen.getByRole('heading', { name: new RegExp(label, 'i') })).toBeInTheDocument()
     expect(screen.getByText('Hello')).toBeInTheDocument()
+  })
+
+  it('surfaces blocked state on cards', () => {
+    useTasks.mockReturnValue({
+      data: [{ ...TASK, blocked_by_count: 1 }],
+      isLoading: false,
+      error: null,
+    })
+    render(inRouter(<BoardView />))
+    expect(screen.getByLabelText('Blocked by 1 unfinished task')).toBeInTheDocument()
   })
 
   it('shows loading state', () => {
@@ -130,5 +148,15 @@ describe('BoardView', () => {
       expect.objectContaining({ taskId: 't1', toStatus: 'done', fromStatus: 'todo' }),
       expect.any(Object),
     )
+  })
+
+  it('selects a card for bulk actions without opening it', async () => {
+    useTasks.mockReturnValue({ data: [TASK], isLoading: false, error: null })
+    render(inRouter(<BoardView />))
+
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Select NIM-1: Hello' }))
+
+    expect(screen.getByText('1 selected for bulk action')).toBeInTheDocument()
+    expect(setTaskRef).not.toHaveBeenCalled()
   })
 })

@@ -32,7 +32,16 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
               </WorkspaceProvider>
             </AuthGate>
           </SessionProvider>
-          <Toaster richColors position="bottom-right" />
+          <Toaster
+            position="bottom-right"
+            toastOptions={{
+              style: {
+                background: 'var(--surface-raised)',
+                color: 'var(--text)',
+                border: '1px solid var(--border-strong)',
+              },
+            }}
+          />
         </BrowserRouter>
       </QueryClientProvider>
     </AppErrorBoundary>

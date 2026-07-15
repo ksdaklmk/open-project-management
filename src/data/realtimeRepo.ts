@@ -11,6 +11,8 @@ export type RealtimeTable =
   | 'workspace_invitations'
   | 'notifications'
   | 'notification_reads'
+  | 'project_milestones'
+  | 'task_dependencies'
 
 export interface WorkspaceRealtimeEvent {
   table: RealtimeTable
@@ -28,6 +30,8 @@ const WORKSPACE_TABLES: RealtimeTable[] = [
   'workspace_members',
   'projects',
   'workspace_invitations',
+  'project_milestones',
+  'task_dependencies',
 ]
 const CHILD_TABLES: RealtimeTable[] = ['task_tags', 'subtasks', 'comments']
 const PERSONAL_TABLES: RealtimeTable[] = ['notifications', 'notification_reads']

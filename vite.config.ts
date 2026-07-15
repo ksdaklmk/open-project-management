@@ -8,6 +8,9 @@ export default defineConfig({
     include: ['src/**/*.test.{ts,tsx}'],
     globals: true,
     setupFiles: ['./src/test-setup.ts'],
+    // Coverage instrumentation plus axe/jsdom work can cross Vitest's 5s
+    // default on constrained local and CI runners without indicating a hang.
+    testTimeout: 10_000,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json-summary', 'html'],

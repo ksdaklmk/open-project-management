@@ -59,8 +59,13 @@ Deno.serve(async (request) => {
   const client = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   })
-  // A scheduler may invoke this worker repeatedly. The due RPC is idempotent,
-  // and claim uses SKIP LOCKED so concurrent workers cannot share a delivery.
+  // A scheduler may invoke this worker repeatedly. Recurrence generation and
+  // due notifications are idempotent; both workers use SKIP LOCKED so
+  // concurrent invocations cannot share an occurrence or delivery.
+  const { data: generated, error: recurrenceError } = await client.rpc('generate_due_recurrences', {
+    p_limit: 25,
+  })
+  if (recurrenceError) return new Response('Could not generate recurring work', { status: 500 })
   await client.rpc('enqueue_due_notifications', { p_days: 3 })
   const { data, error } = await client.rpc('claim_notification_outbox', { p_limit: 25 })
   if (error) return new Response('Could not claim notification queue', { status: 500 })
@@ -100,9 +105,14 @@ Deno.serve(async (request) => {
   console.log(
     JSON.stringify({
       event: 'notification_delivery_batch',
+      recurrences_generated: generated?.length ?? 0,
       claimed: data?.length ?? 0,
       delivered,
     }),
   )
-  return Response.json({ claimed: data?.length ?? 0, delivered })
+  return Response.json({
+    recurrences_generated: generated?.length ?? 0,
+    claimed: data?.length ?? 0,
+    delivered,
+  })
 })
