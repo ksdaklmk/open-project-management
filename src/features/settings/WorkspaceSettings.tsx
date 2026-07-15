@@ -8,6 +8,8 @@ import { settingsPermissions } from './settingsPermissions'
 import { ProjectSettings } from './ProjectSettings'
 import { MemberSettings } from './MemberSettings'
 import { InvitationSettings } from './InvitationSettings'
+import { TemplateSettings } from './TemplateSettings'
+import { MilestoneSettings } from './MilestoneSettings'
 import { normaliseProjectKey, projectKeyError } from '../../lib/validation'
 
 export function CreateWorkspaceForm({ embedded = false }: { embedded?: boolean }) {
@@ -164,6 +166,8 @@ export function WorkspaceSettings() {
         </form>
       </section>
       <ProjectSettings workspaceId={activeId} />
+      <MilestoneSettings workspaceId={activeId} />
+      <TemplateSettings workspaceId={activeId} />
       <InvitationSettings workspaceId={activeId} actorRole={actorRole!} />
       <MemberSettings workspaceId={activeId} actorId={actorId} actorRole={actorRole!} />
       <CreateWorkspaceForm embedded />

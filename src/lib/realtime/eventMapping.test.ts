@@ -16,10 +16,19 @@ describe('eventQueryKeys', () => {
       ['tasks', 'w1'],
       ['task', 'w1'],
       ['workload', 'w1'],
+      ['dependencies', 'w1'],
     ])
     expect(eventQueryKeys(event('projects', { workspace_id: 'w1' }), 'w1', client)).toEqual([
       ['projects', 'w1'],
       ['tasks', 'w1'],
+      ['milestones', 'w1'],
+    ])
+    expect(
+      eventQueryKeys(event('task_dependencies', { workspace_id: 'w1' }), 'w1', client),
+    ).toEqual([
+      ['dependencies', 'w1'],
+      ['tasks', 'w1'],
+      ['task', 'w1'],
     ])
   })
 

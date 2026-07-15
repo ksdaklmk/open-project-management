@@ -24,6 +24,12 @@ vi.mock('../../lib/hooks/useWorkspaceAdmin', () => ({
   useUpdateWorkspace: () => state.update,
 }))
 vi.mock('./ProjectSettings', () => ({ ProjectSettings: () => <div>Project settings mounted</div> }))
+vi.mock('./TemplateSettings', () => ({
+  TemplateSettings: () => <div>Template settings mounted</div>,
+}))
+vi.mock('./MilestoneSettings', () => ({
+  MilestoneSettings: () => <div>Milestone settings mounted</div>,
+}))
 vi.mock('./MemberSettings', () => ({ MemberSettings: () => <div>Member settings mounted</div> }))
 vi.mock('./InvitationSettings', () => ({
   InvitationSettings: () => <div>Invitation settings mounted</div>,
@@ -54,6 +60,8 @@ describe('WorkspaceSettings', () => {
     )
     state.update.mutate.mock.calls[0][1].onSuccess()
     expect(screen.getByText('Project settings mounted')).toBeInTheDocument()
+    expect(screen.getByText('Template settings mounted')).toBeInTheDocument()
+    expect(screen.getByText('Milestone settings mounted')).toBeInTheDocument()
     expect(screen.getByText('Invitation settings mounted')).toBeInTheDocument()
     expect(screen.getByText('Member settings mounted')).toBeInTheDocument()
   })

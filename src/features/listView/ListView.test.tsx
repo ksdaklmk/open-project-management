@@ -2,10 +2,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 
-const { useTasks, useMembers, useActiveWorkspace, setTaskRef, mutate, moveMutate } = vi.hoisted(
-  () => ({
+const { useTasks, useMembers, useProjects, useActiveWorkspace, setTaskRef, mutate, moveMutate } =
+  vi.hoisted(() => ({
     useTasks: vi.fn(),
     useMembers: vi.fn(),
+    useProjects: vi.fn(),
     useActiveWorkspace: vi.fn(() => ({
       activeId: 'w1' as string | null,
       setActiveId: vi.fn(),
@@ -14,14 +15,18 @@ const { useTasks, useMembers, useActiveWorkspace, setTaskRef, mutate, moveMutate
     setTaskRef: vi.fn(),
     mutate: vi.fn(),
     moveMutate: vi.fn(),
-  }),
-)
+  }))
 vi.mock('../../lib/hooks/useTasks', () => ({ useTasks }))
 vi.mock('../../lib/hooks/useMembers', () => ({ useMembers }))
+vi.mock('../../lib/hooks/useProjects', () => ({ useProjects }))
 vi.mock('../../lib/workspace', () => ({ useActiveWorkspace }))
 vi.mock('../../app/useViewState', () => ({ useViewState: () => ({ setTaskRef }) }))
 vi.mock('../../lib/hooks/useUpdateTask', () => ({ useUpdateTask: () => ({ mutate }) }))
 vi.mock('../../lib/hooks/useMoveTask', () => ({ useMoveTask: () => ({ mutate: moveMutate }) }))
+vi.mock('../bulkActions/BulkActionBar', () => ({
+  BulkActionBar: ({ taskIds }: { taskIds: string[] }) =>
+    taskIds.length ? <div>{taskIds.length} selected for bulk action</div> : null,
+}))
 
 import { ListView } from './ListView'
 import { expectNoA11yViolations } from '../../test-a11y'
@@ -34,7 +39,9 @@ const inRouter = (ui: React.ReactElement) => (
 
 beforeEach(() => {
   vi.clearAllMocks()
+  useActiveWorkspace.mockReturnValue({ activeId: 'w1', setActiveId: vi.fn(), loading: false })
   useMembers.mockReturnValue({ data: [] })
+  useProjects.mockReturnValue({ data: [] })
 })
 
 describe('ListView', () => {
@@ -112,6 +119,29 @@ describe('ListView', () => {
     expect(screen.getByRole('heading', { name: /To Do/i })).toBeInTheDocument()
     expect(screen.getByText('Hello')).toBeInTheDocument()
   })
+  it('surfaces unfinished predecessor counts as blocked state', () => {
+    useTasks.mockReturnValue({
+      data: [
+        {
+          id: 't1',
+          ref: 'NIM-1',
+          title: 'Hello',
+          status: 'todo',
+          priority: 'low',
+          position: 0,
+          type: 'feature',
+          assignee_id: null,
+          points: null,
+          tags: [],
+          blocked_by_count: 2,
+        },
+      ],
+      isLoading: false,
+      error: null,
+    })
+    render(inRouter(<ListView />))
+    expect(screen.getByLabelText('Blocked by 2 unfinished tasks')).toBeInTheDocument()
+  })
   it('shows an empty state when there are no tasks', () => {
     useTasks.mockReturnValue({ data: [], isLoading: false, error: null })
     render(inRouter(<ListView />))
@@ -129,7 +159,7 @@ describe('ListView', () => {
   })
   it('shows the skeleton while workspaces are still loading (no false empty state)', () => {
     // cold load: workspaces in flight → activeId null → useTasks disabled (isLoading false, data undefined)
-    useActiveWorkspace.mockReturnValueOnce({ activeId: null, setActiveId: vi.fn(), loading: true })
+    useActiveWorkspace.mockReturnValue({ activeId: null, setActiveId: vi.fn(), loading: true })
     useTasks.mockReturnValue({ data: undefined, isLoading: false, error: null })
     render(inRouter(<ListView />))
     expect(screen.getByRole('status')).toBeInTheDocument()
@@ -162,5 +192,30 @@ describe('ListView', () => {
       position: 0,
       fromStatus: 'todo',
     })
+  })
+
+  it('selects an individual task for bulk actions', async () => {
+    useTasks.mockReturnValue({
+      data: [
+        {
+          id: 't1',
+          ref: 'NIM-1',
+          title: 'Hello',
+          status: 'todo',
+          priority: 'low',
+          position: 0,
+          type: 'feature',
+          assignee_id: null,
+          points: null,
+          tags: [],
+        },
+      ],
+      isLoading: false,
+      error: null,
+    })
+    const { default: userEvent } = await import('@testing-library/user-event')
+    render(inRouter(<ListView />))
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Select NIM-1: Hello' }))
+    expect(screen.getByText('1 selected for bulk action')).toBeInTheDocument()
   })
 })

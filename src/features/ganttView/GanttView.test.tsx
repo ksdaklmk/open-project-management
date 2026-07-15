@@ -10,6 +10,26 @@ const { useTasks, useActiveWorkspace, setTaskRef } = vi.hoisted(() => ({
   setTaskRef: vi.fn(),
 }))
 vi.mock('../../lib/hooks/useTasks', () => ({ useTasks }))
+const ganttData = vi.hoisted(() => ({
+  milestones: [] as any[],
+  dependencies: [] as any[],
+}))
+vi.mock('../../lib/hooks/useMilestones', () => ({
+  useMilestones: () => ({
+    data: ganttData.milestones,
+    isLoading: false,
+    error: null,
+    refetch: vi.fn(),
+  }),
+}))
+vi.mock('../../lib/hooks/useTaskDependencies', () => ({
+  useTaskDependencyEdges: () => ({
+    data: ganttData.dependencies,
+    isLoading: false,
+    error: null,
+    refetch: vi.fn(),
+  }),
+}))
 vi.mock('../../lib/workspace', () => ({ useActiveWorkspace }))
 vi.mock('../../app/useViewState', () => ({ useViewState: () => ({ setTaskRef }) }))
 
@@ -44,7 +64,11 @@ const t = (over: Partial<Task>): Task => ({
   ...over,
 })
 
-beforeEach(() => vi.clearAllMocks())
+beforeEach(() => {
+  vi.clearAllMocks()
+  ganttData.milestones = []
+  ganttData.dependencies = []
+})
 
 describe('GanttView', () => {
   it('has no automated accessibility violations', async () => {
@@ -110,6 +134,36 @@ describe('GanttView', () => {
     expect(screen.getByTestId('gantt-today')).toBeInTheDocument()
     expect(screen.getByText(/Unscheduled/i)).toBeInTheDocument()
     expect(screen.getByText('NIM-105')).toBeInTheDocument()
+  })
+
+  it('renders milestone markers and dependency connectors', () => {
+    useTasks.mockReturnValue({
+      data: [
+        t({ id: 'a', ref: 'NIM-101', start_date: '2026-06-22', end_date: '2026-06-24' }),
+        t({ id: 'b', ref: 'NIM-102', start_date: '2026-06-25', end_date: '2026-06-28' }),
+      ],
+      isLoading: false,
+      error: null,
+    })
+    ganttData.milestones = [
+      {
+        id: 'm1',
+        title: 'Beta',
+        projectName: 'Nimbus',
+        target_date: '2026-06-27',
+        status: 'planned',
+      },
+    ]
+    ganttData.dependencies = [
+      {
+        id: 'd1',
+        predecessor: { id: 'a' },
+        successor: { id: 'b' },
+      },
+    ]
+    render(inRouter(<GanttView now={new Date(2026, 5, 25)} />))
+    expect(screen.getByRole('img', { name: /Beta, Nimbus/ })).toBeInTheDocument()
+    expect(screen.getByTestId('gantt-dependencies')).toBeInTheDocument()
   })
 
   it('shows the no-scheduled message when every task is undated', () => {

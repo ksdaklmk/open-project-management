@@ -1,7 +1,12 @@
 import { supabase } from '../lib/supabase'
 import type { Database } from '../types/database'
 
-export type Task = Database['public']['Tables']['tasks']['Row'] & { tags: string[] }
+type TaskRow = Database['public']['Tables']['tasks']['Row']
+export type Task = Omit<TaskRow, 'archived_at'> & {
+  archived_at?: TaskRow['archived_at']
+  tags: string[]
+  blocked_by_count?: number
+}
 type Status = Database['public']['Enums']['task_status']
 type Priority = Database['public']['Enums']['task_priority']
 type TaskType = Database['public']['Enums']['task_type']
@@ -35,8 +40,42 @@ export interface TaskPage {
   nextCursor: TaskCursor | null
 }
 
+export type BulkTaskAction =
+  | { kind: 'status'; value: Task['status'] }
+  | { kind: 'priority'; value: Task['priority'] }
+  | { kind: 'assignee'; value: string | null }
+  | { kind: 'start_date'; value: string | null }
+  | { kind: 'end_date'; value: string | null }
+  | { kind: 'clear_dates' }
+  | { kind: 'tag_add' | 'tag_remove'; value: string }
+  | { kind: 'project'; value: string }
+  | { kind: 'archive' | 'delete' }
+
+export interface BulkTaskPreflight {
+  requestedCount: number
+  willChangeCount: number
+  unchangedCount: number
+  skippedCount: number
+}
+
+export interface BulkTaskBatchResult {
+  operationId: string
+  requestedCount: number
+  changedCount: number
+  unchangedCount: number
+  skippedCount: number
+  undoableUntil: string | null
+}
+
+export interface BulkTaskUndoResult {
+  restoredCount: number
+  conflictCount: number
+  missingCount: number
+}
+
 type QueryTaskRow = Database['public']['Tables']['tasks']['Row'] & {
   tags: string[] | null
+  blocked_by_count: number | null
   sort_value: string
 }
 
@@ -70,9 +109,10 @@ export async function queryTasks(query: TaskQuery, signal?: AbortSignal): Promis
   const rows = (data ?? []) as QueryTaskRow[]
   const hasMore = rows.length > limit
   const visible = rows.slice(0, limit)
-  const items = visible.map(({ sort_value: _sortValue, tags, ...task }) => ({
+  const items = visible.map(({ sort_value: _sortValue, tags, blocked_by_count, ...task }) => ({
     ...task,
     tags: tags ?? [],
+    blocked_by_count: blocked_by_count ?? 0,
   }))
   const last = visible[visible.length - 1]
   return {
@@ -88,15 +128,83 @@ export async function getTaskByRef(
 ): Promise<Task | null> {
   const { data, error } = await supabase
     .from('tasks')
-    .select('*, task_tags(tag)')
+    .select('*, task_tags(tag), projects!inner(archived_at)')
     .eq('workspace_id', workspaceId)
     .eq('ref', ref)
+    .is('archived_at', null)
+    .is('projects.archived_at', null)
     .abortSignal(signal ?? new AbortController().signal)
     .maybeSingle()
   if (error) throw new Error(error.message)
   if (!data) return null
-  const { task_tags, ...task } = data as typeof data & { task_tags?: Array<{ tag: string }> }
+  const {
+    task_tags,
+    projects: _project,
+    ...task
+  } = data as typeof data & {
+    task_tags?: Array<{ tag: string }>
+  }
   return { ...task, tags: (task_tags ?? []).map((item) => item.tag) } as Task
+}
+
+export async function preflightBulkTaskAction(
+  workspaceId: string,
+  taskIds: string[],
+  action: BulkTaskAction,
+): Promise<BulkTaskPreflight> {
+  const { data, error } = await supabase.rpc('preflight_bulk_task_action', {
+    p_workspace_id: workspaceId,
+    p_task_ids: taskIds,
+    p_action: action,
+  })
+  if (error) throw new Error(error.message)
+  const result = data?.[0]
+  if (!result) throw new Error('Bulk preflight returned no result.')
+  return {
+    requestedCount: result.requested_count,
+    willChangeCount: result.will_change_count,
+    unchangedCount: result.unchanged_count,
+    skippedCount: result.skipped_count,
+  }
+}
+
+export async function applyBulkTaskAction(
+  operationId: string,
+  workspaceId: string,
+  taskIds: string[],
+  action: BulkTaskAction,
+): Promise<BulkTaskBatchResult> {
+  const { data, error } = await supabase.rpc('apply_bulk_task_action', {
+    p_operation_id: operationId,
+    p_workspace_id: workspaceId,
+    p_task_ids: taskIds,
+    p_action: action,
+  })
+  if (error) throw new Error(error.message)
+  const result = data?.[0]
+  if (!result) throw new Error('Bulk update returned no result.')
+  return {
+    operationId: result.operation_id,
+    requestedCount: result.requested_count,
+    changedCount: result.changed_count,
+    unchangedCount: result.unchanged_count,
+    skippedCount: result.skipped_count,
+    undoableUntil: result.undoable_until,
+  }
+}
+
+export async function undoBulkTaskAction(operationId: string): Promise<BulkTaskUndoResult> {
+  const { data, error } = await supabase.rpc('undo_bulk_task_action', {
+    p_operation_id: operationId,
+  })
+  if (error) throw new Error(error.message)
+  const result = data?.[0]
+  if (!result) throw new Error('Bulk undo returned no result.')
+  return {
+    restoredCount: result.restored_count,
+    conflictCount: result.conflict_count,
+    missingCount: result.missing_count,
+  }
 }
 
 export interface WorkloadPoint {

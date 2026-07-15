@@ -9,6 +9,8 @@ import { SubtaskList } from './SubtaskList'
 import { CommentThread } from './CommentThread'
 import { AppIcon } from '../../components/AppIcon'
 import { useTaskWatch } from '../../lib/hooks/useNotifications'
+import { RecurrencePanel } from './RecurrencePanel'
+import { DependencyPanel } from './DependencyPanel'
 
 const FOCUSABLE =
   'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'
@@ -94,6 +96,8 @@ export function TaskDrawer() {
               <DrawerFields key={task.id} task={task} workspaceId={activeId ?? ''} />
               <TagEditor task={task} workspaceId={activeId ?? ''} />
               <SubtaskList taskId={task.id} />
+              <DependencyPanel task={task} workspaceId={activeId ?? ''} />
+              <RecurrencePanel task={task} workspaceId={activeId ?? ''} />
               <CommentThread taskId={task.id} workspaceId={activeId ?? ''} />
               <footer className="border-t border-[var(--border)] pt-6">
                 <DeleteTaskButton taskId={task.id} workspaceId={activeId ?? ''} onDeleted={close} />

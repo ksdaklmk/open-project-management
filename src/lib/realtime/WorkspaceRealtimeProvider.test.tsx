@@ -88,8 +88,9 @@ describe('WorkspaceRealtimeProvider', () => {
       realtime.callbacks[0].event(event)
       vi.advanceTimersByTime(75)
     })
-    expect(invalidate).toHaveBeenCalledTimes(3)
+    expect(invalidate).toHaveBeenCalledTimes(4)
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['tasks', 'w1'] })
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['dependencies', 'w1'] })
   })
 
   it('shows reconnecting and closes missed-event gaps after resubscribe', () => {

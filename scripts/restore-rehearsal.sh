@@ -25,7 +25,14 @@ row_counts() {
        (select count(*) from notification_preferences),
        (select count(*) from notification_outbox),
        (select count(*) from saved_views),
-       (select count(*) from saved_view_defaults)
+       (select count(*) from saved_view_defaults),
+       (select count(*) from task_bulk_operations),
+       (select count(*) from task_bulk_operation_items),
+       (select count(*) from project_templates),
+       (select count(*) from task_dependencies),
+       (select count(*) from project_milestones),
+       (select count(*) from task_recurrences),
+       (select count(*) from recurrence_occurrences)
      )"
 }
 
@@ -63,7 +70,9 @@ source_version="$("$runtime" exec "$container" psql -U postgres -d postgres -X -
      public.projects,
      public.workspace_invitations,
      public.notifications,
-     public.notification_reads;" >/dev/null
+     public.notification_reads,
+     public.project_milestones,
+     public.task_dependencies;" >/dev/null
 "$runtime" exec "$container" psql -U supabase_admin -d "$restore_db" -X -v ON_ERROR_STOP=1 -c \
   "grant all on schema public, auth, supabase_migrations to postgres;
    grant usage on schema extensions to postgres, authenticated, anon, service_role;
@@ -90,7 +99,10 @@ for file in \
   supabase/tests/restore_smoke.sql \
   supabase/tests/scale_query_test.sql \
   supabase/tests/realtime_test.sql \
-  supabase/tests/saved_views_test.sql; do
+  supabase/tests/saved_views_test.sql \
+  supabase/tests/bulk_task_operations_test.sql \
+  supabase/tests/templates_recurrence_test.sql \
+  supabase/tests/milestones_dependencies_test.sql; do
   echo "restore verification: $file"
   "$runtime" exec -i "$container" psql -U postgres -d "$restore_db" -X -v ON_ERROR_STOP=1 <"$file" >/dev/null
 done
@@ -99,5 +111,5 @@ finished="$(date +%s)"
 
 printf 'restore_rehearsal_status=passed\n'
 printf 'migration_version=%s\n' "$version"
-printf 'row_counts=workspaces,projects,tasks,members,activity,activation,dismissals,watchers,mentions,notifications,reads,preferences,outbox,saved_views,saved_view_defaults:%s\n' "$restored_counts"
+printf 'row_counts=workspaces,projects,tasks,members,activity,activation,dismissals,watchers,mentions,notifications,reads,preferences,outbox,saved_views,saved_view_defaults,bulk_operations,bulk_items,templates,dependencies,milestones,recurrences,occurrences:%s\n' "$restored_counts"
 printf 'duration_seconds=%s\n' "$((finished - started))"

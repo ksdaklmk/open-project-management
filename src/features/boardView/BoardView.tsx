@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { useFilteredTasks } from '../../lib/hooks/useFilteredTasks'
 import { useMembers } from '../../lib/hooks/useMembers'
+import { useProjects } from '../../lib/hooks/useProjects'
 import { useMoveTask } from '../../lib/hooks/useMoveTask'
 import { useActiveWorkspace } from '../../lib/workspace'
 import { useViewState } from '../../app/useViewState'
@@ -10,6 +11,8 @@ import { BoardColumn } from './BoardColumn'
 import { dropTarget } from './computeDropPosition'
 import type { Status } from '../../types/constants'
 import { LoadMoreButton } from '../../components/LoadMoreButton'
+import { BulkActionBar } from '../bulkActions/BulkActionBar'
+import { useTaskSelection } from '../bulkActions/useTaskSelection'
 
 export function BoardView() {
   const { activeId, loading: wsLoading } = useActiveWorkspace()
@@ -23,10 +26,12 @@ export function BoardView() {
     isFetchingNextPage,
   } = useFilteredTasks(activeId ?? '', { sort: 'position' })
   const { data: members } = useMembers(activeId ?? '')
+  const { data: projects } = useProjects(activeId ?? '')
   const move = useMoveTask(activeId ?? '')
   const { setTaskRef, taskRef } = useViewState()
   const dragId = useRef<string | null>(null)
   const [moveAnnouncement, setMoveAnnouncement] = useState('')
+  const selection = useTaskSelection(activeId ?? '', tasks ?? [])
 
   const onCardDragStart = (taskId: string) => {
     dragId.current = taskId
@@ -69,6 +74,13 @@ export function BoardView() {
   const columns = boardColumns(tasks ?? [])
   return (
     <>
+      <BulkActionBar
+        workspaceId={activeId ?? ''}
+        taskIds={[...selection.selectedIds]}
+        members={members ?? []}
+        projects={projects ?? []}
+        onClearSelection={selection.clear}
+      />
       <p className="sr-only" aria-live="polite" aria-atomic="true">
         {moveAnnouncement}
       </p>
@@ -84,6 +96,9 @@ export function BoardView() {
             onMove={onAccessibleMove}
             onOpen={setTaskRef}
             selectedRef={taskRef}
+            bulkSelectedIds={selection.selectedIds}
+            onToggleTask={selection.toggle}
+            onToggleAll={selection.setMany}
           />
         ))}
       </div>

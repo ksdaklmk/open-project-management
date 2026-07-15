@@ -37,4 +37,7 @@ for ((run = 1; run <= repeat; run += 1)); do
   run_sql_file supabase/tests/my_work_test.sql
   run_sql_file supabase/tests/notifications_test.sql
   run_sql_file supabase/tests/saved_views_test.sql
+  run_sql_file supabase/tests/bulk_task_operations_test.sql
+  run_sql_file supabase/tests/templates_recurrence_test.sql
+  run_sql_file supabase/tests/milestones_dependencies_test.sql
 done

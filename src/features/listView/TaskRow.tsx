@@ -3,6 +3,7 @@ import { TASK_TYPES, TAG_COLORS } from '../../types/constants'
 import type { Task } from '../../data/tasksRepo'
 import type { Member } from '../../data/membersRepo'
 import { StatusCell, PriorityCell, AssigneeCell, type Patch } from './cells'
+import { BlockedBadge } from '../../components/BlockedBadge'
 
 const cssVars = (color?: string) => ({ '--chip': color }) as CSSProperties
 
@@ -24,21 +25,36 @@ export function TaskRow({
   task,
   members,
   selected,
+  bulkSelected,
   onSelect,
+  onToggleSelected,
   onPatch,
   onMove,
 }: {
   task: Task
   members: Member[]
   selected?: boolean
+  bulkSelected: boolean
   onSelect: (ref: string) => void
+  onToggleSelected: (taskId: string) => void
   onPatch: (id: string, p: Patch) => void
   onMove: (task: Task, toStatus: Task['status']) => void
 }) {
   const type = TASK_TYPES[task.type]
   const tags = task.tags
   return (
-    <tr data-selected={selected || undefined} className="opm-row border-b border-[var(--border)]">
+    <tr
+      data-selected={selected || bulkSelected || undefined}
+      className="opm-row border-b border-[var(--border)]"
+    >
+      <td className="py-1.5 pl-3 pr-1 align-middle">
+        <input
+          type="checkbox"
+          aria-label={`Select ${task.ref}: ${task.title}`}
+          checked={bulkSelected}
+          onChange={() => onToggleSelected(task.id)}
+        />
+      </td>
       <td className="py-1.5 pl-3 pr-1 align-middle">
         <span
           className="inline-flex h-4 w-4 items-center justify-center"
@@ -53,15 +69,18 @@ export function TaskRow({
         <span className="opm-task-ref">{task.ref}</span>
       </td>
       <td className="px-2 py-1.5 align-middle">
-        <button
-          type="button"
-          aria-label={`Open ${task.ref}: ${task.title}`}
-          aria-current={selected ? 'true' : undefined}
-          onClick={() => onSelect(task.ref)}
-          className="opm-task-open opm-task-title block w-full truncate text-left text-[var(--text)]"
-        >
-          {task.title}
-        </button>
+        <div className="flex min-w-0 items-center gap-2">
+          <button
+            type="button"
+            aria-label={`Open ${task.ref}: ${task.title}`}
+            aria-current={selected ? 'true' : undefined}
+            onClick={() => onSelect(task.ref)}
+            className="opm-task-open opm-task-title block min-w-0 flex-1 truncate text-left text-[var(--text)]"
+          >
+            {task.title}
+          </button>
+          <BlockedBadge count={task.blocked_by_count} />
+        </div>
       </td>
       <td className="px-2 py-1.5 align-middle">
         <StatusCell task={task} onChange={(p) => p.status && onMove(task, p.status)} />

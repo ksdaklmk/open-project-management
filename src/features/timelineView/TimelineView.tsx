@@ -6,6 +6,7 @@ import { bucketTasks } from './buckets'
 import { addDays, isoLocal, parseDate } from '../../lib/weeks'
 import type { Task } from '../../data/tasksRepo'
 import { LoadMoreButton } from '../../components/LoadMoreButton'
+import { useMilestones } from '../../lib/hooks/useMilestones'
 
 const COLOR: Record<string, string> = Object.fromEntries(STATUSES.map((s) => [s.id, s.color]))
 const STATUS_LABEL: Record<string, string> = Object.fromEntries(
@@ -21,11 +22,13 @@ function range(t: Task): string {
 
 export function TimelineView({ now = new Date() }: { now?: Date } = {}) {
   const { activeId, loading: wsLoading } = useActiveWorkspace()
+  const windowStart = isoLocal(addDays(now, -365))
+  const windowEnd = isoLocal(addDays(now, 365))
   const datedQ = useFilteredTasks(activeId ?? '', {
     sort: 'due',
     schedule: 'dated',
-    windowStart: isoLocal(addDays(now, -365)),
-    windowEnd: isoLocal(addDays(now, 365)),
+    windowStart,
+    windowEnd,
     limit: 500,
   })
   const unscheduledQ = useFilteredTasks(activeId ?? '', {
@@ -33,26 +36,75 @@ export function TimelineView({ now = new Date() }: { now?: Date } = {}) {
     schedule: 'unscheduled',
     limit: 100,
   })
+  const milestonesQ = useMilestones(activeId ?? '')
   const { setTaskRef } = useViewState()
 
-  if (wsLoading || datedQ.isLoading || unscheduledQ.isLoading) return <TimelineSkeleton />
-  if (datedQ.error || unscheduledQ.error)
+  if (wsLoading || datedQ.isLoading || unscheduledQ.isLoading || milestonesQ.isLoading)
+    return <TimelineSkeleton />
+  if (datedQ.error || unscheduledQ.error || milestonesQ.error)
     return (
       <TimelineError
         onRetry={() => {
           void datedQ.refetch()
           void unscheduledQ.refetch()
+          void milestonesQ.refetch()
         }}
       />
     )
 
   const all = [...(datedQ.data ?? []), ...(unscheduledQ.data ?? [])]
-  if (all.length === 0) return <TimelineEmpty />
+  const milestones = (milestonesQ.data ?? []).filter(
+    (milestone) => milestone.target_date >= windowStart && milestone.target_date <= windowEnd,
+  )
+  if (all.length === 0 && milestones.length === 0) return <TimelineEmpty />
 
   const buckets = bucketTasks(all, now).filter((b) => b.tasks.length > 0)
 
   return (
     <div className="opm-timeline space-y-7">
+      {milestones.length > 0 && (
+        <section aria-labelledby="timeline-milestones-title">
+          <h2
+            id="timeline-milestones-title"
+            className="opm-section-title mb-2 flex items-center gap-2 px-0.5 text-[var(--text)]"
+          >
+            Milestones
+            <span className="opm-count">{milestones.length}</span>
+          </h2>
+          <ul className="opm-database-list overflow-hidden border-y border-[var(--border)] bg-[var(--surface)] divide-y divide-[var(--border)]">
+            {milestones.map((milestone) => {
+              const color =
+                milestone.status === 'complete'
+                  ? 'var(--success)'
+                  : milestone.status === 'at_risk'
+                    ? 'var(--danger)'
+                    : 'var(--primary)'
+              return (
+                <li key={milestone.id} className="flex items-center gap-3 px-3 py-2">
+                  <span
+                    role="img"
+                    aria-label={`${milestone.status.replace('_', ' ')} milestone`}
+                    className="h-2.5 w-2.5 shrink-0 rotate-45"
+                    style={{ background: color }}
+                  />
+                  <span className="min-w-0 flex-1 truncate text-sm text-[var(--text)]">
+                    {milestone.title}
+                  </span>
+                  <span className="shrink-0 text-xs text-[var(--muted)]">
+                    {milestone.projectName}
+                  </span>
+                  <time
+                    dateTime={milestone.target_date}
+                    className="shrink-0 text-xs tabular-nums text-[var(--muted)]"
+                  >
+                    {fmt(parseDate(milestone.target_date))}
+                  </time>
+                </li>
+              )
+            })}
+          </ul>
+        </section>
+      )}
       {buckets.map((b) => (
         <section key={b.id}>
           <h2 className="opm-section-title mb-2 flex items-center gap-2 px-0.5 text-[var(--text)]">

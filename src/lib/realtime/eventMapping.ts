@@ -6,6 +6,7 @@ const directWorkspaceKeys: Record<string, (workspaceId: string) => QueryKey[]> =
     ['tasks', workspaceId],
     ['task', workspaceId],
     ['workload', workspaceId],
+    ['dependencies', workspaceId],
   ],
   task_tags: (workspaceId) => [
     ['tasks', workspaceId],
@@ -15,6 +16,13 @@ const directWorkspaceKeys: Record<string, (workspaceId: string) => QueryKey[]> =
   projects: (workspaceId) => [
     ['projects', workspaceId],
     ['tasks', workspaceId],
+    ['milestones', workspaceId],
+  ],
+  project_milestones: (workspaceId) => [['milestones', workspaceId]],
+  task_dependencies: (workspaceId) => [
+    ['dependencies', workspaceId],
+    ['tasks', workspaceId],
+    ['task', workspaceId],
   ],
   workspace_members: (workspaceId) => [
     ['members', workspaceId],
@@ -103,6 +111,8 @@ export function allWorkspaceQueryKeys(queryClient: QueryClient, workspaceId: str
     ['projects', workspaceId],
     ['activity', workspaceId],
     ['invitations', workspaceId],
+    ['milestones', workspaceId],
+    ['dependencies', workspaceId],
     ['notifications'],
     ['notification-unread'],
   ]

@@ -9,7 +9,9 @@ export async function signIn(page: Page) {
   await page.getByLabel('Email').fill(OWNER_EMAIL)
   await page.getByLabel('Password').fill(OWNER_PASSWORD)
   await page.getByRole('button', { name: 'Sign in' }).click()
-  await expect(page.getByRole('heading', { name: 'List' })).toBeVisible()
+  // The local Auth request can complete before the session listener has
+  // hydrated workspace queries when all three browser projects start together.
+  await expect(page.getByRole('heading', { name: 'List' })).toBeVisible({ timeout: 15_000 })
   await expect(page.getByLabel('Workspace', { exact: true })).toHaveValue(
     '91000000-0000-0000-0000-000000000001',
   )

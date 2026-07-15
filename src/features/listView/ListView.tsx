@@ -1,5 +1,6 @@
 import { useFilteredTasks } from '../../lib/hooks/useFilteredTasks'
 import { useMembers } from '../../lib/hooks/useMembers'
+import { useProjects } from '../../lib/hooks/useProjects'
 import { useActiveWorkspace } from '../../lib/workspace'
 import { useViewState } from '../../app/useViewState'
 import { useUpdateTask } from '../../lib/hooks/useUpdateTask'
@@ -10,6 +11,8 @@ import { useTaskFilters } from '../toolbar/useTaskFilters'
 import { TaskTable } from './TaskTable'
 import type { Task } from '../../data/tasksRepo'
 import { LoadMoreButton } from '../../components/LoadMoreButton'
+import { BulkActionBar } from '../bulkActions/BulkActionBar'
+import { useTaskSelection } from '../bulkActions/useTaskSelection'
 
 export function ListView() {
   const { activeId, loading: wsLoading } = useActiveWorkspace()
@@ -24,6 +27,7 @@ export function ListView() {
   } = useFilteredTasks(activeId ?? '')
   const { sort } = useTaskFilters()
   const { data: members } = useMembers(activeId ?? '')
+  const { data: projects } = useProjects(activeId ?? '')
   const { setTaskRef, taskRef } = useViewState()
   const update = useUpdateTask(activeId ?? '')
   const onPatch = (id: string, patch: Parameters<typeof update.mutate>[0]['patch']) =>
@@ -31,35 +35,52 @@ export function ListView() {
   const move = useMoveTask(activeId ?? '')
   const onMove = (task: Task, toStatus: Task['status']) =>
     move.mutate({ taskId: task.id, toStatus, position: task.position, fromStatus: task.status })
+  const visibleTasks = sortTasks(tasks ?? [], sort)
+  const selection = useTaskSelection(activeId ?? '', visibleTasks)
+  const groups = groupTasksByStatus(visibleTasks)
 
   if (wsLoading || isLoading) return <ListSkeleton />
   if (error) return <ErrorState onRetry={() => refetch()} />
-  const groups = groupTasksByStatus(sortTasks(tasks ?? [], sort))
-  if (groups.length === 0) return <EmptyState />
 
   return (
-    <div
-      role="region"
-      aria-label="Task list, horizontally scrollable"
-      tabIndex={0}
-      className="opm-list-scroll overflow-x-auto pb-4"
-    >
-      {groups.map((g) => (
-        <TaskTable
-          key={g.status}
-          status={g.status}
-          tasks={g.tasks}
-          members={members ?? []}
-          selectedRef={taskRef}
-          onSelect={setTaskRef}
-          onPatch={onPatch}
-          onMove={onMove}
-        />
-      ))}
-      {hasNextPage && (
-        <LoadMoreButton pending={isFetchingNextPage} onClick={() => void fetchNextPage()} />
+    <>
+      <BulkActionBar
+        workspaceId={activeId ?? ''}
+        taskIds={[...selection.selectedIds]}
+        members={members ?? []}
+        projects={projects ?? []}
+        onClearSelection={selection.clear}
+      />
+      {groups.length === 0 ? (
+        <EmptyState />
+      ) : (
+        <div
+          role="region"
+          aria-label="Task list, horizontally scrollable"
+          tabIndex={0}
+          className="opm-list-scroll overflow-x-auto pb-4"
+        >
+          {groups.map((g) => (
+            <TaskTable
+              key={g.status}
+              status={g.status}
+              tasks={g.tasks}
+              members={members ?? []}
+              selectedRef={taskRef}
+              bulkSelectedIds={selection.selectedIds}
+              onSelect={setTaskRef}
+              onToggleTask={selection.toggle}
+              onToggleAll={selection.setMany}
+              onPatch={onPatch}
+              onMove={onMove}
+            />
+          ))}
+          {hasNextPage && (
+            <LoadMoreButton pending={isFetchingNextPage} onClick={() => void fetchNextPage()} />
+          )}
+        </div>
       )}
-    </div>
+    </>
   )
 }
 
